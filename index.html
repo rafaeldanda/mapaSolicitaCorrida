@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Poa Drive - Solicitar</title>
+    <title>Poa Drive</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -17,7 +17,7 @@
         .label { font-size: 0.65rem; font-weight: 800; color: #4338ca; text-transform: uppercase; margin-bottom: 4px; }
         .value { font-size: 0.9rem; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         #price-tag { font-size: 1.1rem; font-weight: 700; color: #059669; text-align: center; margin: 8px 0; }
-        button { width: 100%; padding: 18px; border: none; border-radius: 15px; font-weight: 700; font-size: 1rem; background: #10b981; color: white; }
+        button { width: 100%; padding: 18px; border: none; border-radius: 15px; font-weight: 700; font-size: 1rem; background: #10b981; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         button:disabled { background: #94a3b8; }
         .leaflet-control-geocoder { border: 2px solid #4338ca !important; border-radius: 10px !important; }
     </style>
@@ -101,12 +101,12 @@
                 });
         }
 
-        async function enviarParaN8N() {
+        function enviarParaN8N() {
             const btn = document.getElementById('btn-pedir');
             btn.disabled = true;
-            btn.innerText = "PROCESSANDO...";
+            btn.innerText = "ENVIANDO...";
 
-            const payload = {
+            const payload = JSON.stringify({
                 user_id: tg.initDataUnsafe?.user?.id || "WEB",
                 origem: document.getElementById('txt-origem').innerText,
                 destino: document.getElementById('txt-destino').innerText,
@@ -115,26 +115,24 @@
                 lat_dest: destino.getLatLng().lat,
                 lon_dest: destino.getLatLng().lng,
                 valor: document.getElementById('price-tag').innerText
-            };
-
-            // MODO NO-CORS E SILENCIOSO PARA EVITAR ALERTAS DE ERRO FALSOS
-            fetch('https://primary-production-a103.up.railway.app/webhook/4a3ec249-66de-4148-bb53-8f45d18d1eef', {
-                method: 'POST',
-                mode: 'no-cors', // Permite enviar mesmo que o servidor não autorize explicitamente o navegador
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
             });
 
-            // Como usamos no-cors, não esperamos a resposta. 
-            // Assumimos que o n8n recebeu (já que o navegador funcionou antes)
+            // MÉTODO ROBUSTO: XMLHttpRequest (Ignora bloqueios modernos de fetch)
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "https://primary-production-a103.up.railway.app/webhook/4a3ec249-66de-4148-bb53-8f45d18d1eef", true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+
+            // Não esperamos resposta para não travar a UI
+            xhr.send(payload);
+
+            // Interface do Telegram reage imediatamente
             tg.HapticFeedback.notificationOccurred('success');
-            tg.showAlert("✅ Pedido enviado! Aguarde o contato.", () => {
+            tg.showAlert("✅ Pedido enviado com sucesso!", function() {
                 tg.close();
-                setTimeout(() => { tg.close(); }, 300);
             });
-            
-            // Segurança: Fecha se nada acontecer em 4 segundos
-            setTimeout(() => { tg.close(); }, 4000);
+
+            // Fechamento forçado de backup
+            setTimeout(() => { tg.close(); }, 3500);
         }
     </script>
 </body>
