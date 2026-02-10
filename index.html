@@ -3,21 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Poa Drive</title>
+    <title>Poa Drive - Solicitar</title>
+    
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    
     <style>
-        body { font-family: sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; background: #f8f9fa; overflow: hidden; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            margin: 0; padding: 0; display: flex; flex-direction: column; 
+            height: 100vh; background: #f8f9fa; overflow: hidden; 
+        }
+        
         #map { flex-grow: 1; width: 100%; z-index: 1; }
-        .panel { padding: 20px; background: white; box-shadow: 0 -5px 20px rgba(0,0,0,0.1); border-radius: 25px 25px 0 0; z-index: 100; }
-        .address-card { background: #f1f5f9; border-radius: 12px; padding: 12px; margin-bottom: 15px; border-left: 5px solid #4338ca; }
-        .label { font-size: 0.65rem; font-weight: 800; color: #4338ca; text-transform: uppercase; }
-        .value { font-size: 0.9rem; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        #price-tag { font-size: 1.1rem; font-weight: 700; color: #059669; text-align: center; margin: 10px 0; }
-        button { width: 100%; padding: 18px; border: none; border-radius: 15px; font-weight: 700; background: #10b981; color: white; cursor: pointer; }
-        button:disabled { background: #94a3b8; }
-        .leaflet-control-geocoder { border: 2px solid #4338ca !important; border-radius: 10px !important; }
+        
+        .panel { 
+            padding: 20px; background: white; 
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.1); 
+            border-radius: 25px 25px 0 0; z-index: 100; 
+            position: relative; 
+        }
+        
+        .address-card { 
+            background: #f1f5f9; border-radius: 12px; 
+            padding: 12px; margin-bottom: 12px; 
+            border-left: 5px solid #4338ca; 
+        }
+        
+        .label { 
+            font-size: 0.65rem; font-weight: 800; 
+            color: #4338ca; text-transform: uppercase; margin-bottom: 4px; 
+        }
+        
+        .value { 
+            font-size: 0.9rem; color: #1e293b; 
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
+        }
+        
+        #price-tag { 
+            font-size: 1.1rem; font-weight: 700; color: #059669; 
+            text-align: center; margin: 8px 0; 
+        }
+        
+        button { 
+            width: 100%; padding: 18px; border: none; border-radius: 15px; 
+            font-weight: 700; font-size: 1rem; cursor: pointer; 
+            transition: 0.3s; background: #10b981; color: white; 
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); 
+        }
+        
+        button:disabled { background: #94a3b8; box-shadow: none; cursor: not-allowed; }
+        button:active { transform: scale(0.98); }
+
+        .leaflet-control-geocoder { 
+            border: 2px solid #4338ca !important; 
+            border-radius: 10px !important; overflow: hidden; 
+        }
     </style>
 </head>
 <body>
@@ -26,21 +68,25 @@
 
     <div class="panel">
         <div class="address-card">
-            <div class="label">Origem</div>
-            <div id="txt-origem" class="value">Localizando...</div>
+            <div class="label">Onde você está?</div>
+            <div id="txt-origem" class="value">Localizando pelo GPS...</div>
         </div>
+        
         <div class="address-card" style="border-left-color: #f59e0b;">
-            <div class="label">Destino</div>
-            <div id="txt-destino" class="value">Use a lupa 🔍</div>
+            <div class="label">Para onde você vai?</div>
+            <div id="txt-destino" class="value">Toque na lupa para buscar 🔍</div>
         </div>
+
         <div id="price-tag">---</div>
-        <button id="btn-pedir" disabled onclick="enviarParaN8N()">CONFIRMAR PEDIDO</button>
+        
+        <button id="btn-pedir" disabled onclick="enviarParaN8N()">CONFIRMAR CORRIDA</button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     
     <script>
+        // Inicialização do WebApp do Telegram
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
@@ -50,51 +96,63 @@
 
         let origem = null, destino = null, rotaLayer = null;
 
+        // Pegar localização inicial
         navigator.geolocation.getCurrentPosition(pos => {
-            atualizarOrigem({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+            const latlng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            atualizarOrigem(latlng);
         }, () => {
-            document.getElementById('txt-origem').innerText = "Toque no mapa";
+            document.getElementById('txt-origem').innerText = "Toque no mapa para marcar a origem";
         });
 
-        const geocoder = L.Control.geocoder({ defaultMarkGeocode: false, placeholder: "Para onde vamos?" })
-            .on('markgeocode', e => atualizarDestino(e.geocode.center)).addTo(map);
+        // Configuração da busca (Lupa)
+        const geocoder = L.Control.geocoder({
+            defaultMarkGeocode: false,
+            placeholder: "Buscar endereço com número...",
+        }).on('markgeocode', function(e) {
+            atualizarDestino(e.geocode.center);
+        }).addTo(map);
 
         function atualizarOrigem(latlng) {
             if (origem) map.removeLayer(origem);
             origem = L.circleMarker(latlng, { radius: 8, color: '#4338ca', fillColor: '#fff', fillOpacity: 1, weight: 3 }).addTo(map);
             map.setView(latlng, 15);
-            reverse(latlng, 'txt-origem');
+            reverseGeocode(latlng, 'txt-origem');
         }
 
         function atualizarDestino(latlng) {
             if (destino) map.removeLayer(destino);
             destino = L.marker(latlng).addTo(map);
-            reverse(latlng, 'txt-destino', true);
+            reverseGeocode(latlng, 'txt-destino', true);
         }
 
-        function reverse(latlng, id, calc = false) {
+        function reverseGeocode(latlng, elementId, calcRoute = false) {
             fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`)
                 .then(r => r.json()).then(data => {
-                    const rua = data.address.road || data.address.pedestrian || "Rua s/n";
+                    const rua = data.address.road || data.address.pedestrian || "Endereço selecionado";
                     const num = data.address.house_number || "";
-                    document.getElementById(id).innerText = num ? `${rua}, ${num}` : rua;
-                    if (calc) calcular();
+                    document.getElementById(elementId).innerText = num ? `${rua}, ${num}` : rua;
+                    if (calcRoute) calcularRota();
                 });
         }
 
         map.on('click', e => atualizarOrigem(e.latlng));
 
-        function calcular() {
+        function calcularRota() {
             if (!origem || !destino) return;
-            const p1 = origem.getLatLng(); const p2 = destino.getLatLng();
+            const p1 = origem.getLatLng();
+            const p2 = destino.getLatLng();
+            
             fetch(`https://router.project-osrm.org/route/v1/driving/${p1.lng},${p1.lat};${p2.lng},${p2.lat}?overview=full&geometries=geojson`)
                 .then(r => r.json()).then(data => {
                     const rota = data.routes[0];
+                    const coords = rota.geometry.coordinates.map(c => [c[1], c[0]]);
                     if (rotaLayer) map.removeLayer(rotaLayer);
-                    rotaLayer = L.polyline(rota.geometry.coordinates.map(c => [c[1], c[0]]), { color: '#4338ca', weight: 6 }).addTo(map);
+                    rotaLayer = L.polyline(coords, { color: '#4338ca', weight: 6, opacity: 0.8 }).addTo(map);
                     map.fitBounds(rotaLayer.getBounds(), { padding: [40, 40] });
+
                     const km = (rota.distance / 1000).toFixed(1);
-                    document.getElementById('price-tag').innerHTML = `Viagem: ${km} km • <b>R$ ${(km * 2.8 + 6).toFixed(2)}</b>`;
+                    const preco = (km * 2.8 + 6).toFixed(2);
+                    document.getElementById('price-tag').innerHTML = `Viagem: ${km} km • <b>R$ ${preco}</b>`;
                     document.getElementById('btn-pedir').disabled = false;
                 });
         }
@@ -102,16 +160,19 @@
         async function enviarParaN8N() {
             const btn = document.getElementById('btn-pedir');
             btn.disabled = true;
-            btn.innerText = "ENVIANDO...";
+            btn.innerText = "ENVIANDO PEDIDO...";
+
+            const userId = (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : "USER_WEB";
 
             const payload = {
-                user_id: tg.initDataUnsafe?.user?.id || "WEB",
+                user_id: userId,
                 origem: document.getElementById('txt-origem').innerText,
                 destino: document.getElementById('txt-destino').innerText,
                 lat_orig: origem.getLatLng().lat,
                 lon_orig: origem.getLatLng().lng,
                 lat_dest: destino.getLatLng().lat,
-                lon_dest: destino.getLatLng().lng
+                lon_dest: destino.getLatLng().lng,
+                valor: document.getElementById('price-tag').innerText
             };
 
             try {
@@ -122,21 +183,28 @@
                 });
 
                 if (res.ok) {
-                    if (tg.initDataUnsafe?.user) {
-                        tg.HapticFeedback.notificationOccurred('success');
-                        // FECHAMENTO REFORÇADO AQUI
-                        tg.showAlert("✅ Pedido enviado! Aguarde no chat.", function() {
-                            setTimeout(() => { tg.close(); }, 100); 
-                        });
-                    } else {
-                        alert("✅ Sucesso!");
-                        location.reload();
-                    }
-                } else { throw new Error(); }
+                    tg.HapticFeedback.notificationOccurred('success');
+                    
+                    // MECANISMO DE FECHAMENTO REFORÇADO
+                    tg.showAlert("✅ Pedido enviado! Aguarde o contato de um motorista.", () => {
+                        // 1. Tenta fechar imediatamente ao clicar no OK
+                        tg.close();
+                        
+                        // 2. Plano B: Se o sistema demorar, tenta fechar após 200ms
+                        setTimeout(() => { tg.close(); }, 200);
+                    });
+
+                    // 3. Plano C: Fechamento forçado após 5 segundos (caso o usuário não clique no OK)
+                    setTimeout(() => { tg.close(); }, 5000);
+
+                } else {
+                    throw new Error("Erro no servidor");
+                }
             } catch (e) {
-                tg.showAlert("Erro ao enviar. Tente novamente.");
+                const msg = "Erro ao enviar. Tente novamente.";
+                if (tg.initDataUnsafe && tg.initDataUnsafe.user) tg.showAlert(msg); else alert(msg);
                 btn.disabled = false;
-                btn.innerText = "CONFIRMAR PEDIDO";
+                btn.innerText = "CONFIRMAR CORRIDA";
             }
         }
     </script>
