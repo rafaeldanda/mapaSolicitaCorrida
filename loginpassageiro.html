@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --tg-theme-bg-color: #ffffff;
+      --tg-theme-text-color: #000000;
+      --tg-theme-button-color: #2ea6ff;
+      --tg-theme-button-text-color: #ffffff;
+      --tg-theme-secondary-bg-color: #f0f0f0;
+      --tg-theme-hint-color: #999999;
+    }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+      padding: 30px 20px; 
+      background-color: var(--tg-theme-bg-color);
+      color: var(--tg-theme-text-color);
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .logo {
+      font-size: 50px;
+      margin-bottom: 20px;
+    }
+    h3 { margin-bottom: 25px; font-size: 22px; }
+    
+    .input-group { width: 100%; }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      margin-bottom: 15px;
+      font-size: 16px;
+      border: 1px solid var(--tg-theme-hint-color, #ccc);
+      border-radius: 10px;
+      background-color: var(--tg-theme-secondary-bg-color);
+      color: var(--tg-theme-text-color);
+      box-sizing: border-box;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--tg-theme-button-color);
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 15px;
+      background-color: var(--tg-theme-button-color);
+      color: var(--tg-theme-button-text-color);
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .forgot-password {
+      margin-top: 20px;
+      color: var(--tg-theme-button-color);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div class="logo">🔐</div>
+<h3>Acesse sua Conta</h3>
+
+<div class="input-group">
+  <input id="usuario" type="text" placeholder="Usuário ou E-mail">
+  <input id="senha" type="password" placeholder="Senha">
+  
+  <button class="btn-login" onclick="fazerLogin()">Entrar</button>
+</div>
+
+<div class="forgot-password" onclick="esqueciSenha()">Esqueci minha senha</div>
+
+<script>
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
+
+  function fazerLogin() {
+   
+    const usuario = document.getElementById('usuario').value;
+    const senha = document.getElementById('senha').value;
+
+    // Validação simples (Is Not Empty)
+    if (!usuario || !senha) {
+      tg.showAlert("⚠️ Por favor, preencha todos os campos.");
+      return;
+    }
+
+    // Feedback visual no botão nativo do Telegram
+    tg.MainButton.setText("AUTENTICANDO...");
+    tg.MainButton.show();
+    tg.MainButton.showProgress();
+
+    // Envio direto para o seu Webhook (ajuste a URL se necessário)
+    const url = "https://primary-production-a103.up.railway.app/webhook/eeb9a6ad-2361-4c4c-9a23-dd229e18ee9c";
+    
+     fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        acao: "login",
+        usuario: usuario,
+        senha: senha // Em produção, lembre-se de usar HTTPS sempre
+      })
+    })
+    .then(res => {
+      if (res.status===200) {
+        alert("✅ Login realizado com sucesso!");
+        window.close();
+        Telegram.WebApp.close();        
+      }  else {
+        alert("usuario ou senha invalido!");
+      }
+    })
+    .catch(err => {
+     // alert(err.status);      
+    })
+
+    
+  }
+
+   
+
+  function esqueciSenha() {
+    tg.showAlert("💡 Um link de recuperação será enviado para o seu e-mail cadastrado.");
+    
+    // Opcional: Enviar comando para o webhook avisando que esqueceu a senha
+    // fetch(url, { method: "POST", body: JSON.stringify({ acao: "recuperar", ... }) });
+  }
+</script>
+
+</body>
+</html>

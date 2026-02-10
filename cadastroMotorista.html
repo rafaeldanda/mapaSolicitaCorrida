@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background-color: #fff; color: #000; }
+    h3 { margin-bottom: 20px; color: #333; }
+    input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; outline: none; }
+    input:focus { border-color: #2ea6ff; }
+    .btn { width: 100%; padding: 15px; background: #2ea6ff; color: #fff; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; transition: background 0.3s; }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+<h3>Cadastro</h3>
+<input id="nome" type="text" placeholder="Nome">
+<input id="telefone" type="tel" placeholder="Telefone">
+<input id="email" type="email" placeholder="E-mail">
+<input id="cpf" type="text" placeholder="CPF">
+<input id="senha" type="password" placeholder="Senha">
+
+<button id="btnEnviar" class="btn" onclick="confirmar()">Enviar Dados</button>
+
+<script>
+  // Inicialização do Telegram WebApp
+  let tg = null;
+  try {
+    if (window.Telegram && window.Telegram.WebApp) {
+      tg = window.Telegram.WebApp;
+      tg.ready();
+      tg.expand();
+    }
+  } catch (e) {
+    console.warn("Executando fora do Telegram");
+  }
+
+  function confirmar() {
+    const nome = document.getElementById('nome').value;
+    const senha = document.getElementById('senha').value;
+
+    if (!nome || !senha) {
+      const msg = "Por favor, preencha o nome e a senha.";
+      if (tg && tg.showAlert) {
+        try { tg.showAlert(msg); } catch(e) { alert(msg); }
+      } else {
+        alert(msg);
+      }
+      return;
+    }
+
+    if (confirm("Deseja confirmar o envio dos dados?")) {
+      enviar();
+    }
+  }
+
+  async function enviar() {
+    const btn = document.getElementById('btnEnviar');
+    const baseUrl = "https://primary-production-a103.up.railway.app/webhook/7691e9b8-c7b4-47ae-9935-1fac55b9d7c9";
+    
+    // Bloqueia o botão para evitar cliques duplos
+    btn.disabled = true;
+    btn.innerText = "PROCESSANDO...";
+
+    // Coleta dos dados e tratamento do chatId
+    const rawChatId = "{{ $json.query.chatId }}";
+    const cleanChatId = rawChatId.includes('$json') ? "PC_TEST" : rawChatId;
+
+    const params = new URLSearchParams({
+      chatId: cleanChatId,
+      nome: document.getElementById('nome').value,
+      telefone: document.getElementById('telefone').value,
+      email: document.getElementById('email').value,
+      cpf: document.getElementById('cpf').value,
+      senha: document.getElementById('senha').value
+    });
+
+    try {
+      // Faz a chamada GET esperando a resposta
+      const response = await fetch(`${baseUrl}?${params.toString()}`);
+
+      if (response.ok) {
+        const msgSucesso = "✅ Cadastro realizado!";
+        const urlRedirecionamento = "7691e9b8-c7b4-47ae-9935-1fac55b9d7c9"; // <--- MUDE AQUI
+
+        if (tg && tg.showAlert) {
+          try {
+            tg.showAlert(msgSucesso, () => {
+              window.location.href = urlRedirecionamento;
+            });
+          } catch(e) {
+            alert(msgSucesso);
+            window.location.href = urlRedirecionamento;
+          }
+        } else {
+          alert(msgSucesso);
+          window.location.href = urlRedirecionamento;
+        }
+      } else {
+        // Se cair aqui, o erro é no n8n (provavelmente método GET desativado)
+        throw new Error("Erro " + response.status + ": O servidor recusou a conexão.");
+      }
+
+    } catch (err) {
+      alert("❌ " + err.message);
+      btn.disabled = false;
+      btn.innerText = "Enviar Dados";
+    }
+  }
+</script>
+</body>
+</html>
