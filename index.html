@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Poa Drive - Solicitar Viagem</title>
+    
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; background: #f0f2f5; overflow: hidden; }
+        #map { flex-grow: 1; width: 100%; position: relative; }
+        
+        .panel { padding: 20px; background: white; box-shadow: 0 -4px 12px rgba(0,0,0,0.15); border-radius: 20px 20px 0 0; z-index: 1000; }
+        
+        .address-box { margin-bottom: 15px; border-left: 4px solid #4338ca; padding-left: 12px; }
+        .address-line { font-size: 0.9rem; color: #333; margin-bottom: 8px; min-height: 1.2rem; }
+        .address-line b { color: #4338ca; font-size: 0.7rem; text-transform: uppercase; display: block; letter-spacing: 1px; }
+        
+        #info { font-size: 1rem; color: #1a1a1a; margin-top: 12px; border-top: 1px solid #eee; padding-top: 12px; font-weight: bold; }
+        
+        button { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: 0.2s; }
+        #btn-pedir { background: #10b981; color: white; margin-top: 10px; }
+        #btn-pedir:disabled { background: #d1d5db; color: #9ca3af; cursor: not-allowed; }
+        
+        /* Ajuste na barra de busca para WebApp */
+        .leaflet-control-geocoder { background: white; border: 2px solid #4338ca !important; border-radius: 8px; margin-top: 10px !important; }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <div class="panel">
+        <div class="address-box">
+            <div class="address-line"><b>Sua Origem:</b> <span id="txt-origem">Buscando sinal GPS...</span></div>
+            <div class="address-line"><b>Destino Confirmado:</b> <span id="txt-destino">Use a lupa para buscar 🔍</span></div>
+        </div>
+        
+        <div id="info">Selecione o destino com número para calcular.</div>
+        
+        <button id="btn-pedir" disabled onclick="enviarParaN8N()">CONFIRMAR CORRIDA</button>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    
+    <script>
+        // Inicializa o Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Abre o WebApp em tela cheia
+
+        // Mapa focado em Porto Alegre
+        const map = L.map('map', { zoomControl: false }).setView([-30.0346, -51.2177], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        let origem = null, destino = null, rotaLayer = null;
+
+        // Ao carregar, tenta pegar GPS
+        window.onload = function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    definirOrigem({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+                }, () => {
+                    document.getElementById('txt-origem').innerText = "GPS falhou. Toque no mapa para Origem.";
+                });
+            }
+        };
+
+        // Lupa de Busca (Único método para destino para garantir o número)
+        const geocoder = L.Control.geocoder({
+            defaultMarkGeocode: false,
+            placeholder: "Para onde vamos? (Rua, Número)",
+        }).on('markgeocode', function(e) {
+            marcarDestino(e.geocode.center);
+        }).addTo(map);
+
+        function definirOrigem(latlng) {
+            if (origem) map.removeLayer(origem);
+            origem = L.circleMarker(latlng, { radius: 8, fillColor: '#4338ca', color: 'white', fillOpacity: 1 }).addTo(map);
+            map.setView(latlng, 15);
+            
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`)
+                .then(r => r.json()).then(data => {
+                    const rua = data.address.road || data.address.pedestrian || "Localização";
+                    const num = data.address.house_number || "";
+                    document.getElementById('txt-origem').innerText = num ? `${rua}, ${num}` : rua;
+                });
+        }
+
+        function marcarDestino(latlng) {
+            if (!origem) return tg.showAlert("Defina sua origem clicando no mapa primeiro.");
+            if (destino) map.removeLayer(destino);
+            
+            destino = L.marker(latlng).addTo(map);
+            document.getElementById('txt-destino').innerText = "Obtendo número...";
+
+            // Reverse Geocode para garantir número e bairro
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`)
+                .then(r => r.json()).then(data => {
+                    const rua = data.address.road || data.address.pedestrian || "Rua selecionada";
+                    const num = data.address.house_number || ""; 
+                    const bairro = data.address.suburb || data.address.neighbourhood || "";
+                    
+                    const enderecoFinal = num ? `${rua}, ${num}${bairro ? ' - ' + bairro : ''}` : `${rua}${bairro ? ' - ' + bairro : ''}`;
+                    document.getElementById('txt-destino').innerText = enderecoFinal;
+                    calcularRota();
+                });
+        }
+
+        // Toque no mapa define apenas Origem
+        map.on('click', e => { definirOrigem(e.latlng); });
+
+        function calcularRota() {
+            const pA = origem.getLatLng();
+            const pB = destino.getLatLng();
+            const url = `https://router.project-osrm.org/route/v1/driving/${pA.lng},${pA.lat};${pB.lng},${pB.lat}?overview=full&geometries=geojson`;
+
+            fetch(url).then(res => res.json()).then(data => {
+                const rota = data.routes[0];
+                const coords = rota.geometry.coordinates.map(c => [c[1], c[0]]);
+                if (rotaLayer) map.removeLayer(rotaLayer);
+                rotaLayer = L.polyline(coords, { color: '#4338ca', weight: 5 }).addTo(map);
+                map.fitBounds(rotaLayer.getBounds(), { padding: [40, 40] });
+
+                const km = (rota.distance / 1000).toFixed(2);
+                const preco = (km * 2.5 + 5).toFixed(2);
+                document.getElementById('info').innerHTML = `Distância: ${km}km <br> <span style="color:#10b981">Valor Estimado: R$ ${preco}</span>`;
+                document.getElementById('btn-pedir').disabled = false;
+            });
+        }
+
+        async function enviarParaN8N() {
+            const btn = document.getElementById('btn-pedir');
+            
+            // Dados para o n8n
+            const dados = {
+                user_id: tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : "ID_DESCONHECIDO",
+                user_name: tg.initDataUnsafe.user ? tg.initDataUnsafe.user.first_name : "WebUser",
+                origem: document.getElementById('txt-origem').innerText,
+                destino: document.getElementById('txt-destino').innerText,
+                lat_orig: origem.getLatLng().lat,
+                lon_orig: origem.getLatLng().lng,
+                lat_dest: destino.getLatLng().lat,
+                lon_dest: destino.getLatLng().lng,
+                resumo_valor: document.getElementById('info').innerText
+            };
+
+            btn.innerText = "ENVIANDO PEDIDO...";
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('https://primary-production-a103.up.railway.app/webhook/4a3ec249-66de-4148-bb53-8f45d18d1eef?id=' + dados.user_id, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dados)
+                });
+
+                if (response.ok) {
+                    // Notificação de sucesso tátil (vibrar)
+                    tg.HapticFeedback.notificationOccurred('success');
+                    
+                    // Alerta oficial do Telegram com fechamento da página
+                    tg.showAlert("✅ Pedido enviado! Aguarde o contato de um motorista no chat.", () => {
+                        tg.close(); // Fecha o WebApp e volta para o chat do bot
+                    });
+                } else {
+                    tg.showAlert("❌ Erro ao processar seu pedido. Tente novamente.");
+                    btn.disabled = false;
+                    btn.innerText = "CONFIRMAR CORRIDA";
+                }
+            } catch (error) {
+                tg.showAlert("❌ Erro de conexão com o servidor.");
+                btn.disabled = false;
+                btn.innerText = "CONFIRMAR CORRIDA";
+            }
+        }
+    </script>
+</body>
+</html>
