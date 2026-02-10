@@ -3,22 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Poa Drive</title>
+    <title>Poa Drive - Passageiro</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     
     <style>
-        body { font-family: sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; background: #f0f2f5; overflow: hidden; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; background: #f8f9fa; overflow: hidden; }
         #map { flex-grow: 1; width: 100%; z-index: 1; }
-        .panel { padding: 20px; background: white; box-shadow: 0 -4px 12px rgba(0,0,0,0.1); border-radius: 20px 20px 0 0; z-index: 10; }
-        .address-line { font-size: 0.9rem; margin-bottom: 8px; border-left: 3px solid #4338ca; padding-left: 10px; }
-        .address-line b { font-size: 0.7rem; color: #4338ca; display: block; text-transform: uppercase; }
-        #info { font-weight: bold; margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px; }
-        button { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; background: #10b981; color: white; margin-top: 10px; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
-        .leaflet-control-geocoder { margin-top: 15px !important; border: 2px solid #4338ca !important; }
+        
+        .panel { padding: 20px; background: white; box-shadow: 0 -5px 20px rgba(0,0,0,0.1); border-radius: 25px 25px 0 0; z-index: 100; position: relative; }
+        
+        .address-card { background: #f1f5f9; border-radius: 12px; padding: 12px; margin-bottom: 15px; border-left: 5px solid #4338ca; }
+        .label { font-size: 0.65rem; font-weight: 800; color: #4338ca; text-transform: uppercase; margin-bottom: 4px; }
+        .value { font-size: 0.9rem; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        #price-tag { font-size: 1.1rem; font-weight: 700; color: #059669; text-align: center; margin: 10px 0; }
+        
+        button { width: 100%; padding: 18px; border: none; border-radius: 15px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: 0.3s; background: #10b981; color: white; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); }
+        button:disabled { background: #94a3b8; box-shadow: none; cursor: not-allowed; }
+        button:active { transform: scale(0.98); }
+
+        /* Ajuste da Lupa para Mobile */
+        .leaflet-control-geocoder { border: 2px solid #4338ca !important; border-radius: 10px !important; overflow: hidden; }
     </style>
 </head>
 <body>
@@ -26,82 +35,92 @@
     <div id="map"></div>
 
     <div class="panel">
-        <div class="address-line"><b>Origem:</b> <span id="txt-origem">Localizando...</span></div>
-        <div class="address-line"><b>Destino:</b> <span id="txt-destino">Aguardando busca...</span></div>
-        <div id="info">Busque o destino na lupa 🔍</div>
-        <button id="btn-pedir" disabled onclick="enviarParaN8N()">CONFIRMAR CORRIDA</button>
+        <div class="address-card">
+            <div class="label">Origem (Sua posição)</div>
+            <div id="txt-origem" class="value">Localizando GPS...</div>
+        </div>
+        
+        <div class="address-card" style="border-left-color: #f59e0b;">
+            <div class="label">Destino (Busque na lupa 🔍)</div>
+            <div id="txt-destino" class="value">Aguardando endereço...</div>
+        </div>
+
+        <div id="price-tag">---</div>
+        
+        <button id="btn-pedir" disabled onclick="enviarParaN8N()">SOLICITAR MOTORISTA</button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     
     <script>
-        // Inicia o Telegram WebApp (se existir)
-        const tg = window.Telegram ? window.Telegram.WebApp : null;
-        if (tg) tg.expand();
+        // 1. Inicializa o Telegram e garante o expand
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
 
         const map = L.map('map', { zoomControl: false }).setView([-30.0346, -51.2177], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
         let origem = null, destino = null, rotaLayer = null;
 
-        // GPS Inicial
+        // 2. Localização Inicial
         navigator.geolocation.getCurrentPosition(pos => {
-            definirOrigem({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+            const latlng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            atualizarOrigem(latlng);
         }, () => {
-            document.getElementById('txt-origem').innerText = "Toque no mapa para definir origem";
+            document.getElementById('txt-origem').innerText = "Clique no mapa para marcar origem";
         });
 
-        // Lupa de busca
+        // 3. Busca de Endereço
         const geocoder = L.Control.geocoder({
             defaultMarkGeocode: false,
-            placeholder: "Rua e número...",
+            placeholder: "Para onde você vai?",
         }).on('markgeocode', function(e) {
-            marcarDestino(e.geocode.center);
+            atualizarDestino(e.geocode.center);
         }).addTo(map);
 
-        function definirOrigem(latlng) {
+        function atualizarOrigem(latlng) {
             if (origem) map.removeLayer(origem);
-            origem = L.circleMarker(latlng, { radius: 7, fillColor: '#4338ca', color: 'white', fillOpacity: 1 }).addTo(map);
+            origem = L.circleMarker(latlng, { radius: 8, color: '#4338ca', fillColor: '#fff', fillOpacity: 1, weight: 3 }).addTo(map);
             map.setView(latlng, 15);
-            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`)
-                .then(r => r.json()).then(data => {
-                    const rua = data.address.road || "Localização";
-                    const num = data.address.house_number || "";
-                    document.getElementById('txt-origem').innerText = num ? `${rua}, ${num}` : rua;
-                });
+            reverseGeocode(latlng, 'txt-origem');
         }
 
-        function marcarDestino(latlng) {
+        function atualizarDestino(latlng) {
             if (destino) map.removeLayer(destino);
             destino = L.marker(latlng).addTo(map);
-            document.getElementById('txt-destino').innerText = "Verificando endereço...";
-            
+            reverseGeocode(latlng, 'txt-destino', true);
+        }
+
+        function reverseGeocode(latlng, elementId, calcRoute = false) {
             fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`)
                 .then(r => r.json()).then(data => {
-                    const rua = data.address.road || "Destino";
+                    const rua = data.address.road || data.address.pedestrian || "Endereço desconhecido";
                     const num = data.address.house_number || "";
-                    const bairro = data.address.suburb || "";
-                    document.getElementById('txt-destino').innerText = `${rua}${num ? ', ' + num : ''}${bairro ? ' - ' + bairro : ''}`;
-                    calcularRota();
+                    document.getElementById(elementId).innerText = num ? `${rua}, ${num}` : rua;
+                    if (calcRoute) calcularRota();
                 });
         }
 
-        map.on('click', e => definirOrigem(e.latlng));
+        map.on('click', e => atualizarOrigem(e.latlng));
 
         function calcularRota() {
             if (!origem || !destino) return;
             const p1 = origem.getLatLng();
             const p2 = destino.getLatLng();
+            
             fetch(`https://router.project-osrm.org/route/v1/driving/${p1.lng},${p1.lat};${p2.lng},${p2.lat}?overview=full&geometries=geojson`)
                 .then(r => r.json()).then(data => {
                     const rota = data.routes[0];
                     const coords = rota.geometry.coordinates.map(c => [c[1], c[0]]);
                     if (rotaLayer) map.removeLayer(rotaLayer);
-                    rotaLayer = L.polyline(coords, { color: '#4338ca', weight: 5 }).addTo(map);
-                    map.fitBounds(rotaLayer.getBounds(), { padding: [30, 30] });
+                    rotaLayer = L.polyline(coords, { color: '#4338ca', weight: 6, opacity: 0.8 }).addTo(map);
+                    map.fitBounds(rotaLayer.getBounds(), { padding: [40, 40] });
+
                     const km = (rota.distance / 1000).toFixed(1);
-                    document.getElementById('info').innerHTML = `Viagem: ${km}km | <span style="color:#10b981">R$ ${(km * 2.5 + 5).toFixed(2)}</span>`;
+                    const preco = (km * 2.8 + 6).toFixed(2); // Exemplo: R$ 6 base + 2.80 por km
+                    document.getElementById('price-tag').innerHTML = `Distância: ${km} km • <b>R$ ${preco}</b>`;
                     document.getElementById('btn-pedir').disabled = false;
                 });
         }
@@ -109,41 +128,48 @@
         async function enviarParaN8N() {
             const btn = document.getElementById('btn-pedir');
             btn.disabled = true;
-            btn.innerText = "ENVIANDO...";
+            btn.innerText = "CONTATANDO MOTORISTAS...";
 
-            const user_id = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : "WEB_TESTE";
+            // Captura segura de ID do Telegram
+            const userId = (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : "USER_WEB";
 
-            const dados = {
-                user_id: user_id,
+            const payload = {
+                user_id: userId,
                 origem: document.getElementById('txt-origem').innerText,
                 destino: document.getElementById('txt-destino').innerText,
                 lat_orig: origem.getLatLng().lat,
                 lon_orig: origem.getLatLng().lng,
                 lat_dest: destino.getLatLng().lat,
-                lon_dest: destino.getLatLng().lng
+                lon_dest: destino.getLatLng().lng,
+                valor: document.getElementById('price-tag').innerText
             };
 
             try {
                 const res = await fetch('https://primary-production-a103.up.railway.app/webhook/4a3ec249-66de-4148-bb53-8f45d18d1eef', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(dados)
+                    body: JSON.stringify(payload)
                 });
 
-                if (res.status === 200) {
-                    if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                        tg.showAlert("✅ Pedido enviado!", () => tg.close());
+                if (res.ok) {
+                    // Verificação de ambiente para Alerta
+                    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                        tg.HapticFeedback.notificationOccurred('success');
+                        tg.showAlert("✅ Solicitação enviada! Aguarde o contato de um motorista no chat.", () => {
+                            tg.close(); // Fecha o WebApp
+                        });
                     } else {
-                        alert("✅ Sucesso (Navegador)!");
+                        alert("✅ Sucesso! O n8n recebeu seu pedido.");
                         location.reload();
                     }
                 } else {
-                    alert("Erro: " + res.status);
-                    btn.disabled = false;
+                    throw new Error();
                 }
             } catch (e) {
-                alert("Erro de conexão");
+                const msg = "Erro ao enviar. Verifique sua internet.";
+                if (tg.initDataUnsafe && tg.initDataUnsafe.user) tg.showAlert(msg); else alert(msg);
                 btn.disabled = false;
+                btn.innerText = "SOLICITAR MOTORISTA";
             }
         }
     </script>
