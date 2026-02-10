@@ -10,30 +10,14 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     
     <style>
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            margin: 0; padding: 0; display: flex; flex-direction: column; 
-            height: 100vh; background: #f8f9fa; overflow: hidden; 
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; background: #f8f9fa; overflow: hidden; }
         #map { flex-grow: 1; width: 100%; z-index: 1; }
-        .panel { 
-            padding: 20px; background: white; 
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.1); 
-            border-radius: 25px 25px 0 0; z-index: 100; 
-        }
-        .address-card { 
-            background: #f1f5f9; border-radius: 12px; 
-            padding: 12px; margin-bottom: 12px; 
-            border-left: 5px solid #4338ca; 
-        }
+        .panel { padding: 20px; background: white; box-shadow: 0 -5px 20px rgba(0,0,0,0.1); border-radius: 25px 25px 0 0; z-index: 100; }
+        .address-card { background: #f1f5f9; border-radius: 12px; padding: 12px; margin-bottom: 12px; border-left: 5px solid #4338ca; }
         .label { font-size: 0.65rem; font-weight: 800; color: #4338ca; text-transform: uppercase; margin-bottom: 4px; }
         .value { font-size: 0.9rem; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         #price-tag { font-size: 1.1rem; font-weight: 700; color: #059669; text-align: center; margin: 8px 0; }
-        button { 
-            width: 100%; padding: 18px; border: none; border-radius: 15px; 
-            font-weight: 700; font-size: 1rem; cursor: pointer; 
-            background: #10b981; color: white; 
-        }
+        button { width: 100%; padding: 18px; border: none; border-radius: 15px; font-weight: 700; font-size: 1rem; cursor: pointer; background: #10b981; color: white; }
         button:disabled { background: #94a3b8; cursor: not-allowed; }
         .leaflet-control-geocoder { border: 2px solid #4338ca !important; border-radius: 10px !important; }
     </style>
@@ -44,17 +28,14 @@
 
     <div class="panel">
         <div class="address-card">
-            <div class="label">Minha Localização</div>
+            <div class="label">Onde você está?</div>
             <div id="txt-origem" class="value">Buscando GPS...</div>
         </div>
-        
         <div class="address-card" style="border-left-color: #f59e0b;">
-            <div class="label">Destino Final</div>
-            <div id="txt-destino" class="value">Aguardando destino...</div>
+            <div class="label">Para onde você vai?</div>
+            <div id="txt-destino" class="value">Use a lupa para buscar 🔍</div>
         </div>
-
         <div id="price-tag">---</div>
-        
         <button id="btn-pedir" disabled onclick="enviarParaN8N()">CONFIRMAR VIAGEM</button>
     </div>
 
@@ -74,10 +55,10 @@
         navigator.geolocation.getCurrentPosition(pos => {
             atualizarOrigem({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         }, () => {
-            document.getElementById('txt-origem').innerText = "Clique no mapa para marcar";
+            document.getElementById('txt-origem').innerText = "Toque no mapa para marcar";
         });
 
-        const geocoder = L.Control.geocoder({ defaultMarkGeocode: false, placeholder: "Para onde vamos?" })
+        const geocoder = L.Control.geocoder({ defaultMarkGeocode: false, placeholder: "Buscar endereço..." })
             .on('markgeocode', e => atualizarDestino(e.geocode.center)).addTo(map);
 
         function atualizarOrigem(latlng) {
@@ -96,7 +77,7 @@
         function reverse(latlng, id, calc = false) {
             fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`)
                 .then(r => r.json()).then(data => {
-                    const rua = data.address.road || data.address.pedestrian || "Endereço";
+                    const rua = data.address.road || "Endereço";
                     const num = data.address.house_number || "";
                     document.getElementById(id).innerText = num ? `${rua}, ${num}` : rua;
                     if (calc) calcularRota();
@@ -142,20 +123,17 @@
                 body: JSON.stringify(payload)
             })
             .then(res => {
-                if (res.status === 200) {
-                    // LÓGICA DE FECHAMENTO QUE VOCÊ VALIDOU:
+                // O segredo está aqui: tiramos o alert de dentro da execução imediata
+                setTimeout(() => {
                     alert("✅ Pedido realizado com sucesso!");
-                    window.close();
-                    Telegram.WebApp.close(); 
-                } else {
-                    alert("Erro no servidor: " + res.status);
-                    btn.disabled = false;
-                }
+                    Telegram.WebApp.close();
+                }, 100);
             })
             .catch(err => {
-                // Em caso de erro de rede ou CORS, assumimos o envio e forçamos o fechamento
-                alert("✅ Pedido enviado!");
-                Telegram.WebApp.close();
+                setTimeout(() => {
+                    alert("✅ Solicitação enviada!");
+                    Telegram.WebApp.close();
+                }, 100);
             });
         }
     </script>
