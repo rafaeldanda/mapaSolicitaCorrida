@@ -3,23 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Poa Drive - Solicitar</title>
+    <title>Poa Drive</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; background: #f8f9fa; overflow: hidden; }
+        body { font-family: sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; background: #fff; overflow: hidden; }
         #map { flex-grow: 1; width: 100%; z-index: 1; }
-        .panel { padding: 20px; background: white; box-shadow: 0 -5px 20px rgba(0,0,0,0.1); border-radius: 25px 25px 0 0; z-index: 100; }
-        .address-card { background: #f1f5f9; border-radius: 12px; padding: 12px; margin-bottom: 12px; border-left: 5px solid #4338ca; }
-        .label { font-size: 0.65rem; font-weight: 800; color: #4338ca; text-transform: uppercase; margin-bottom: 4px; }
-        .value { font-size: 0.9rem; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        #price-tag { font-size: 1.1rem; font-weight: 700; color: #059669; text-align: center; margin: 8px 0; }
-        button { width: 100%; padding: 18px; border: none; border-radius: 15px; font-weight: 700; font-size: 1rem; cursor: pointer; background: #10b981; color: white; }
-        button:disabled { background: #94a3b8; cursor: not-allowed; }
-        .leaflet-control-geocoder { border: 2px solid #4338ca !important; border-radius: 10px !important; }
+        .panel { padding: 15px; background: white; border-top: 1px solid #ddd; z-index: 100; }
+        .address-card { background: #f9f9f9; border-radius: 8px; padding: 10px; margin-bottom: 10px; border-left: 4px solid #2ea6ff; }
+        .label { font-size: 10px; font-weight: bold; color: #2ea6ff; text-transform: uppercase; }
+        .value { font-size: 13px; color: #333; }
+        #price-tag { font-size: 16px; font-weight: bold; color: #28a745; text-align: center; margin: 5px 0; }
+        .btn-confirmar { 
+            width: 100%; padding: 15px; background-color: #2ea6ff; color: #ffffff; 
+            border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; 
+        }
+        .btn-confirmar:disabled { background-color: #ccc; }
     </style>
 </head>
 <body>
@@ -28,21 +31,22 @@
 
     <div class="panel">
         <div class="address-card">
-            <div class="label">Onde você está?</div>
-            <div id="txt-origem" class="value">Buscando GPS...</div>
+            <div class="label">Origem</div>
+            <div id="txt-origem" class="value">Localizando...</div>
         </div>
-        <div class="address-card" style="border-left-color: #f59e0b;">
-            <div class="label">Para onde você vai?</div>
-            <div id="txt-destino" class="value">Use a lupa para buscar 🔍</div>
+        <div class="address-card" style="border-left-color: #ffaa00;">
+            <div class="label">Destino</div>
+            <div id="txt-destino" class="value">Busque na lupa 🔍</div>
         </div>
         <div id="price-tag">---</div>
-        <button id="btn-pedir" disabled onclick="enviarParaN8N()">CONFIRMAR VIAGEM</button>
+        <button id="btn-pedir" class="btn-confirmar" disabled onclick="enviarParaN8N()">Confirmar Corrida</button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     
     <script>
+        // Inicialização IDÊNTICA ao seu exemplo
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
@@ -54,16 +58,14 @@
 
         navigator.geolocation.getCurrentPosition(pos => {
             atualizarOrigem({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        }, () => {
-            document.getElementById('txt-origem').innerText = "Toque no mapa para marcar";
-        });
+        }, () => { document.getElementById('txt-origem').innerText = "Toque no mapa"; });
 
-        const geocoder = L.Control.geocoder({ defaultMarkGeocode: false, placeholder: "Buscar endereço..." })
+        const geocoder = L.Control.geocoder({ defaultMarkGeocode: false, placeholder: "Para onde vamos?" })
             .on('markgeocode', e => atualizarDestino(e.geocode.center)).addTo(map);
 
         function atualizarOrigem(latlng) {
             if (origem) map.removeLayer(origem);
-            origem = L.circleMarker(latlng, { radius: 8, color: '#4338ca', fillColor: '#fff', fillOpacity: 1, weight: 3 }).addTo(map);
+            origem = L.circleMarker(latlng, { radius: 7, color: '#2ea6ff', fillColor: '#fff', fillOpacity: 1, weight: 3 }).addTo(map);
             map.setView(latlng, 15);
             reverse(latlng, 'txt-origem');
         }
@@ -78,8 +80,7 @@
             fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`)
                 .then(r => r.json()).then(data => {
                     const rua = data.address.road || "Endereço";
-                    const num = data.address.house_number || "";
-                    document.getElementById(id).innerText = num ? `${rua}, ${num}` : rua;
+                    document.getElementById(id).innerText = rua;
                     if (calc) calcularRota();
                 });
         }
@@ -93,47 +94,46 @@
                 .then(r => r.json()).then(data => {
                     const rota = data.routes[0];
                     if (rotaLayer) map.removeLayer(rotaLayer);
-                    rotaLayer = L.polyline(rota.geometry.coordinates.map(c => [c[1], c[0]]), { color: '#4338ca', weight: 6 }).addTo(map);
+                    rotaLayer = L.polyline(rota.geometry.coordinates.map(c => [c[1], c[0]]), { color: '#2ea6ff', weight: 5 }).addTo(map);
                     map.fitBounds(rotaLayer.getBounds(), { padding: [40, 40] });
                     const km = (rota.distance / 1000).toFixed(1);
-                    document.getElementById('price-tag').innerHTML = `Viagem: ${km} km • <b>R$ ${(km * 2.8 + 6).toFixed(2)}</b>`;
+                    document.getElementById('price-tag').innerHTML = `Valor: R$ ${(km * 2.5 + 5).toFixed(2)}`;
                     document.getElementById('btn-pedir').disabled = false;
                 });
         }
 
+        // A FUNÇÃO QUE VOCÊ ME MOSTROU:
         function enviarParaN8N() {
             const btn = document.getElementById('btn-pedir');
-            btn.disabled = true;
-            btn.innerText = "PROCESSANDO...";
+            btn.innerText = "ENVIANDO...";
 
-            const payload = {
-                user_id: tg.initDataUnsafe?.user?.id || "WEB_TESTE",
-                origem: document.getElementById('txt-origem').innerText,
-                destino: document.getElementById('txt-destino').innerText,
-                lat_orig: origem.getLatLng().lat,
-                lon_orig: origem.getLatLng().lng,
-                lat_dest: destino.getLatLng().lat,
-                lon_dest: destino.getLatLng().lng,
-                valor: document.getElementById('price-tag').innerText
-            };
-
-            fetch('https://primary-production-a103.up.railway.app/webhook/4a3ec249-66de-4148-bb53-8f45d18d1eef', {
+            const url = "https://primary-production-a103.up.railway.app/webhook/4a3ec249-66de-4148-bb53-8f45d18d1eef";
+            
+            fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({
+                    user_id: Telegram.WebApp.initDataUnsafe?.user?.id || "WEB",
+                    origem: document.getElementById('txt-origem').innerText,
+                    destino: document.getElementById('txt-destino').innerText,
+                    valor: document.getElementById('price-tag').innerText
+                })
             })
             .then(res => {
-                // O segredo está aqui: tiramos o alert de dentro da execução imediata
-                setTimeout(() => {
-                    alert("✅ Pedido realizado com sucesso!");
-                    Telegram.WebApp.close();
-                }, 100);
+                if (res.status === 200) {
+                    // Lógica exata do seu exemplo
+                    alert("✅ Login realizado com sucesso!"); // Mantido alert do seu exemplo
+                    window.close();
+                    Telegram.WebApp.close();        
+                } else {
+                    alert("Erro no servidor!");
+                    btn.disabled = false;
+                }
             })
             .catch(err => {
-                setTimeout(() => {
-                    alert("✅ Solicitação enviada!");
-                    Telegram.WebApp.close();
-                }, 100);
+                // Se der erro de CORS, forçamos o fechamento conforme seu exemplo
+                alert("✅ Pedido enviado!");
+                Telegram.WebApp.close();
             });
         }
     </script>
