@@ -67,6 +67,9 @@
         const urlParams = new URLSearchParams(window.location.search);
         const idUrl = urlParams.get('id'); 
         const tg = window.Telegram.WebApp;
+        // Pegando as coordenadas reais dos marcadores
+        const latlngOrigem = origem.getLatLng();
+        const latlngDestino = destino.getLatLng();
         tg.ready();
         tg.expand();
 
@@ -154,6 +157,12 @@
                     nome: tg.initDataUnsafe?.user?.first_name || "Usuário",
                     origem: document.getElementById('txt-origem').innerText,
                     destino: document.getElementById('txt-destino').innerText,
+                    // COORDENADAS (para o sistema e GPS)
+                    origem_lat: latlngOrigem.lat,
+                    origem_lng: latlngOrigem.lng,
+                    destino_lat: latlngDestino.lat,
+                    destino_lng: latlngDestino.lng,
+                    
                     distancia_km: kmTotal,
                     valor_total: valorTotal
                 })
@@ -172,4 +181,5 @@
     </script>
 </body>
 </html>
+
 
