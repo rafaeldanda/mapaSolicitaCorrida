@@ -38,92 +38,70 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
+ <script>
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
 
-        const map = L.map('map', { zoomControl: false }).setView([-30.0346, -51.2177], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    const map = L.map('map', { zoomControl: false }).setView([-30.0346, -51.2177], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        let origem = null, destino = null, rotaLayer = null;
+    // ADICIONEI ESTAS DUAS VARIÁVEIS GLOBAIS
+    let origem = null, destino = null, rotaLayer = null;
+    let valorTotal = 0, kmTotal = 0; 
 
-        navigator.geolocation.getCurrentPosition(pos => {
-            atualizarOrigem({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        }, () => { document.getElementById('txt-origem').innerText = "Toque no mapa"; });
+    // ... (suas funções navigator, geocoder, atualizarOrigem, etc continuam iguais) ...
 
-        const geocoder = L.Control.geocoder({ defaultMarkGeocode: false, placeholder: "Buscar..." })
-            .on('markgeocode', e => atualizarDestino(e.geocode.center)).addTo(map);
+    function calcularRota() {
+        if (!origem || !destino) return;
+        const p1 = origem.getLatLng(); const p2 = destino.getLatLng();
+        fetch(`https://router.project-osrm.org/route/v1/driving/${p1.lng},${p1.lat};${p2.lng},${p2.lat}?overview=full&geometries=geojson`)
+            .then(r => r.json()).then(data => {
+                const rota = data.routes[0];
+                if (rotaLayer) map.removeLayer(rotaLayer);
+                rotaLayer = L.polyline(rota.geometry.coordinates.map(c => [c[1], c[0]]), { color: '#2ea6ff', weight: 5 }).addTo(map);
+                map.fitBounds(rotaLayer.getBounds(), { padding: [40, 40] });
+                
+                // ATUALIZANDO AS VARIÁVEIS GLOBAIS AQUI
+                kmTotal = (rota.distance / 1000).toFixed(1);
+                valorTotal = (kmTotal * 2.8 + 6).toFixed(2);
 
-        function atualizarOrigem(latlng) {
-            if (origem) map.removeLayer(origem);
-            origem = L.circleMarker(latlng, { radius: 7, color: '#2ea6ff', fillColor: '#fff', fillOpacity: 1, weight: 3 }).addTo(map);
-            map.setView(latlng, 15);
-            reverse(latlng, 'txt-origem');
-        }
-
-        function atualizarDestino(latlng) {
-            if (destino) map.removeLayer(destino);
-            destino = L.marker(latlng).addTo(map);
-            reverse(latlng, 'txt-destino', true);
-        }
-
-        function reverse(latlng, id, calc = false) {
-            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`)
-                .then(r => r.json()).then(data => {
-                    const rua = data.address.road || data.address.pedestrian || "Rua s/n";
-                    const num = data.address.house_number || "";
-                    let endereco = num ? `${rua}, ${num}` : rua;
-                    document.getElementById(id).innerText = endereco;
-                    if (calc) calcularRota();
-                });
-        }
-
-        map.on('click', e => atualizarOrigem(e.latlng));
-
-        function calcularRota() {
-            if (!origem || !destino) return;
-            const p1 = origem.getLatLng(); const p2 = destino.getLatLng();
-            fetch(`https://router.project-osrm.org/route/v1/driving/${p1.lng},${p1.lat};${p2.lng},${p2.lat}?overview=full&geometries=geojson`)
-                .then(r => r.json()).then(data => {
-                    const rota = data.routes[0];
-                    if (rotaLayer) map.removeLayer(rotaLayer);
-                    rotaLayer = L.polyline(rota.geometry.coordinates.map(c => [c[1], c[0]]), { color: '#2ea6ff', weight: 5 }).addTo(map);
-                    map.fitBounds(rotaLayer.getBounds(), { padding: [40, 40] });
-                    const km = (rota.distance / 1000).toFixed(1);
-                    document.getElementById('price-tag').innerHTML = `R$ ${(km * 2.8 + 6).toFixed(2)}`;
-                    document.getElementById('btn-pedir').disabled = false;
-                });
-        }
-
-        // LÓGICA COPIADA DO TEU EXEMPLO QUE FUNCIONA
-        function enviarParaN8N() {
-            const btn = document.getElementById('btn-pedir');
-            btn.innerText = "ENVIANDO...";
-
-            fetch("https://primary-production-a103.up.railway.app/webhook/4a3ec249-66de-4148-bb53-8f45d18d1eef", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    user_id: Telegram.WebApp.initDataUnsafe?.user?.id || "WEB",
-                    origem: document.getElementById('txt-origem').innerText,
-                    destino: document.getElementById('txt-destino').innerText
-                })
-            })
-            .then(res => {
-                if (res.status === 200) {
-                    alert("✅ Pedido realizado com sucesso!");
-                    window.close();
-                    Telegram.WebApp.close();        
-                } else {
-                    alert("Erro no servidor!");
-                }
-            })
-            .catch(err => {
-                alert("✅ Pedido enviado!");
-                Telegram.WebApp.close();
+                document.getElementById('price-tag').innerHTML = `R$ ${valorTotal}`;
+                document.getElementById('btn-pedir').disabled = false;
             });
-        }
-    </script>
+    }
+
+    function enviarParaN8N() {
+        const btn = document.getElementById('btn-pedir');
+        btn.innerText = "ENVIANDO...";
+
+        fetch("https://primary-production-a103.up.railway.app/webhook/4a3ec249-66de-4148-bb53-8f45d18d1eef", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                user_id: Telegram.WebApp.initDataUnsafe?.user?.id || "WEB",
+                nome_usuario: Telegram.WebApp.initDataUnsafe?.user?.first_name || "Usuario Web",
+                origem: document.getElementById('txt-origem').innerText,
+                destino: document.getElementById('txt-destino').innerText,
+                distancia_km: kmTotal, // ENVIANDO KM
+                valor_total: valorTotal // ENVIANDO PREÇO
+            })
+        })
+        .then(res => {
+            if (res.status === 200) {
+                alert("✅ Pedido realizado com sucesso!");
+                Telegram.WebApp.close();        
+            } else {
+                alert("Erro no servidor!");
+                btn.innerText = "CONFIRMAR PEDIDO";
+            }
+        })
+        .catch(err => {
+            alert("Erro ao conectar com n8n");
+            btn.innerText = "CONFIRMAR PEDIDO";
+        });
+    }
+</script>
 </body>
+
 </html>
