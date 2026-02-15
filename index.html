@@ -19,12 +19,11 @@
         .btn-confirmar { width: 100%; padding: 15px; background-color: #10b981; color: #ffffff; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
         .btn-confirmar:disabled { background-color: #ccc; }
 
-        /* --- AJUSTE PARA CENTRALIZAR A LUPA NO TOPO --- */
         .leaflet-top.leaflet-center {
             left: 50%;
             transform: translateX(-50%);
-            top: 15px; /* Distância do topo */
-            width: 90%; /* Largura da barra de busca */
+            top: 15px;
+            width: 90%;
             max-width: 400px;
         }
 
@@ -35,11 +34,6 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
             border: none !important;
             border-radius: 12px !important;
-        }
-
-        .leaflet-control-geocoder-form input {
-            padding: 12px !important;
-            font-size: 16px !important;
         }
     </style>
 </head>
@@ -67,9 +61,6 @@
         const urlParams = new URLSearchParams(window.location.search);
         const idUrl = urlParams.get('id'); 
         const tg = window.Telegram.WebApp;
-        // Pegando as coordenadas reais dos marcadores
-        const latlngOrigem = origem.getLatLng();
-        const latlngDestino = destino.getLatLng();
         tg.ready();
         tg.expand();
 
@@ -78,12 +69,6 @@
 
         const map = L.map('map', { zoomControl: false }).setView([-30.0346, -51.2177], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-        // --- CRIANDO UMA POSIÇÃO CENTRALIZADA PERSONALIZADA ---
-        map.on('init', function() {
-            const centerControl = document.querySelector('.leaflet-top.leaflet-right');
-            centerControl.classList.replace('leaflet-right', 'leaflet-center');
-        });
 
         const geocoder = L.Control.geocoder({ 
             defaultMarkGeocode: false, 
@@ -96,7 +81,6 @@
         })
         .addTo(map);
 
-        // Mover o controle manualmente para a classe centralizada se necessário
         document.querySelector('.leaflet-control-geocoder').parentElement.classList.add('leaflet-center');
 
         function atualizarOrigem(latlng) {
@@ -144,6 +128,10 @@
         }
 
         function enviarParaN8N() {
+            // PEGANDO AS COORDENADAS AQUI DENTRO (AGORA ELAS EXISTEM!)
+            const latlngOrigem = origem.getLatLng();
+            const latlngDestino = destino.getLatLng();
+
             const btn = document.getElementById('btn-pedir');
             btn.innerText = "ENVIANDO...";
             btn.disabled = true;
@@ -157,12 +145,10 @@
                     nome: tg.initDataUnsafe?.user?.first_name || "Usuário",
                     origem: document.getElementById('txt-origem').innerText,
                     destino: document.getElementById('txt-destino').innerText,
-                    // COORDENADAS (para o sistema e GPS)
                     origem_lat: latlngOrigem.lat,
                     origem_lng: latlngOrigem.lng,
                     destino_lat: latlngDestino.lat,
                     destino_lng: latlngDestino.lng,
-                    
                     distancia_km: kmTotal,
                     valor_total: valorTotal
                 })
@@ -181,5 +167,3 @@
     </script>
 </body>
 </html>
-
-
