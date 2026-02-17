@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Motorista Online</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#28a745">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .status-card { background: white; padding: 40px; border-radius: 20px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 80%; }
+        .circle { width: 100px; height: 100px; background: #28a745; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; color: white; font-size: 40px; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(40, 167, 69, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); } }
+        h1 { color: #333; margin-bottom: 10px; }
+        p { color: #666; }
+        .btn-offline { margin-top: 30px; background: #dc3545; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="status-card">
+    <div class="circle">✔</div>
+    <h1 id="msgNome">Online</h1>
+    <p id="msgStatus">Transmitindo localização em tempo real...</p>
+    <button class="btn-offline" onclick="fecharApp()">Ficar Offline</button>
+</div>
+
+<script>
+    const n8n_webhook = "https://primary-production-a103.up.railway.app/webhook/SUA_URL_DE_GPS";
+    
+    // 1. Pega o ChatID da URL ou do LocalStorage (memória do celular)
+    const urlParams = new URLSearchParams(window.location.search);
+    let chatId = urlParams.get('chatId');
+
+    if (chatId) {
+        localStorage.setItem('driver_chatId', chatId);
+    } else {
+        chatId = localStorage.getItem('driver_chatId');
+    }
+
+    // 2. Inicia o Rastreio se tiver o ID
+    if (chatId) {
+        iniciarRastreio();
+    } else {
+        document.getElementById('msgNome').innerText = "Erro de Identificação";
+        document.getElementById('msgStatus').innerText = "Abra o app pelo link do Telegram novamente.";
+    }
+
+    function iniciarRastreio() {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.watchPosition(async (pos) => {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+
+                // Envia para o n8n
+                fetch(`${n8n_webhook}?chatId=${chatId}&lat=${lat}&lon=${lon}&status=online`);
+                
+            }, null, { enableHighAccuracy: true, maximumAge: 10000 });
+        }
+
+        // Tenta manter a tela acesa
+        if ('wakeLock' in navigator) {
+            navigator.wakeLock.request('screen').catch(() => {});
+        }
+    }
+
+    function fecharApp() {
+        if (confirm("Deseja parar o rastreamento e ficar offline?")) {
+            // Avisa o n8n que saiu
+            fetch(`${n8n_webhook}?chatId=${chatId}&status=offline`);
+            window.close();
+            if(window.Telegram && window.Telegram.WebApp) window.Telegram.WebApp.close();
+        }
+    }
+</script>
+
+</body>
+</html>

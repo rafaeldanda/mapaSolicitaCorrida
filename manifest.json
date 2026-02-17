@@ -1,0 +1,17 @@
+{
+  "name": "Motorista Oficial",
+  "short_name": "Motorista",
+  "description": "Aplicativo para rastreamento de motoristas",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2ea6ff",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/71/71222.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
