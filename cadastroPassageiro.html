@@ -3,121 +3,73 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Cadastro - Passageiro</title>
+  <title>Cadastro</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    :root { --primary: #2ea6ff; --bg: #f4f7f9; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-    .card { background: #fff; width: 90%; max-width: 400px; padding: 30px; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
-    h2 { text-align: center; color: #333; margin-bottom: 8px; font-size: 22px; }
-    p.subtitle { text-align: center; color: #888; font-size: 14px; margin-bottom: 25px; }
-    .input-group { margin-bottom: 15px; }
-    label { display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600; color: #666; padding-left: 5px; }
-    input { width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; box-sizing: border-box; font-size: 16px; transition: all 0.3s ease; background: #fafafa; }
-    input:focus { border-color: var(--primary); background: #fff; outline: none; box-shadow: 0 0 0 4px rgba(46, 166, 255, 0.1); }
-    .btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 15px; transition: transform 0.2s, background 0.2s; }
-    .btn:active { transform: scale(0.97); background: #1a94ed; }
-    .btn:disabled { background: #cbd5e0; cursor: not-allowed; }
+    body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+    .card { background: #fff; width: 90%; max-width: 380px; padding: 25px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; }
+    input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+    .btn { width: 100%; padding: 16px; background: #0088cc; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
+    #iframe-oculto { display: none; }
   </style>
 </head>
 <body>
 
 <div class="card">
-  <h2>Seja bem-vindo!</h2>
-  <p class="subtitle">Complete seu cadastro para começar a viajar.</p>
-  
-  <div class="input-group">
-    <label>Nome Completo</label>
-    <input id="nome" type="text" placeholder="Ex: Maria Silva">
-  </div>
-
-  <div class="input-group">
-    <label>WhatsApp</label>
-    <input id="telefone" type="tel" placeholder="(00) 00000-0000">
-  </div>
-
-  <div class="input-group">
-    <label>E-mail</label>
-    <input id="email" type="email" placeholder="exemplo@email.com">
-  </div>
-
-  <div class="input-group">
-    <label>CPF</label>
-    <input id="cpf" type="text" placeholder="000.000.000-00">
-  </div>
-
-  <div class="input-group">
-    <label>Crie uma Senha</label>
-    <input id="senha" type="password" placeholder="******">
-  </div>
-
-  <button id="btnEnviar" class="btn" onclick="processarCadastro()">CONCLUIR CADASTRO</button>
+  <h2>Cadastro</h2>
+  <input id="nome" type="text" placeholder="Nome Completo">
+  <input id="telefone" type="tel" placeholder="WhatsApp">
+  <input id="email" type="email" placeholder="E-mail">
+  <input id="cpf" type="text" placeholder="CPF">
+  <input id="senha" type="password" placeholder="Senha">
+  <button id="btnEnviar" class="btn" onclick="enviar()">CONCLUIR</button>
 </div>
+
+<iframe name="janela-invisivel" id="iframe-oculto"></iframe>
 
 <script>
   const tg = window.Telegram?.WebApp;
   if (tg) { tg.ready(); tg.expand(); }
 
-  async function processarCadastro() {
+  function enviar() {
     const btn = document.getElementById('btnEnviar');
     const webhookUrl = "https://primary-production-a103.up.railway.app/webhook/0421cb4e-c94e-40bc-ad39-823394a4d901";
 
-    // Validação básica
-    const nome = document.getElementById('nome').value.trim();
-    const tel = document.getElementById('telefone').value.trim();
-    const senha = document.getElementById('senha').value.trim();
+    const dados = {
+      fluxo: "CADASTRO_PASSAGEIRO",
+      chatId: new URLSearchParams(window.location.search).get('chatId') || tg?.initDataUnsafe?.user?.id || "USER_CHROME",
+      nome: document.getElementById('nome').value,
+      telefone: document.getElementById('telefone').value,
+      email: document.getElementById('email').value,
+      cpf: document.getElementById('cpf').value,
+      senha: document.getElementById('senha').value
+    };
 
-    if (!nome || !tel || !senha) {
-      alert("Por favor, preencha Nome, WhatsApp e Senha.");
+    if (!dados.nome || !dados.senha) {
+      alert("Preencha nome e senha.");
       return;
     }
 
+    // Muda o botão para dar feedback
     btn.disabled = true;
-    btn.innerText = "Enviando...";
+    btn.innerText = "PRONTO!";
 
-    // --- Lógica de Captura do ID ---
-    const urlParams = new URLSearchParams(window.location.search);
-    let finalChatId = urlParams.get('chatId');
+    // Monta a URL e "atira" para o iframe invisível
+    const query = new URLSearchParams(dados).toString();
+    window.open(`${webhookUrl}?${query}`, 'janela-invisivel');
 
-    if (!finalChatId && tg?.initDataUnsafe?.user) {
-      finalChatId = tg.initDataUnsafe.user.id;
-    }
-
-    if (!finalChatId) {
-      finalChatId = "PASS_WEB_" + Math.floor(Math.random() * 9999);
-    }
-
-    // Montagem da query enviada para o n8n
-    const queryParams = new URLSearchParams({
-      fluxo: "CADASTRO_PASSAGEIRO",
-      chatId: finalChatId,
-      nome: nome,
-      telefone: tel,
-      email: document.getElementById('email').value.trim(),
-      cpf: document.getElementById('cpf').value.trim(),
-      senha: senha, // Novo campo adicionado aqui
-      timestamp: new Date().toISOString()
-    });
-
-    try {
-      const response = await fetch(`${webhookUrl}?${queryParams.toString()}`);
-      
-      if (response.ok) {
-        if (tg?.showAlert) {
-          tg.showAlert("✅ Cadastro realizado!", () => tg.close());
-        } else {
-          alert("✅ Cadastro realizado com sucesso!");
-        }
+    // Mostra o alerta e fecha o app imediatamente
+    setTimeout(() => {
+      if (tg && tg.showAlert) {
+        tg.showAlert("✅ Cadastro realizado!", () => {
+          tg.close();
+        });
       } else {
-        throw new Error("Erro no servidor");
+        alert("✅ Cadastro realizado com sucesso!");
+        btn.innerText = "CONCLUÍDO";
       }
-    } catch (err) {
-      alert("❌ Erro ao salvar. Tente novamente.");
-      btn.disabled = false;
-      btn.innerText = "CONCLUIR CADASTRO";
-    }
+    }, 500); // Meio segundo é o suficiente para o disparo
   }
 </script>
-
 </body>
 </html>
