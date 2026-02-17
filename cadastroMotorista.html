@@ -66,14 +66,21 @@
 
             const response = await fetch(`${baseUrl}?${params.toString()}`);
 
-            if (response.ok) {
-                // 1. Abre o alert (O navegador vai travar a execução aqui até você clicar OK)
+           if (response.ok) {
                 alert("✅ Cadastro realizado com sucesso!");
                 
-                // 2. Após o OK, tenta fechar o MiniApp
-                if (tg) {
-                    tg.close();
-                }
+                // Tenta fechar de 3 formas diferentes para garantir
+                try {
+                    if (window.Telegram && window.Telegram.WebApp) {
+                        window.Telegram.WebApp.close();
+                    }
+                } catch (e) { console.error(e); }
+
+                // Fallback: Se não fechou, tenta fechar a janela do navegador
+                setTimeout(() => {
+                    window.close();
+                }, 500);
+            
             } else {
                 alert("❌ Erro no servidor: " + response.status);
                 btn.disabled = false;
@@ -104,6 +111,7 @@
   
 </body>
 </html>
+
 
 
 
