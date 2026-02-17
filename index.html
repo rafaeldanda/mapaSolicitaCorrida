@@ -2,80 +2,67 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Motorista Online</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#28a745">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Webhook - Ping</title>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .status-card { background: white; padding: 40px; border-radius: 20px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 80%; }
-        .circle { width: 100px; height: 100px; background: #28a745; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; color: white; font-size: 40px; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(40, 167, 69, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); } }
-        h1 { color: #333; margin-bottom: 10px; }
-        p { color: #666; }
-        .btn-offline { margin-top: 30px; background: #dc3545; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; }
+        body { font-family: sans-serif; text-align: center; padding: 50px; background: #f0f0f0; }
+        .ping-box { background: white; padding: 20px; border-radius: 15px; shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .contagem { font-size: 2em; color: #2ea6ff; font-weight: bold; }
+        .log { font-size: 0.8em; color: #666; margin-top: 20px; text-align: left; background: #eee; padding: 10px; height: 150px; overflow-y: scroll; }
     </style>
 </head>
 <body>
 
-<div class="status-card">
-    <div class="circle">✔</div>
-    <h1 id="msgNome">Online</h1>
-    <p id="msgStatus">Transmitindo localização em tempo real...</p>
-    <button class="btn-offline" onclick="fecharApp()">Ficar Offline</button>
+<div class="ping-box">
+    <h1>Teste de Webhook</h1>
+    <p>Enviando ping a cada 5 segundos...</p>
+    <div id="contador" class="contagem">0</div>
+    <div id="log" class="log">Aguardando início...</div>
 </div>
 
 <script>
     const n8n_webhook = "https://primary-production-a103.up.railway.app/webhook/91e80c8e-2309-4dd4-8512-f0dc5c4af856";
-    
-    // 1. Pega o ChatID da URL ou do LocalStorage (memória do celular)
-    const urlParams = new URLSearchParams(window.location.search);
-    let chatId = urlParams.get('chatId');
+    let pingsEnviados = 0;
+    let chatId = "TESTE_SEQUENCIAL";
 
-    if (chatId) {
-        localStorage.setItem('driver_chatId', chatId);
-    } else {
-        chatId = localStorage.getItem('driver_chatId');
+    function adicionarLog(msg) {
+        const logDiv = document.getElementById('log');
+        logDiv.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+        logDiv.scrollTop = logDiv.scrollHeight;
     }
 
-    // 2. Inicia o Rastreio se tiver o ID
-    if (chatId) {
-        iniciarRastreio();
-    } else {
-        document.getElementById('msgNome').innerText = "Erro de Identificação";
-        document.getElementById('msgStatus').innerText = "Abra o app pelo link do Telegram novamente.";
-    }
-
-    function iniciarRastreio() {
+    async function enviarPing() {
         if ("geolocation" in navigator) {
-            navigator.geolocation.watchPosition(async (pos) => {
-                const lat = pos.coords.latitude;
-                const lon = pos.coords.longitude;
-
-                // Envia para o n8n
-                fetch(`${n8n_webhook}?chatId=${chatId}&lat=${lat}&lon=${lon}&status=online`);
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const { latitude, longitude } = pos.coords;
                 
-            }, null, { enableHighAccuracy: true, maximumAge: 10000 });
-        }
-
-        // Tenta manter a tela acesa
-        if ('wakeLock' in navigator) {
-            navigator.wakeLock.request('screen').catch(() => {});
+                try {
+                    // Enviando com timestamp para você ver a diferença no n8n
+                    const response = await fetch(`${n8n_webhook}?chatId=${chatId}&lat=${latitude}&lon=${longitude}&ping=${pingsEnviados + 1}&test=true`);
+                    
+                    if (response.ok) {
+                        pingsEnviados++;
+                        document.getElementById('contador').innerText = pingsEnviados;
+                        adicionarLog(`✅ Ping #${pingsEnviados} enviado.`);
+                    } else {
+                        adicionarLog(`❌ Erro no Webhook: ${response.status}`);
+                    }
+                } catch (err) {
+                    adicionarLog(`❌ Falha de conexão.`);
+                }
+            }, (err) => {
+                adicionarLog(`⚠️ Erro GPS: ${err.message}`);
+            }, { enableHighAccuracy: true });
         }
     }
 
-    function fecharApp() {
-        if (confirm("Deseja parar o rastreamento e ficar offline?")) {
-            // Avisa o n8n que saiu
-            fetch(`${n8n_webhook}?chatId=${chatId}&status=offline`);
-            window.close();
-            if(window.Telegram && window.Telegram.WebApp) window.Telegram.WebApp.close();
-        }
-    }
+    // DISPARA O PING A CADA 5 SEGUNDOS (5000ms)
+    // Mude para 1000 se quiser testar 1 por segundo
+    setInterval(enviarPing, 5000);
+
+    // Envia o primeiro imediatamente ao abrir
+    enviarPing();
 </script>
 
 </body>
-
 </html>
