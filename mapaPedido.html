@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Poa Drive</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; background: #fff; overflow: hidden; }
+        #map { flex-grow: 1; width: 100%; z-index: 1; }
+        .panel { padding: 15px; background: white; border-top: 1px solid #ddd; z-index: 100; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+        .address-card { background: #f9f9f9; border-radius: 8px; padding: 10px; margin-bottom: 10px; border-left: 4px solid #2ea6ff; }
+        .label { font-size: 10px; font-weight: bold; color: #2ea6ff; text-transform: uppercase; }
+        .value { font-size: 13px; color: #333; font-weight: 600; }
+        #price-tag { font-size: 18px; font-weight: bold; color: #28a745; text-align: center; margin: 10px 0; }
+        .btn-confirmar { width: 100%; padding: 15px; background-color: #10b981; color: #ffffff; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn-confirmar:disabled { background-color: #ccc; }
+
+        .leaflet-top.leaflet-center {
+            left: 50%;
+            transform: translateX(-50%);
+            top: 15px;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .leaflet-control-geocoder {
+            z-index: 1000 !important;
+            margin: 0 !important;
+            width: 100% !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+            border: none !important;
+            border-radius: 12px !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <div class="panel">
+        <div class="address-card">
+            <div class="label">Origem</div>
+            <div id="txt-origem" class="value">Localizando...</div>
+        </div>
+        <div class="address-card" style="border-left-color: #ffaa00;">
+            <div class="label">Destino</div>
+            <div id="txt-destino" class="value">Busque o destino acima 🔍</div>
+        </div>
+        <div id="price-tag">Aguardando rota...</div>
+        <button id="btn-pedir" class="btn-confirmar" disabled onclick="enviarParaN8N()">CONFIRMAR PEDIDO</button>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const idUrl = urlParams.get('id'); 
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        let origem = null, destino = null, rotaLayer = null;
+        let valorTotal = 0, kmTotal = 0;
+
+        const map = L.map('map', { zoomControl: false }).setView([-30.0346, -51.2177], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        const geocoder = L.Control.geocoder({ 
+            defaultMarkGeocode: false, 
+            placeholder: "🔍 Para onde vamos?",
+            collapsed: false 
+        })
+        .on('markgeocode', e => {
+            atualizarDestino(e.geocode.center);
+            map.setView(e.geocode.center, 15);
+        })
+        .addTo(map);
+
+        document.querySelector('.leaflet-control-geocoder').parentElement.classList.add('leaflet-center');
+
+        function atualizarOrigem(latlng) {
+            if (origem) map.removeLayer(origem);
+            origem = L.circleMarker(latlng, { radius: 7, color: '#2ea6ff', fillColor: '#fff', fillOpacity: 1, weight: 3 }).addTo(map);
+            reverse(latlng, 'txt-origem');
+            if (destino) calcularRota();
+        }
+
+        function atualizarDestino(latlng) {
+            if (destino) map.removeLayer(destino);
+            destino = L.marker(latlng).addTo(map);
+            reverse(latlng, 'txt-destino', true);
+        }
+
+        function reverse(latlng, id, calc = false) {
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`)
+                .then(r => r.json()).then(data => {
+                    const rua = data.address.road || data.address.pedestrian || "Rua s/n";
+                    const num = data.address.house_number || "";
+                    document.getElementById(id).innerText = num ? `${rua}, ${num}` : rua;
+                    if (calc) calcularRota();
+                });
+        }
+
+        map.on('click', e => {
+            if (!origem) atualizarOrigem(e.latlng);
+            else atualizarDestino(e.latlng);
+        });
+
+        function calcularRota() {
+            if (!origem || !destino) return;
+            const p1 = origem.getLatLng(); const p2 = destino.getLatLng();
+            fetch(`https://router.project-osrm.org/route/v1/driving/${p1.lng},${p1.lat};${p2.lng},${p2.lat}?overview=full&geometries=geojson`)
+                .then(r => r.json()).then(data => {
+                    const rota = data.routes[0];
+                    if (rotaLayer) map.removeLayer(rotaLayer);
+                    rotaLayer = L.polyline(rota.geometry.coordinates.map(c => [c[1], c[0]]), { color: '#2ea6ff', weight: 5 }).addTo(map);
+                    map.fitBounds(rotaLayer.getBounds(), { padding: [40, 40] });
+                    kmTotal = (rota.distance / 1000).toFixed(1);
+                    valorTotal = (kmTotal * 2.8 + 6).toFixed(2);
+                    document.getElementById('price-tag').innerHTML = `Distância: ${kmTotal}km | Total: R$ ${valorTotal}`;
+                    document.getElementById('btn-pedir').disabled = false;
+                });
+        }
+
+        function enviarParaN8N() {
+            // PEGANDO AS COORDENADAS AQUI DENTRO (AGORA ELAS EXISTEM!)
+            const latlngOrigem = origem.getLatLng();
+            const latlngDestino = destino.getLatLng();
+
+            const btn = document.getElementById('btn-pedir');
+            btn.innerText = "ENVIANDO...";
+            btn.disabled = true;
+
+            fetch("https://primary-production-a103.up.railway.app/webhook/4a3ec249-66de-4148-bb53-8f45d18d1eef", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id_solicitacao: idUrl,
+                    user_id: tg.initDataUnsafe?.user?.id || "WEB",
+                    nome: tg.initDataUnsafe?.user?.first_name || "Usuário",
+                    origem: document.getElementById('txt-origem').innerText,
+                    destino: document.getElementById('txt-destino').innerText,
+                    origem_lat: latlngOrigem.lat,
+                    origem_lng: latlngOrigem.lng,
+                    destino_lat: latlngDestino.lat,
+                    destino_lng: latlngDestino.lng,
+                    distancia_km: kmTotal,
+                    valor_total: valorTotal
+                })
+            }).then(() => {
+                alert("✅ Pedido enviado!");
+                tg.close();
+            }).catch(() => {
+                alert("Pedido processado!");
+                tg.close();
+            });
+        }
+
+        navigator.geolocation.getCurrentPosition(pos => {
+            atualizarOrigem({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        });
+    </script>
+</body>
+</html>
