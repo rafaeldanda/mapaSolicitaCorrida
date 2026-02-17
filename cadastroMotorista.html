@@ -25,76 +25,80 @@
 <button id="btnEnviar" class="btn" onclick="confirmar()">Enviar Dados</button>
 
 <script>
-  let tg = window.Telegram.WebApp;
-  
-  // Inicialização básica
-  try {
-    tg.ready();
-    tg.expand();
-  } catch (e) {
-    console.error("Erro ao iniciar WebApp:", e);
-  }
-
-  function confirmar() {
-    const nome = document.getElementById('nome').value;
-    const senha = document.getElementById('senha').value;
-
-    if (!nome || !senha) {
-      alert("Por favor, preencha o nome e a senha.");
-      return;
-    }
-
-    // Confirm simples para evitar erro de método não suportado
-    if (confirm("Deseja confirmar o envio dos dados?")) {
-      enviar();
-    }
-  }
-
-  async function enviar() {
-    const btn = document.getElementById('btnEnviar');
-    const baseUrl = "https://primary-production-a103.up.railway.app/webhook/7691e9b8-c7b4-47ae-9935-1fac55b9d7c9";
-    
-    btn.disabled = true;
-    btn.innerText = "PROCESSANDO...";
-
-    // PEGA O ID REAL DO TELEGRAM
-    let cleanChatId = "PC_TEST";
-    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-        cleanChatId = tg.initDataUnsafe.user.id;
-    }
-
-    const params = new URLSearchParams({
-      chatId: cleanChatId,
-      nome: document.getElementById('nome').value,
-      telefone: document.getElementById('telefone').value,
-      email: document.getElementById('email').value,
-      cpf: document.getElementById('cpf').value,
-      senha: document.getElementById('senha').value
-    });
-
+    // Tenta inicializar o Telegram, mas não trava se falhar
+    let tg = null;
     try {
-      const response = await fetch(`${baseUrl}?${params.toString()}`);
-
-      if (response.ok) {
-        alert("✅ Cadastro realizado!");
-        // Tenta fechar o WebApp, se não der, avisa o usuário
-        try {
-            tg.close();
-        } catch(e) {
-            console.log("Não foi possível fechar o app automaticamente.");
+        if (window.Telegram && window.Telegram.WebApp) {
+            tg = window.Telegram.WebApp;
+            tg.ready();
         }
-      } else {
-        throw new Error("Erro no servidor: " + response.status);
-      }
-
-    } catch (err) {
-      alert("❌ Erro: " + err.message);
-      btn.disabled = false;
-      btn.innerText = "Enviar Dados";
+    } catch (e) {
+        console.warn("Fora do ambiente Telegram WebApp");
     }
-  }
+
+    function confirmar() {
+        const nome = document.getElementById('nome').value;
+        const senha = document.getElementById('senha').value;
+
+        if (!nome || !senha) {
+            alert("Preencha nome e senha.");
+            return;
+        }
+
+        if (confirm("Deseja confirmar o envio?")) {
+            enviar();
+        }
+    }
+
+    async function enviar() {
+        const btn = document.getElementById('btnEnviar');
+        const baseUrl = "https://primary-production-a103.up.railway.app/webhook/7691e9b8-c7b4-47ae-9935-1fac55b9d7c9";
+        
+        btn.disabled = true;
+        btn.innerText = "ENVIANDO...";
+
+        // Pega o ID se estiver no Telegram, senão usa PC_TEST
+        let cleanChatId = "PC_TEST";
+        try {
+            if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                cleanChatId = tg.initDataUnsafe.user.id;
+            }
+        } catch (e) {}
+
+        const params = new URLSearchParams({
+            chatId: cleanChatId,
+            nome: document.getElementById('nome').value,
+            telefone: document.getElementById('telefone').value,
+            email: document.getElementById('email').value,
+            cpf: document.getElementById('cpf').value,
+            senha: document.getElementById('senha').value
+        });
+
+        try {
+            // Chamada para o seu n8n
+            const response = await fetch(`${baseUrl}?${params.toString()}`, {
+                method: 'GET'
+            });
+
+            if (response.ok) {
+                alert("✅ Cadastro realizado!");
+                // Só fecha se o método existir, evitando o erro de Unsupported
+                if (tg && typeof tg.close === 'function') {
+                    tg.close();
+                }
+            } else {
+                alert("❌ Erro no n8n: " + response.status);
+            }
+        } catch (err) {
+            alert("❌ Erro de conexão: " + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Enviar Dados";
+        }
+    }
 </script>
 </body>
 
 </html>
+
 
