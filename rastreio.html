@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        .status-on { color: green; font-weight: bold; }
+        .btn-stop { background: #ff4b4b; color: white; padding: 10px; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <h3>Rastreamento Ativo</h3>
+    <p>Status: <span id="status" class="status-on">Transmitindo Localização...</span></p>
+    <p>Mantenha esta tela aberta durante o trabalho.</p>
+    
+    <button class="btn-stop" onclick="pararRastreio()">Ficar Offline</button>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        // Pega o ID do motorista da URL (?chatId=123)
+        const urlParams = new URLSearchParams(window.location.search);
+        const chatId = urlParams.get('chatId');
+
+        function enviarLocalizacao() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+
+                    // Envia para o seu n8n (crie um novo Webhook para atualização)
+                    const url = `https://primary-production-a103.up.railway.app/webhook/ATUALIZAR_LOCALIZACAO?chatId=${chatId}&lat=${lat}&lon=${lon}`;
+                    
+                    try {
+                        await fetch(url);
+                        console.log("Localização enviada:", lat, lon);
+                    } catch (e) {
+                        console.error("Erro ao enviar:", e);
+                    }
+                }, (error) => {
+                    console.error("Erro de GPS:", error);
+                }, { enableHighAccuracy: true });
+            }
+        }
+
+        // Envia a cada 30 segundos
+        const intervalo = setInterval(enviarLocalizacao, 30000);
+
+        // Impede o celular de apagar a tela (se suportado pelo navegador)
+        if ('wakeLock' in navigator) {
+            navigator.wakeLock.request('screen');
+        }
+
+        function pararRastreio() {
+            clearInterval(intervalo);
+            alert("Você está Offline.");
+            tg.close();
+        }
+    </script>
+</body>
+</html>
