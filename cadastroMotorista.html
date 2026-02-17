@@ -25,53 +25,84 @@
 <button id="btnEnviar" class="btn" onclick="confirmar()">Enviar Dados</button>
 
 <script>
+    // 1. Inicialização segura: Não deixa o script morrer se o Telegram falhar
+    var tg = null;
+    try {
+        if (window.Telegram && window.Telegram.WebApp) {
+            tg = window.Telegram.WebApp;
+            tg.ready();
+        }
+    } catch (e) {
+        console.error("Erro ao carregar Telegram WebApp:", e);
+    }
+
     async function enviar() {
         const btn = document.getElementById('btnEnviar');
         const baseUrl = "https://primary-production-a103.up.railway.app/webhook/7691e9b8-c7b4-47ae-9935-1fac55b9d7c9";
         
-        btn.disabled = true;
-        btn.innerText = "PROCESSANDO...";
-
-        // --- A MÁGICA ESTÁ AQUI: Pegar chatId da URL ---
-        const urlParams = new URLSearchParams(window.location.search);
-        let cleanChatId = urlParams.get('chatId') || "PC_TEST"; 
-        // ----------------------------------------------
-
-        const params = new URLSearchParams({
-            chatId: cleanChatId,
-            nome: document.getElementById('nome').value,
-            telefone: document.getElementById('telefone').value,
-            email: document.getElementById('email').value,
-            cpf: document.getElementById('cpf').value,
-            senha: document.getElementById('senha').value
-        });
-
         try {
-            // Usamos mode: 'no-cors' se o n8n estiver bloqueando, 
-            // mas o padrão é fetch simples para GET
-            const response = await fetch(`${baseUrl}?${params.toString()}`);
+            // Desabilita o botão para mostrar que o clique funcionou
+            btn.disabled = true;
+            btn.innerText = "ENVIANDO...";
 
-            if (response.ok || response.status === 0) {
-                alert("✅ Cadastro realizado para o ID: " + cleanChatId);
-                
-                // Tenta fechar o WebApp apenas se estiver no ambiente certo
-                if (window.Telegram && window.Telegram.WebApp) {
-                    window.Telegram.WebApp.close();
-                }
-            } else {
-                throw new Error("Erro no servidor: " + response.status);
+            // 2. Captura o chatId da URL (ex: ?chatId=123)
+            const urlParams = new URLSearchParams(window.location.search);
+            let cleanChatId = urlParams.get('chatId');
+
+            // 3. Fallback: se não estiver na URL, tenta pegar do Telegram
+            if (!cleanChatId && tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                cleanChatId = tg.initDataUnsafe.user.id;
             }
+
+            // 4. Se ainda assim não tiver nada, usa o PC_TEST
+            if (!cleanChatId) {
+                cleanChatId = "PC_TEST";
+            }
+
+            const params = new URLSearchParams({
+                chatId: cleanChatId,
+                nome: document.getElementById('nome').value,
+                telefone: document.getElementById('telefone').value,
+                email: document.getElementById('email').value,
+                cpf: document.getElementById('cpf').value,
+                senha: document.getElementById('senha').value
+            });
+
+            console.log("Enviando para:", `${baseUrl}?${params.toString()}`);
+
+            // 5. Executa a chamada
+            const response = await fetch(`${baseUrl}?${params.toString()}`, {
+                method: 'GET',
+                mode: 'cors'
+            });
+
+            if (response.ok) {
+                alert("✅ Sucesso! ID: " + cleanChatId);
+                if (tg) tg.close();
+            } else {
+                alert("❌ Erro no servidor: " + response.status);
+            }
+
         } catch (err) {
-            alert("❌ Erro: " + err.message);
+            console.error(err);
+            alert("❌ Falha crítica: " + err.message);
         } finally {
             btn.disabled = false;
             btn.innerText = "Enviar Dados";
+        }
+    }
+
+    // 6. Função de confirmação simples
+    function confirmar() {
+        if (confirm("Deseja confirmar o envio dos dados?")) {
+            enviar().catch(e => alert("Erro na função enviar: " + e.message));
         }
     }
 </script>
 </body>
 
 </html>
+
 
 
 
