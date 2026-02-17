@@ -6,103 +6,106 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     body { font-family: sans-serif; padding: 20px; background-color: #fff; color: #000; }
-    h3 { margin-bottom: 20px; color: #333; }
+    h3 { margin-bottom: 20px; color: #333; border-bottom: 2px solid #2ea6ff; padding-bottom: 10px; }
+    h4 { margin: 15px 0 10px 0; color: #666; font-size: 14px; text-transform: uppercase; }
     input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; outline: none; }
-    input:focus { border-color: #2ea6ff; }
-    .btn { width: 100%; padding: 15px; background: #2ea6ff; color: #fff; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; transition: background 0.3s; }
+    input:focus { border-color: #2ea6ff; box-shadow: 0 0 5px rgba(46,166,255,0.3); }
+    .btn { width: 100%; padding: 15px; background: #2ea6ff; color: #fff; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; transition: background 0.3s; margin-top: 10px; }
     .btn:disabled { background: #ccc; cursor: not-allowed; }
   </style>
 </head>
 <body>
 
-<h3>Cadastro</h3>
-<input id="nome" type="text" placeholder="Nome">
+<h3>Cadastro de Motorista</h3>
+
+<h4>Dados Pessoais</h4>
+<input id="nome" type="text" placeholder="Nome Completo">
 <input id="telefone" type="tel" placeholder="Telefone">
 <input id="email" type="email" placeholder="E-mail">
 <input id="cpf" type="text" placeholder="CPF">
-<input id="senha" type="password" placeholder="Senha">
+<input id="senha" type="password" placeholder="Crie uma Senha">
 
-<button id="btnEnviar" class="btn" onclick="confirmar()">Enviar Dados</button>
+<h4>Dados do Veículo</h4>
+<input id="modelo" type="text" placeholder="Modelo (Ex: Toyota Corolla)">
+<input id="placa" type="text" placeholder="Placa (Ex: ABC-1234)">
+<input id="cor" type="text" placeholder="Cor do Carro">
+
+<button id="btnEnviar" class="btn" onclick="confirmar()">Concluir Cadastro</button>
 
 <script>
-    // 1. Inicialização segura: Não deixa o script morrer se o Telegram falhar
     var tg = null;
     try {
         if (window.Telegram && window.Telegram.WebApp) {
             tg = window.Telegram.WebApp;
             tg.ready();
         }
-    } catch (e) {
-        console.error("Erro ao carregar Telegram WebApp:", e);
-    }
+    } catch (e) { console.error("Erro Telegram:", e); }
 
     async function enviar() {
         const btn = document.getElementById('btnEnviar');
         const baseUrl = "https://primary-production-a103.up.railway.app/webhook/7691e9b8-c7b4-47ae-9935-1fac55b9d7c9";
         
         try {
-            // Desabilita o botão para mostrar que o clique funcionou
             btn.disabled = true;
-            btn.innerText = "ENVIANDO...";
+            btn.innerText = "PROCESSANDO...";
 
-            // 2. Captura o chatId da URL (ex: ?chatId=123)
             const urlParams = new URLSearchParams(window.location.search);
             let cleanChatId = urlParams.get('chatId');
 
-            // 3. Fallback: se não estiver na URL, tenta pegar do Telegram
             if (!cleanChatId && tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
                 cleanChatId = tg.initDataUnsafe.user.id;
             }
 
-            // 4. Se ainda assim não tiver nada, usa o PC_TEST
-            if (!cleanChatId) {
-                cleanChatId = "PC_TEST";
-            }
+            if (!cleanChatId) { cleanChatId = "PC_TEST"; }
 
+            // Capturando os novos campos do carro
             const params = new URLSearchParams({
                 chatId: cleanChatId,
                 nome: document.getElementById('nome').value,
                 telefone: document.getElementById('telefone').value,
                 email: document.getElementById('email').value,
                 cpf: document.getElementById('cpf').value,
-                senha: document.getElementById('senha').value
+                senha: document.getElementById('senha').value,
+                // Novos campos adicionados aqui:
+                modelo: document.getElementById('modelo').value,
+                placa: document.getElementById('placa').value,
+                cor: document.getElementById('cor').value
             });
 
-            console.log("Enviando para:", `${baseUrl}?${params.toString()}`);
-
-            // 5. Executa a chamada
             const response = await fetch(`${baseUrl}?${params.toString()}`, {
                 method: 'GET',
                 mode: 'cors'
             });
 
             if (response.ok) {
-                alert("✅ Sucesso! ID: " + cleanChatId);
+                alert("✅ Cadastro realizado com sucesso!");
                 if (tg) tg.close();
             } else {
                 alert("❌ Erro no servidor: " + response.status);
             }
 
         } catch (err) {
-            console.error(err);
-            alert("❌ Falha crítica: " + err.message);
+            alert("❌ Falha: " + err.message);
         } finally {
             btn.disabled = false;
-            btn.innerText = "Enviar Dados";
+            btn.innerText = "Concluir Cadastro";
         }
     }
 
-    // 6. Função de confirmação simples
     function confirmar() {
-        if (confirm("Deseja confirmar o envio dos dados?")) {
-            enviar().catch(e => alert("Erro na função enviar: " + e.message));
+        // Validação básica
+        const campos = ['nome', 'cpf', 'modelo', 'placa'];
+        for (let id of campos) {
+            if (!document.getElementById(id).value) {
+                alert("Por favor, preencha os dados principais (Nome, CPF e Veículo).");
+                return;
+            }
+        }
+        
+        if (confirm("Os dados do veículo estão corretos?")) {
+            enviar().catch(e => console.error(e));
         }
     }
 </script>
 </body>
-
 </html>
-
-
-
-
