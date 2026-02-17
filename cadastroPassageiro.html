@@ -3,120 +3,121 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Cadastro de Motorista</title>
+  <title>Cadastro - Passageiro</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    body { font-family: sans-serif; padding: 20px; background-color: #fff; color: #000; }
-    h3 { margin-bottom: 20px; color: #333; }
-    input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; outline: none; }
-    input:focus { border-color: #2ea6ff; }
-    .btn { width: 100%; padding: 15px; background: #2ea6ff; color: #fff; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; transition: background 0.3s; }
-    .btn:disabled { background: #ccc; cursor: not-allowed; }
+    :root { --primary: #2ea6ff; --bg: #f4f7f9; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .card { background: #fff; width: 90%; max-width: 400px; padding: 30px; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+    h2 { text-align: center; color: #333; margin-bottom: 8px; font-size: 22px; }
+    p.subtitle { text-align: center; color: #888; font-size: 14px; margin-bottom: 25px; }
+    .input-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600; color: #666; padding-left: 5px; }
+    input { width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; box-sizing: border-box; font-size: 16px; transition: all 0.3s ease; background: #fafafa; }
+    input:focus { border-color: var(--primary); background: #fff; outline: none; box-shadow: 0 0 0 4px rgba(46, 166, 255, 0.1); }
+    .btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 15px; transition: transform 0.2s, background 0.2s; }
+    .btn:active { transform: scale(0.97); background: #1a94ed; }
+    .btn:disabled { background: #cbd5e0; cursor: not-allowed; }
   </style>
 </head>
 <body>
 
-<h3>Cadastro de Motorista</h3>
-<input id="nome" type="text" placeholder="Nome Completo">
-<input id="telefone" type="tel" placeholder="Telefone / WhatsApp">
-<input id="email" type="email" placeholder="E-mail">
-<input id="cpf" type="text" placeholder="CPF">
-<input id="senha" type="password" placeholder="Defina uma Senha">
+<div class="card">
+  <h2>Seja bem-vindo!</h2>
+  <p class="subtitle">Complete seu cadastro para começar a viajar.</p>
+  
+  <div class="input-group">
+    <label>Nome Completo</label>
+    <input id="nome" type="text" placeholder="Ex: Maria Silva">
+  </div>
 
-<button id="btnEnviar" class="btn" onclick="confirmar()">Enviar Dados</button>
+  <div class="input-group">
+    <label>WhatsApp</label>
+    <input id="telefone" type="tel" placeholder="(00) 00000-0000">
+  </div>
+
+  <div class="input-group">
+    <label>E-mail</label>
+    <input id="email" type="email" placeholder="exemplo@email.com">
+  </div>
+
+  <div class="input-group">
+    <label>CPF</label>
+    <input id="cpf" type="text" placeholder="000.000.000-00">
+  </div>
+
+  <div class="input-group">
+    <label>Crie uma Senha</label>
+    <input id="senha" type="password" placeholder="******">
+  </div>
+
+  <button id="btnEnviar" class="btn" onclick="processarCadastro()">CONCLUIR CADASTRO</button>
+</div>
 
 <script>
-  // Inicialização do Telegram WebApp
-  let tg = null;
-  try {
-    if (window.Telegram && window.Telegram.WebApp) {
-      tg = window.Telegram.WebApp;
-      tg.ready();
-      tg.expand();
-    }
-  } catch (e) {
-    console.warn("Executando fora do Telegram");
-  }
+  const tg = window.Telegram?.WebApp;
+  if (tg) { tg.ready(); tg.expand(); }
 
-  function confirmar() {
-    const nome = document.getElementById('nome').value;
-    const senha = document.getElementById('senha').value;
+  async function processarCadastro() {
+    const btn = document.getElementById('btnEnviar');
+    const webhookUrl = "https://primary-production-a103.up.railway.app/webhook/0421cb4e-c94e-40bc-ad39-823394a4d901";
 
-    if (!nome || !senha) {
-      const msg = "Por favor, preencha pelo menos o nome e a senha.";
-      if (tg && tg.showAlert) {
-        tg.showAlert(msg);
-      } else {
-        alert(msg);
-      }
+    // Validação básica
+    const nome = document.getElementById('nome').value.trim();
+    const tel = document.getElementById('telefone').value.trim();
+    const senha = document.getElementById('senha').value.trim();
+
+    if (!nome || !tel || !senha) {
+      alert("Por favor, preencha Nome, WhatsApp e Senha.");
       return;
     }
 
-    if (confirm("Deseja confirmar o envio dos dados?")) {
-      enviar();
-    }
-  }
-
-  async function enviar() {
-    const btn = document.getElementById('btnEnviar');
-    const baseUrl = "https://primary-production-a103.up.railway.app/webhook/0421cb4e-c94e-40bc-ad39-823394a4d901";
-    
     btn.disabled = true;
-    btn.innerText = "PROCESSANDO...";
+    btn.innerText = "Enviando...";
 
-    // --- LÓGICA DE CAPTURA DE ID CORRIGIDA ---
+    // --- Lógica de Captura do ID ---
     const urlParams = new URLSearchParams(window.location.search);
-    let cleanChatId = urlParams.get('chatId'); // Pega da URL (?chatId=123)
+    let finalChatId = urlParams.get('chatId');
 
-    // Se não estiver na URL, tenta pegar dos dados do Telegram
-    if (!cleanChatId && tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
-        cleanChatId = tg.initDataUnsafe.user.id;
+    if (!finalChatId && tg?.initDataUnsafe?.user) {
+      finalChatId = tg.initDataUnsafe.user.id;
     }
 
-    // Se ainda assim estiver vazio (teste em PC), usa um identificador genérico
-    if (!cleanChatId) {
-        cleanChatId = "TESTE_WEB_" + Math.floor(Math.random() * 1000);
+    if (!finalChatId) {
+      finalChatId = "PASS_WEB_" + Math.floor(Math.random() * 9999);
     }
-    // ----------------------------------------
 
-    const params = new URLSearchParams({
-      chatId: cleanChatId,
-      nome: document.getElementById('nome').value,
-      telefone: document.getElementById('telefone').value,
-      email: document.getElementById('email').value,
-      cpf: document.getElementById('cpf').value,
-      senha: document.getElementById('senha').value,
-      data_cadastro: new Date().toISOString()
+    // Montagem da query enviada para o n8n
+    const queryParams = new URLSearchParams({
+      fluxo: "CADASTRO_PASSAGEIRO",
+      chatId: finalChatId,
+      nome: nome,
+      telefone: tel,
+      email: document.getElementById('email').value.trim(),
+      cpf: document.getElementById('cpf').value.trim(),
+      senha: senha, // Novo campo adicionado aqui
+      timestamp: new Date().toISOString()
     });
 
     try {
-      const response = await fetch(`${baseUrl}?${params.toString()}`);
-
+      const response = await fetch(`${webhookUrl}?${queryParams.toString()}`);
+      
       if (response.ok) {
-        const msgSucesso = "✅ Cadastro realizado com sucesso!";
-        
-        // Define para onde o motorista vai após o cadastro
-        // Substitua 'SUA_URL_PAGINA_RASTREIO' pela URL do seu rastreador no GitHub
-        const urlProxima = "https://SEU-USUARIO.github.io/app-rastreio/rastreador.html?chatId=" + cleanChatId;
-
-        if (tg && tg.showAlert) {
-          tg.showAlert(msgSucesso, () => {
-             window.location.href = urlProxima;
-          });
+        if (tg?.showAlert) {
+          tg.showAlert("✅ Cadastro realizado!", () => tg.close());
         } else {
-          alert(msgSucesso);
-          window.location.href = urlProxima;
+          alert("✅ Cadastro realizado com sucesso!");
         }
       } else {
-        throw new Error("Erro no servidor: " + response.status);
+        throw new Error("Erro no servidor");
       }
-
     } catch (err) {
-      alert("❌ " + err.message);
+      alert("❌ Erro ao salvar. Tente novamente.");
       btn.disabled = false;
-      btn.innerText = "Enviar Dados";
+      btn.innerText = "CONCLUIR CADASTRO";
     }
   }
 </script>
+
 </body>
 </html>
