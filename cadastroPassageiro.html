@@ -37,48 +37,54 @@
   const tg = window.Telegram?.WebApp;
   if (tg) { tg.ready(); tg.expand(); }
 
-  // Máscara de CPF (000.000.000-00)
+  // Máscara de CPF revisada
   document.getElementById('cpf').addEventListener('input', function (e) {
-    let value = e.target.value.replace(/\D/g, '');
-    value = value.replace(/(\={3})(\d)/, '$1.$2');
-    value = value.replace(/(\d{3})(\d)/, '$1.$2');
-    value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-    e.target.value = value;
+    let v = e.target.value.replace(/\D/g, '');
+    if (v.length > 11) v = v.slice(0, 11);
+    v = v.replace(/(\d{3})(\d)/, '$1.$2');
+    v = v.replace(/(\d{3})(\d)/, '$1.$2');
+    v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    e.target.value = v;
   });
 
-  // Máscara de Telefone ((00) 00000-0000)
+  // Máscara de Telefone revisada
   document.getElementById('telefone').addEventListener('input', function (e) {
-    let value = e.target.value.replace(/\D/g, '');
-    value = value.replace(/^(\d{2})(\d)/g, '($1) $2');
-    value = value.replace(/(\d{5})(\d)/, '$1-$2');
-    e.target.value = value;
+    let v = e.target.value.replace(/\D/g, '');
+    if (v.length > 11) v = v.slice(0, 11);
+    v = v.replace(/^(\d{2})(\d)/g, '($1) $2');
+    v = v.replace(/(\d{5})(\d)/, '$1-$2');
+    e.target.value = v;
   });
 
   function enviar() {
     const btn = document.getElementById('btnEnviar');
     const webhookUrl = "https://primary-production-a103.up.railway.app/webhook/0421cb4e-c94e-40bc-ad39-823394a4d901";
 
-    const dados = {
-      fluxo: "CADASTRO_PASSAGEIRO",
-      chatId: new URLSearchParams(window.location.search).get('chatId') || tg?.initDataUnsafe?.user?.id || "WEB",
-      nome: document.getElementById('nome').value,
-      telefone: document.getElementById('telefone').value,
-      email: document.getElementById('email').value,
-      cpf: document.getElementById('cpf').value,
-      senha: document.getElementById('senha').value
-    };
+    // Pegamos os valores brutos e tiramos espaços em branco das pontas
+    const nome = document.getElementById('nome').value.trim();
+    const telefone = document.getElementById('telefone').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const cpf = document.getElementById('cpf').value.trim();
+    const senha = document.getElementById('senha').value.trim();
 
-    if (!dados.nome || !dados.senha || dados.cpf.length < 14) {
-      alert("Preencha os dados corretamente.");
+    // REGRA DE VALIDAÇÃO: Só trava se os campos ESSENCIAIS estiverem realmente vazios
+    if (nome === "" || senha === "" || telefone.length < 10) {
+      alert("Por favor, preencha Nome, WhatsApp e Senha corretamente.");
       return;
     }
 
     btn.disabled = true;
     btn.innerText = "PRONTO! ✅";
 
+    const dados = {
+      fluxo: "CADASTRO_PASSAGEIRO",
+      chatId: new URLSearchParams(window.location.search).get('chatId') || tg?.initDataUnsafe?.user?.id || "WEB",
+      nome, telefone, email, cpf, senha
+    };
+
     const query = new URLSearchParams(dados).toString();
     
-    // Método ultra-rápido para não travar o Chrome
+    // Disparo via Imagem para não travar no Chrome
     const img = new Image();
     img.src = `${webhookUrl}?${query}&t=${Date.now()}`;
 
@@ -87,10 +93,9 @@
         tg.showAlert("✅ Cadastro realizado!", () => tg.close());
       } else {
         alert("✅ Cadastro realizado!");
-        // Redireciona para o bot no Chrome para fechar o ciclo
         window.location.href = "https://t.me/SEU_BOT_NOME"; 
       }
-    }, 500);
+    }, 600);
   }
 </script>
 </body>
