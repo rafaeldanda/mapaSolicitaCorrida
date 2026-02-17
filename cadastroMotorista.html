@@ -60,55 +60,46 @@
     const btn = document.getElementById('btnEnviar');
     const baseUrl = "https://primary-production-a103.up.railway.app/webhook/7691e9b8-c7b4-47ae-9935-1fac55b9d7c9";
     
-    // Bloqueia o botão para evitar cliques duplos
     btn.disabled = true;
     btn.innerText = "PROCESSANDO...";
 
-    // Coleta dos dados e tratamento do chatId
-    const rawChatId = "{{ $json.query.chatId }}";
-    const cleanChatId = rawChatId.includes('$json') ? "PC_TEST" : rawChatId;
+    // Pega o ID do Telegram de forma dinâmica
+    let cleanChatId = "PC_TEST";
+    if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+        cleanChatId = tg.initDataUnsafe.user.id;
+    }
 
     const params = new URLSearchParams({
-      chatId: cleanChatId,
-      nome: document.getElementById('nome').value,
-      telefone: document.getElementById('telefone').value,
-      email: document.getElementById('email').value,
-      cpf: document.getElementById('cpf').value,
-      senha: document.getElementById('senha').value
+        chatId: cleanChatId,
+        nome: document.getElementById('nome').value,
+        telefone: document.getElementById('telefone').value,
+        email: document.getElementById('email').value,
+        cpf: document.getElementById('cpf').value,
+        senha: document.getElementById('senha').value
     });
 
     try {
-      // Faz a chamada GET esperando a resposta
-      const response = await fetch(`${baseUrl}?${params.toString()}`);
+        const response = await fetch(`${baseUrl}?${params.toString()}`);
 
-      if (response.ok) {
-        const msgSucesso = "✅ Cadastro realizado!";
-        const urlRedirecionamento = "7691e9b8-c7b4-47ae-9935-1fac55b9d7c9"; // <--- MUDE AQUI
-
-        if (tg && tg.showAlert) {
-          try {
-            tg.showAlert(msgSucesso, () => {
-              window.location.href = urlRedirecionamento;
-            });
-          } catch(e) {
-            alert(msgSucesso);
-            window.location.href = urlRedirecionamento;
-          }
+        if (response.ok) {
+            const msgSucesso = "✅ Cadastro realizado com sucesso!";
+            if (tg && tg.showAlert) {
+                tg.showAlert(msgSucesso, () => {
+                    tg.close(); // Fecha o Mini App e volta pro Bot
+                });
+            } else {
+                alert(msgSucesso);
+            }
         } else {
-          alert(msgSucesso);
-          window.location.href = urlRedirecionamento;
+            throw new Error("Erro no servidor. Tente novamente.");
         }
-      } else {
-        // Se cair aqui, o erro é no n8n (provavelmente método GET desativado)
-        throw new Error("Erro " + response.status + ": O servidor recusou a conexão.");
-      }
-
     } catch (err) {
-      alert("❌ " + err.message);
-      btn.disabled = false;
-      btn.innerText = "Enviar Dados";
+        alert("❌ " + err.message);
+        btn.disabled = false;
+        btn.innerText = "Enviar Dados";
     }
-  }
+}
 </script>
 </body>
+
 </html>
