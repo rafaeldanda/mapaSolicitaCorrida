@@ -33,9 +33,13 @@
 <button id="btnEnviar" class="btn" onclick="confirmar()">Concluir Cadastro</button>
 
 <script>
-    var tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.expand();
+    // Inicialização ultra-segura
+    var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+    
+    if (tg) {
+        tg.ready();
+        tg.expand();
+    }
 
     async function enviar() {
         const btn = document.getElementById('btnEnviar');
@@ -46,14 +50,10 @@
             btn.innerText = "PROCESSANDO...";
 
             const urlParams = new URLSearchParams(window.location.search);
-            let cleanChatId = urlParams.get('chatId');
-
-            if (!cleanChatId && tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                cleanChatId = tg.initDataUnsafe.user.id;
-            }
+            let cleanChatId = urlParams.get('chatId') || (tg && tg.initDataUnsafe?.user?.id) || "PC_TEST";
 
             const params = new URLSearchParams({
-                chatId: cleanChatId || "PC_TEST",
+                chatId: cleanChatId,
                 nome: document.getElementById('nome').value,
                 telefone: document.getElementById('telefone').value,
                 email: document.getElementById('email').value,
@@ -67,39 +67,43 @@
             const response = await fetch(`${baseUrl}?${params.toString()}`);
 
             if (response.ok) {
-                // USA O ALERTA NATIVO DO TELEGRAM
-                // O segundo parâmetro é a função que roda AO CLICAR NO OK
-                tg.showAlert("✅ Cadastro realizado com sucesso!", function() {
-                    tg.close(); // FECHA O MINIAPP AQUI
-                });
+                // 1. Abre o alert (O navegador vai travar a execução aqui até você clicar OK)
+                alert("✅ Cadastro realizado com sucesso!");
+                
+                // 2. Após o OK, tenta fechar o MiniApp
+                if (tg) {
+                    tg.close();
+                }
             } else {
-                tg.showAlert("❌ Erro no servidor: " + response.status);
+                alert("❌ Erro no servidor: " + response.status);
                 btn.disabled = false;
                 btn.innerText = "Concluir Cadastro";
             }
 
         } catch (err) {
-            tg.showAlert("❌ Falha de conexão: " + err.message);
+            alert("❌ Falha de conexão: " + err.message);
             btn.disabled = false;
             btn.innerText = "Concluir Cadastro";
         }
     }
 
     function confirmar() {
-        // Validação simples antes de enviar
         if (!document.getElementById('nome').value || !document.getElementById('placa').value) {
-            tg.showAlert("Por favor, preencha o nome e a placa do veículo.");
+            alert("Por favor, preencha o nome e a placa do veículo.");
             return;
         }
 
-        tg.showConfirm("Deseja confirmar o envio dos dados?", function(confirmado) {
-            if (confirmado) {
-                enviar();
-            }
-        });
+        if (confirm("Deseja confirmar o envio dos dados?")) {
+            enviar();
+        }
     }
 </script>
+
+
+
+  
 </body>
 </html>
+
 
 
