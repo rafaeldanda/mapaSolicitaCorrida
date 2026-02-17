@@ -25,45 +25,17 @@
 <button id="btnEnviar" class="btn" onclick="confirmar()">Enviar Dados</button>
 
 <script>
-    // Tenta inicializar o Telegram, mas não trava se falhar
-    let tg = null;
-    try {
-        if (window.Telegram && window.Telegram.WebApp) {
-            tg = window.Telegram.WebApp;
-            tg.ready();
-        }
-    } catch (e) {
-        console.warn("Fora do ambiente Telegram WebApp");
-    }
-
-    function confirmar() {
-        const nome = document.getElementById('nome').value;
-        const senha = document.getElementById('senha').value;
-
-        if (!nome || !senha) {
-            alert("Preencha nome e senha.");
-            return;
-        }
-
-        if (confirm("Deseja confirmar o envio?")) {
-            enviar();
-        }
-    }
-
     async function enviar() {
         const btn = document.getElementById('btnEnviar');
         const baseUrl = "https://primary-production-a103.up.railway.app/webhook/7691e9b8-c7b4-47ae-9935-1fac55b9d7c9";
         
         btn.disabled = true;
-        btn.innerText = "ENVIANDO...";
+        btn.innerText = "PROCESSANDO...";
 
-        // Pega o ID se estiver no Telegram, senão usa PC_TEST
-        let cleanChatId = "PC_TEST";
-        try {
-            if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                cleanChatId = tg.initDataUnsafe.user.id;
-            }
-        } catch (e) {}
+        // --- A MÁGICA ESTÁ AQUI: Pegar chatId da URL ---
+        const urlParams = new URLSearchParams(window.location.search);
+        let cleanChatId = urlParams.get('chatId') || "PC_TEST"; 
+        // ----------------------------------------------
 
         const params = new URLSearchParams({
             chatId: cleanChatId,
@@ -75,22 +47,22 @@
         });
 
         try {
-            // Chamada para o seu n8n
-            const response = await fetch(`${baseUrl}?${params.toString()}`, {
-                method: 'GET'
-            });
+            // Usamos mode: 'no-cors' se o n8n estiver bloqueando, 
+            // mas o padrão é fetch simples para GET
+            const response = await fetch(`${baseUrl}?${params.toString()}`);
 
-            if (response.ok) {
-                alert("✅ Cadastro realizado!");
-                // Só fecha se o método existir, evitando o erro de Unsupported
-                if (tg && typeof tg.close === 'function') {
-                    tg.close();
+            if (response.ok || response.status === 0) {
+                alert("✅ Cadastro realizado para o ID: " + cleanChatId);
+                
+                // Tenta fechar o WebApp apenas se estiver no ambiente certo
+                if (window.Telegram && window.Telegram.WebApp) {
+                    window.Telegram.WebApp.close();
                 }
             } else {
-                alert("❌ Erro no n8n: " + response.status);
+                throw new Error("Erro no servidor: " + response.status);
             }
         } catch (err) {
-            alert("❌ Erro de conexão: " + err.message);
+            alert("❌ Erro: " + err.message);
         } finally {
             btn.disabled = false;
             btn.innerText = "Enviar Dados";
@@ -100,5 +72,6 @@
 </body>
 
 </html>
+
 
 
