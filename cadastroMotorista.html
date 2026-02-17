@@ -78,12 +78,16 @@
             });
 
             if (response.ok) {
+                // O código vai PARAR aqui até o usuário clicar no OK do alert
                 alert("✅ Cadastro realizado com sucesso!");
-                if (tg) tg.close();
+                
+                // Só executa depois que o alert for fechado
+                if (tg && typeof tg.close === 'function') {
+                    tg.close();
+                }
             } else {
                 alert("❌ Erro no servidor: " + response.status);
             }
-
         } catch (err) {
             alert("❌ Falha: " + err.message);
         } finally {
@@ -109,3 +113,4 @@
 </script>
 </body>
 </html>
+
