@@ -20,26 +20,46 @@
 
 <h4>Dados Pessoais</h4>
 <input id="nome" type="text" placeholder="Nome Completo">
-<input id="telefone" type="tel" placeholder="Telefone">
+<input id="telefone" type="tel" placeholder="Telefone (51) 99999-9999" maxlength="15">
 <input id="email" type="email" placeholder="E-mail">
-<input id="cpf" type="text" placeholder="CPF">
+<input id="cpf" type="text" placeholder="CPF (000.000.000-00)" maxlength="14">
+<input id="pix" type="text" placeholder="Chave PIX (Para Recebimentos)">
 <input id="senha" type="password" placeholder="Crie uma Senha">
 
 <h4>Dados do Veículo</h4>
 <input id="modelo" type="text" placeholder="Modelo (Ex: Toyota Corolla)">
-<input id="placa" type="text" placeholder="Placa (Ex: ABC-1234)">
+<input id="placa" type="text" placeholder="Placa (Ex: ABC-1234 ou ABC1D23)" maxlength="8">
 <input id="cor" type="text" placeholder="Cor do Carro">
 
 <button id="btnEnviar" class="btn" onclick="confirmar()">Concluir Cadastro</button>
 
 <script>
-    // Inicialização ultra-segura
     var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-    
-    if (tg) {
-        tg.ready();
-        tg.expand();
-    }
+    if (tg) { tg.ready(); tg.expand(); }
+
+    // --- MÁSCARAS DE FORMATAÇÃO ---
+    document.getElementById('cpf').addEventListener('input', function (e) {
+        let v = e.target.value.replace(/\D/g, '').match(/(\d{0,3})(\d{0,3})(\d{0,3})(\d{0,2})/);
+        e.target.value = !v[2] ? v[1] : v[1] + '.' + v[2] + (v[3] ? '.' + v[3] : '') + (v[4] ? '-' + v[4] : '');
+    });
+
+    document.getElementById('telefone').addEventListener('input', function (e) {
+        let v = e.target.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,5})(\d{0,4})/);
+        e.target.value = !v[2] ? v[1] : '(' + v[1] + ') ' + v[2] + (v[3] ? '-' + v[3] : '');
+    });
+
+    // CORREÇÃO DA PLACA: Permite letras e números e força Maiúsculas
+    document.getElementById('placa').addEventListener('input', function (e) {
+        let v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); // Permite A-Z e 0-9
+        if (v.length > 3 && !v.includes('-') && v.length <= 7) {
+            // Tenta ajudar o usuário colocando o traço se for o modelo antigo, 
+            // mas deixa livre para o modelo Mercosul (que tem letra no meio)
+            if(/^[A-Z]{3}[0-9]{4}$/.test(v)) {
+                v = v.substring(0, 3) + '-' + v.substring(3);
+            }
+        }
+        e.target.value = v;
+    });
 
     async function enviar() {
         const btn = document.getElementById('btnEnviar');
@@ -58,6 +78,7 @@
                 telefone: document.getElementById('telefone').value,
                 email: document.getElementById('email').value,
                 cpf: document.getElementById('cpf').value,
+                pix: document.getElementById('pix').value,
                 senha: document.getElementById('senha').value,
                 modelo: document.getElementById('modelo').value,
                 placa: document.getElementById('placa').value,
@@ -68,25 +89,13 @@
 
            if (response.ok) {
                 alert("✅ Cadastro realizado com sucesso!");
-                
-                // Tenta fechar de 3 formas diferentes para garantir
-                try {
-                    if (window.Telegram && window.Telegram.WebApp) {
-                        window.Telegram.WebApp.close();
-                    }
-                } catch (e) { console.error(e); }
-
-                // Fallback: Se não fechou, tenta fechar a janela do navegador
-                setTimeout(() => {
-                    window.close();
-                }, 500);
-            
+                if (tg) tg.close();
+                window.close();
             } else {
                 alert("❌ Erro no servidor: " + response.status);
                 btn.disabled = false;
                 btn.innerText = "Concluir Cadastro";
             }
-
         } catch (err) {
             alert("❌ Falha de conexão: " + err.message);
             btn.disabled = false;
@@ -95,8 +104,21 @@
     }
 
     function confirmar() {
-        if (!document.getElementById('nome').value || !document.getElementById('placa').value) {
-            alert("Por favor, preencha o nome e a placa do veículo.");
+        const campos = ['nome', 'telefone', 'email', 'cpf', 'pix', 'senha', 'modelo', 'placa', 'cor'];
+        let faltando = false;
+
+        campos.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el.value) {
+                faltando = true;
+                el.style.borderColor = "red"; // Marca o campo vazio para ajudar o motorista
+            } else {
+                el.style.borderColor = "#ccc";
+            }
+        });
+
+        if (faltando) {
+            alert("⚠️ Por favor, preencha TODOS os campos obrigatórios.");
             return;
         }
 
@@ -105,15 +127,5 @@
         }
     }
 </script>
-
-
-
-  
 </body>
 </html>
-
-
-
-
-
-
