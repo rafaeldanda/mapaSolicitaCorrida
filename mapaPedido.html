@@ -121,7 +121,7 @@
                     rotaLayer = L.polyline(rota.geometry.coordinates.map(c => [c[1], c[0]]), { color: '#2ea6ff', weight: 5 }).addTo(map);
                     map.fitBounds(rotaLayer.getBounds(), { padding: [40, 40] });
                     kmTotal = (rota.distance / 1000).toFixed(1);
-                    valorTotal = (kmTotal * 2.8 + 6).toFixed(2);
+                    valorTotal = (kmTotal * 2.7).toFixed(2);
                     document.getElementById('price-tag').innerHTML = `Distância: ${kmTotal}km | Total: R$ ${valorTotal}`;
                     document.getElementById('btn-pedir').disabled = false;
                 });
@@ -166,4 +166,5 @@
         });
     </script>
 </body>
+
 </html>
