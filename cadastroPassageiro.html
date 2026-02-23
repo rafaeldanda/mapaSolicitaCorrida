@@ -37,7 +37,7 @@
   const tg = window.Telegram?.WebApp;
   if (tg) { tg.ready(); tg.expand(); }
 
-  // Máscara de CPF revisada
+  // Máscara de CPF
   document.getElementById('cpf').addEventListener('input', function (e) {
     let v = e.target.value.replace(/\D/g, '');
     if (v.length > 11) v = v.slice(0, 11);
@@ -47,7 +47,7 @@
     e.target.value = v;
   });
 
-  // Máscara de Telefone revisada
+  // Máscara de Telefone
   document.getElementById('telefone').addEventListener('input', function (e) {
     let v = e.target.value.replace(/\D/g, '');
     if (v.length > 11) v = v.slice(0, 11);
@@ -56,25 +56,46 @@
     e.target.value = v;
   });
 
+  // Validação Matemática de CPF
+  function validarCPF(cpf) {
+    cpf = cpf.replace(/\D/g, '');
+    if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+    let soma = 0, resto;
+    for (let i = 1; i <= 9; i++) soma += parseInt(cpf.substring(i - 1, i)) * (11 - i);
+    resto = (soma * 10) % 11;
+    if (resto === 10 || resto === 11) resto = 0;
+    if (resto !== parseInt(cpf.substring(9, 10))) return false;
+    soma = 0;
+    for (let i = 1; i <= 10; i++) soma += parseInt(cpf.substring(i - 1, i)) * (12 - i);
+    resto = (soma * 10) % 11;
+    if (resto === 10 || resto === 11) resto = 0;
+    if (resto !== parseInt(cpf.substring(10, 11))) return false;
+    return true;
+  }
+
   function enviar() {
     const btn = document.getElementById('btnEnviar');
     const webhookUrl = "https://primary-production-a103.up.railway.app/webhook/0421cb4e-c94e-40bc-ad39-823394a4d901";
 
-    // Pegamos os valores brutos e tiramos espaços em branco das pontas
     const nome = document.getElementById('nome').value.trim();
     const telefone = document.getElementById('telefone').value.trim();
     const email = document.getElementById('email').value.trim();
     const cpf = document.getElementById('cpf').value.trim();
     const senha = document.getElementById('senha').value.trim();
 
-    // REGRA DE VALIDAÇÃO: Só trava se os campos ESSENCIAIS estiverem realmente vazios
     if (nome === "" || senha === "" || telefone.length < 10) {
       alert("Por favor, preencha Nome, WhatsApp e Senha corretamente.");
       return;
     }
 
+    if (cpf !== "" && !validarCPF(cpf)) {
+      alert("O CPF digitado é inválido. Por favor, verifique.");
+      return;
+    }
+
+    // Alteração solicitada: Texto modificado para "CADASTRADO! ✅"
     btn.disabled = true;
-    btn.innerText = "PRONTO! ✅";
+    btn.innerText = "CADASTRADO! ✅";
 
     const dados = {
       fluxo: "CADASTRO_PASSAGEIRO",
@@ -83,8 +104,6 @@
     };
 
     const query = new URLSearchParams(dados).toString();
-    
-    // Disparo via Imagem para não travar no Chrome
     const img = new Image();
     img.src = `${webhookUrl}?${query}&t=${Date.now()}`;
 
