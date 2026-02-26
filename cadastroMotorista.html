@@ -37,7 +37,7 @@
     var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
     if (tg) { tg.ready(); tg.expand(); }
 
-    // --- MÁSCARAS DE FORMATAÇÃO ---
+    // --- MÁSCARAS ---
     document.getElementById('cpf').addEventListener('input', function (e) {
         let v = e.target.value.replace(/\D/g, '').match(/(\d{0,3})(\d{0,3})(\d{0,3})(\d{0,2})/);
         e.target.value = !v[2] ? v[1] : v[1] + '.' + v[2] + (v[3] ? '.' + v[3] : '') + (v[4] ? '-' + v[4] : '');
@@ -48,18 +48,30 @@
         e.target.value = !v[2] ? v[1] : '(' + v[1] + ') ' + v[2] + (v[3] ? '-' + v[3] : '');
     });
 
-    // CORREÇÃO DA PLACA: Permite letras e números e força Maiúsculas
     document.getElementById('placa').addEventListener('input', function (e) {
-        let v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); // Permite A-Z e 0-9
+        let v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
         if (v.length > 3 && !v.includes('-') && v.length <= 7) {
-            // Tenta ajudar o usuário colocando o traço se for o modelo antigo, 
-            // mas deixa livre para o modelo Mercosul (que tem letra no meio)
-            if(/^[A-Z]{3}[0-9]{4}$/.test(v)) {
-                v = v.substring(0, 3) + '-' + v.substring(3);
-            }
+            if(/^[A-Z]{3}[0-9]{4}$/.test(v)) v = v.substring(0, 3) + '-' + v.substring(3);
         }
         e.target.value = v;
     });
+
+    // --- VALIDAÇÃO REAL DE CPF ---
+    function validarCPF(cpf) {
+        cpf = cpf.replace(/\D/g, '');
+        if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+        let soma = 0, resto;
+        for (let i = 1; i <= 9; i++) soma += parseInt(cpf.substring(i - 1, i)) * (11 - i);
+        resto = (soma * 10) % 11;
+        if (resto === 10 || resto === 11) resto = 0;
+        if (resto !== parseInt(cpf.substring(9, 10))) return false;
+        soma = 0;
+        for (let i = 1; i <= 10; i++) soma += parseInt(cpf.substring(i - 1, i)) * (12 - i);
+        resto = (soma * 10) % 11;
+        if (resto === 10 || resto === 11) resto = 0;
+        if (resto !== parseInt(cpf.substring(10, 11))) return false;
+        return true;
+    }
 
     async function enviar() {
         const btn = document.getElementById('btnEnviar');
@@ -72,7 +84,8 @@
             const urlParams = new URLSearchParams(window.location.search);
             let cleanChatId = urlParams.get('chatId') || (tg && tg.initDataUnsafe?.user?.id) || "PC_TEST";
 
-            const params = new URLSearchParams({
+            const payload = {
+                fluxo: "CADASTRO_MOTORISTA",
                 chatId: cleanChatId,
                 nome: document.getElementById('nome').value,
                 telefone: document.getElementById('telefone').value,
@@ -83,11 +96,17 @@
                 modelo: document.getElementById('modelo').value,
                 placa: document.getElementById('placa').value,
                 cor: document.getElementById('cor').value
+            };
+
+            // MUDANÇA PARA POST (Mais seguro para senhas)
+            const response = await fetch(baseUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
 
-            const response = await fetch(`${baseUrl}?${params.toString()}`);
-
-           if (response.ok) {
+            if (response.ok) {
+                btn.innerText = "CADASTRADO! ✅";
                 alert("✅ Cadastro realizado com sucesso!");
                 if (tg) tg.close();
                 window.close();
@@ -111,7 +130,7 @@
             const el = document.getElementById(id);
             if (!el.value) {
                 faltando = true;
-                el.style.borderColor = "red"; // Marca o campo vazio para ajudar o motorista
+                el.style.borderColor = "red";
             } else {
                 el.style.borderColor = "#ccc";
             }
@@ -119,6 +138,14 @@
 
         if (faltando) {
             alert("⚠️ Por favor, preencha TODOS os campos obrigatórios.");
+            return;
+        }
+
+        // Validação de CPF antes de confirmar
+        const cpfValue = document.getElementById('cpf').value;
+        if (!validarCPF(cpfValue)) {
+            alert("❌ CPF Inválido! Por favor, verifique os números.");
+            document.getElementById('cpf').style.borderColor = "red";
             return;
         }
 
