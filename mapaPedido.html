@@ -3,45 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Poa Drive - Mapbox</title>
+    <title>Poa Drive - Oficial</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
     <script src='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.js'></script>
     <link href='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.css' rel='stylesheet' />
-    
     <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js'></script>
     <link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css' type='text/css'>
 
     <style>
         body { font-family: sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; background: #fff; overflow: hidden; }
         #map { flex-grow: 1; width: 100%; }
-        
         .panel { padding: 15px; background: white; border-top: 1px solid #ddd; z-index: 100; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
         .address-card { background: #f9f9f9; border-radius: 8px; padding: 10px; margin-bottom: 10px; border-left: 4px solid #2ea6ff; }
         .label { font-size: 10px; font-weight: bold; color: #2ea6ff; text-transform: uppercase; }
         .value { font-size: 13px; color: #333; font-weight: 600; }
-        
         #price-tag { font-size: 18px; font-weight: bold; color: #28a745; text-align: center; margin: 10px 0; }
         .btn-confirmar { width: 100%; padding: 15px; background-color: #10b981; color: #ffffff; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
         .btn-confirmar:disabled { background-color: #ccc; }
-
-        /* Estilização do buscador do Mapbox para ficar no topo */
-        .geocoder-container {
-            position: absolute;
-            top: 15px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 90%;
-            max-width: 400px;
-            z-index: 2;
-        }
-        .mapboxgl-ctrl-geocoder { 
-            width: 100% !important; 
-            max-width: none !important; 
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
+        .geocoder-container { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; z-index: 2; }
     </style>
 </head>
 <body>
@@ -51,23 +31,21 @@
 
     <div class="panel">
         <div class="address-card">
-            <div class="label">Origem</div>
-            <div id="txt-origem" class="value">Localizando...</div>
+            <div class="label">Origem (Sua localização)</div>
+            <div id="txt-origem" class="value">Localizando pelo GPS...</div>
         </div>
         <div class="address-card" style="border-left-color: #ffaa00;">
-            <div class="label">Destino</div>
-            <div id="txt-destino" class="value">Busque o destino acima 🔍</div>
+            <div class="label">Destino (Toque no mapa ou busque)</div>
+            <div id="txt-destino" class="value">Aguardando destino...</div>
         </div>
-        <div id="price-tag">Aguardando rota...</div>
+        <div id="price-tag">Defina o destino</div>
         <button id="btn-pedir" class="btn-confirmar" disabled onclick="enviarParaN8N()">CONFIRMAR PEDIDO</button>
     </div>
 
     <script>
-        // CONFIGURAÇÕES INICIAIS
-        mapboxgl.accessToken = 'pk.eyJ1IjoicmFmYWVsZGFuZGEiLCJhIjoiY21tM3V6aHQ3MDR1dTJxcHdiNnhpaHd0ayJ9.w-fjeHmzlyVes75Rg4pJuQ'; // <--- SEU TOKEN DO MAPBOX
+        // Use o seu TOKEN PÚBLICO (pk....) aqui
+        mapboxgl.accessToken = 'pk.eyJ1IjoicmFmYWVsZGFuZGEiLCJhIjoiY21tM3V6aHQ3MDR1dTJxcHdiNnhpaHd0ayJ9.w-fjeHmzlyVes75Rg4pJuQ';
         
-        const urlParams = new URLSearchParams(window.location.search);
-        const idUrl = urlParams.get('id'); 
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
@@ -76,116 +54,95 @@
         let markerOrigem = null, markerDestino = null;
         let kmTotal = 0, valorTotal = 0;
 
-        // INICIALIZAR MAPA
         const map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/mapbox/streets-v12',
-            center: [-51.2177, -30.0346], // Porto Alegre
-            zoom: 13
+            center: [-51.2177, -30.0346],
+            zoom: 14,
+            interactive: true // Permite zoom e arrastar
         });
 
-        // BUSCADOR (GEOCODER)
         const geocoder = new MapboxGeocoder({
             accessToken: mapboxgl.accessToken,
             mapboxgl: mapboxgl,
             countries: 'br',
-            types: 'address', // IMPORTANTE: Foca em endereços com número
+            types: 'address',
             placeholder: '🔍 Para onde vamos?',
-            marker: false // Nós criaremos o nosso próprio marcador
+            marker: false 
         });
 
         document.getElementById('geocoder').appendChild(geocoder.onAdd(map));
 
-        // EVENTO DE BUSCA
+        // Busca por endereço (Destino)
         geocoder.on('result', (e) => {
             const coords = { lat: e.result.center[1], lng: e.result.center[0] };
-            document.getElementById('txt-destino').innerText = e.result.place_name;
+            const formatado = formatarEndereco(e.result);
+            document.getElementById('txt-destino').innerText = formatado;
             atualizarDestino(coords);
         });
 
-        // CLIQUE NO MAPA
+        // Clique no mapa (Apenas para Destino - Mudança 2)
         map.on('click', (e) => {
             const coords = { lat: e.lngLat.lat, lng: e.lngLat.lng };
-            if (!pontoOrigem) {
-                atualizarOrigem(coords);
-            } else {
-                atualizarDestino(coords);
-                reverseGeocode(coords, 'txt-destino');
-            }
+            atualizarDestino(coords);
+            reverseGeocode(coords, 'txt-destino');
         });
 
-        function atualizarOrigem(coords) {
-            pontoOrigem = [coords.lng, coords.lat];
-            if (markerOrigem) markerOrigem.remove();
+        // Função para formatar endereço (Mudança 1)
+        function formatarEndereco(mapboxFeature) {
+            const rua = mapboxFeature.text || "";
+            const num = mapboxFeature.address || "";
+            const contexto = mapboxFeature.context || [];
+            const bairro = contexto.find(c => c.id.includes('neighborhood'))?.text || 
+                           contexto.find(c => c.id.includes('locality'))?.text || "";
             
-            markerOrigem = new mapboxgl.Marker({ color: '#2ea6ff' })
-                .setLngLat(pontoOrigem)
-                .addTo(map);
-            
-            reverseGeocode(coords, 'txt-origem');
-            if (pontoDestino) calcularRota();
+            return num ? `${rua}, ${num} - ${bairro}` : `${rua} - ${bairro}`;
+        }
+
+        function reverseGeocode(coords, id) {
+            fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${coords.lng},${coords.lat}.json?access_token=${mapboxgl.accessToken}&types=address,neighborhood&language=pt`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.features.length > 0) {
+                        const formatado = formatarEndereco(data.features[0]);
+                        document.getElementById(id).innerText = formatado;
+                    }
+                });
         }
 
         function atualizarDestino(coords) {
             pontoDestino = [coords.lng, coords.lat];
             if (markerDestino) markerDestino.remove();
-            
-            markerDestino = new mapboxgl.Marker({ color: '#ffaa00' })
-                .setLngLat(pontoDestino)
-                .addTo(map);
-            
+            markerDestino = new mapboxgl.Marker({ color: '#ffaa00' }).setLngLat(pontoDestino).addTo(map);
             if (pontoOrigem) calcularRota();
         }
 
-        // REVERSE GEOCODING (COORDENADA -> ENDEREÇO)
-        function reverseGeocode(coords, id) {
-            fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${coords.lng},${coords.lat}.json?access_token=${mapboxgl.accessToken}&types=address`)
-                .then(r => r.json())
-                .then(data => {
-                    const endereco = data.features[0]?.place_name || "Endereço não encontrado";
-                    document.getElementById(id).innerText = endereco;
-                });
-        }
-
-        // CÁLCULO DE ROTA USANDO OSRM (PARA NÃO GASTAR CRÉDITOS MAPBOX DIRECTIONS)
         function calcularRota() {
             if (!pontoOrigem || !pontoDestino) return;
-
             const url = `https://router.project-osrm.org/route/v1/driving/${pontoOrigem[0]},${pontoOrigem[1]};${pontoDestino[0]},${pontoDestino[1]}?overview=full&geometries=geojson`;
 
-            fetch(url)
-                .then(r => r.json())
-                .then(data => {
-                    const rota = data.routes[0];
-                    const geojson = {
-                        'type': 'Feature',
-                        'geometry': rota.geometry
-                    };
+            fetch(url).then(r => r.json()).then(data => {
+                const rota = data.routes[0];
+                const geojson = { 'type': 'Feature', 'geometry': rota.geometry };
 
-                    // Desenha a linha no mapa
-                    if (map.getSource('route')) {
-                        map.getSource('route').setData(geojson);
-                    } else {
-                        map.addSource('route', { 'type': 'geojson', 'data': geojson });
-                        map.addLayer({
-                            'id': 'route',
-                            'type': 'line',
-                            'source': 'route',
-                            'layout': { 'line-join': 'round', 'line-cap': 'round' },
-                            'paint': { 'line-color': '#2ea6ff', 'line-width': 5 }
-                        });
-                    }
+                if (map.getSource('route')) {
+                    map.getSource('route').setData(geojson);
+                } else {
+                    map.addSource('route', { 'type': 'geojson', 'data': geojson });
+                    map.addLayer({
+                        'id': 'route', 'type': 'line', 'source': 'route',
+                        'layout': { 'line-join': 'round', 'line-cap': 'round' },
+                        'paint': { 'line-color': '#2ea6ff', 'line-width': 5 }
+                    });
+                }
+                const bounds = new mapboxgl.LngLatBounds(pontoOrigem, pontoOrigem).extend(pontoDestino);
+                map.fitBounds(bounds, { padding: 50 });
 
-                    // Ajusta o zoom
-                    const bounds = new mapboxgl.LngLatBounds(pontoOrigem, pontoOrigem).extend(pontoDestino);
-                    map.fitBounds(bounds, { padding: 50 });
-
-                    // Valores
-                    kmTotal = (rota.distance / 1000).toFixed(1);
-                    valorTotal = (kmTotal * 2.7).toFixed(2);
-                    document.getElementById('price-tag').innerHTML = `Distância: ${kmTotal}km | Total: R$ ${valorTotal}`;
-                    document.getElementById('btn-pedir').disabled = false;
-                });
+                kmTotal = (rota.distance / 1000).toFixed(1);
+                valorTotal = (kmTotal * 2.7).toFixed(2);
+                document.getElementById('price-tag').innerHTML = `Distância: ${kmTotal}km | Total: R$ ${valorTotal}`;
+                document.getElementById('btn-pedir').disabled = false;
+            });
         }
 
         function enviarParaN8N() {
@@ -197,7 +154,6 @@
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    id_solicitacao: idUrl,
                     user_id: tg.initDataUnsafe?.user?.id || "WEB",
                     nome: tg.initDataUnsafe?.user?.first_name || "Usuário",
                     origem: document.getElementById('txt-origem').innerText,
@@ -210,18 +166,20 @@
                     valor_total: valorTotal
                 })
             }).then(() => {
-                alert("✅ Pedido enviado!");
                 tg.close();
             }).catch(() => {
-                alert("Pedido processado!");
                 tg.close();
             });
         }
 
-        // LOCALIZAÇÃO INICIAL
+        // GPS: Define a origem UMA ÚNICA VEZ
         navigator.geolocation.getCurrentPosition(pos => {
-            atualizarOrigem({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-            map.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 15 });
+            const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            pontoOrigem = [coords.lng, coords.lat];
+            if (markerOrigem) markerOrigem.remove();
+            markerOrigem = new mapboxgl.Marker({ color: '#2ea6ff' }).setLngLat(pontoOrigem).addTo(map);
+            reverseGeocode(coords, 'txt-origem');
+            map.flyTo({ center: pontoOrigem, zoom: 15 });
         });
     </script>
 </body>
