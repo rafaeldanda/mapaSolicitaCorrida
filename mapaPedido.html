@@ -21,8 +21,8 @@
         .label { font-size: 10px; font-weight: bold; color: #2ea6ff; text-transform: uppercase; }
         .value { font-size: 13px; color: #333; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         #price-tag { font-size: 18px; font-weight: bold; color: #28a745; text-align: center; margin: 10px 0; }
-        .btn-confirmar { width: 100%; padding: 15px; background-color: #10b981; color: #ffffff; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; }
-        .btn-confirmar:disabled { background-color: #ccc; }
+        .btn-confirmar { width: 100%; padding: 15px; background-color: #10b981; color: #ffffff; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.3s; }
+        .btn-confirmar:disabled { background-color: #ccc; cursor: not-allowed; }
         .geocoder-container { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; z-index: 20; }
     </style>
 </head>
@@ -33,159 +33,167 @@
 
     <div class="panel">
         <div class="address-card">
-            <div class="label">Origem</div>
+            <div class="label">Origem (GPS)</div>
             <div id="txt-origem" class="value">Localizando...</div>
         </div>
         <div class="address-card" style="border-left-color: #ffaa00;">
             <div class="label">Destino</div>
-            <div id="txt-destino" class="value">Use a busca acima 🔍</div>
+            <div id="txt-destino" class="value">Busque o destino acima 🔍</div>
         </div>
-        <div id="price-tag">---</div>
+        <div id="price-tag">Selecione o destino</div>
         <button id="btn-pedir" class="btn-confirmar" disabled onclick="enviarParaN8N()">CONFIRMAR PEDIDO</button>
     </div>
 
+    <script>
+        // TOKEN PÚBLICO
+        mapboxgl.accessToken = 'pk.eyJ1IjoicmFmYWVsZGFuZGEiLCJhIjoiY21tM3V6aHQ3MDR1dTJxcHdiNnhpaHd0ayJ9.w-fjeHmzlyVes75Rg4pJuQ';
 
-<script>
-    mapboxgl.accessToken = 'pk.eyJ1IjoicmFmYWVsZGFuZGEiLCJhIjoiY21tM3V6aHQ3MDR1dTJxcHdiNnhpaHd0ayJ9.w-fjeHmzlyVes75Rg4pJuQ';
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
 
-    const tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.expand();
+        let pontoOrigem = null, pontoDestino = null;
+        let markerOrigem = null, markerDestino = null;
+        let kmTotal = 0, valorTotal = 0;
 
-    let pontoOrigem = null, pontoDestino = null;
-    let markerOrigem = null, markerDestino = null;
-    let kmTotal = 0, valorTotal = 0; // Variáveis globais para o envio
+        // Inicialização do Mapa com Zoom Habilitado
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v12',
+            center: [-51.2177, -30.0346],
+            zoom: 14,
+            interactive: true,
+            dragPan: true,
+            touchZoomRotate: true,
+            doubleClickZoom: true
+        });
 
-    const map = new mapboxgl.Map({
-        container: 'map',
-        style: 'mapbox://styles/mapbox/streets-v12',
-        center: [-51.2177, -30.0346],
-        zoom: 14,
-        interactive: true,
-        dragPan: true,
-        touchZoomRotate: true
-    });
+        // Configuração do Buscador
+        const geocoder = new MapboxGeocoder({
+            accessToken: mapboxgl.accessToken,
+            mapboxgl: mapboxgl,
+            countries: 'br',
+            types: 'address',
+            placeholder: '🔍 Para onde vamos?',
+            marker: false
+        });
 
-    const geocoder = new MapboxGeocoder({
-        accessToken: mapboxgl.accessToken,
-        mapboxgl: mapboxgl,
-        countries: 'br',
-        types: 'address',
-        placeholder: '🔍 Para onde vamos?',
-        marker: false
-    });
+        document.getElementById('geocoder').appendChild(geocoder.onAdd(map));
 
-    document.getElementById('geocoder').appendChild(geocoder.onAdd(map));
+        // Formatação de endereço: Rua, Número - Bairro
+        function formatarEndereco(feat) {
+            const rua = feat.text || "";
+            const num = feat.address || "";
+            const bairro = feat.context?.find(c => c.id.includes('neighborhood'))?.text || 
+                           feat.context?.find(c => c.id.includes('locality'))?.text || "";
+            return num ? `${rua}, ${num} - ${bairro}` : `${rua} - ${bairro}`;
+        }
 
-    geocoder.on('result', (e) => {
-        const coords = { lat: e.result.center[1], lng: e.result.center[0] };
-        document.getElementById('txt-destino').innerText = formatarEndereco(e.result);
-        atualizarDestino(coords);
-    });
+        // Busca por endereço
+        geocoder.on('result', (e) => {
+            const coords = { lat: e.result.center[1], lng: e.result.center[0] };
+            document.getElementById('txt-destino').innerText = formatarEndereco(e.result);
+            atualizarDestino(coords);
+        });
 
-    function formatarEndereco(feat) {
-        const rua = feat.text || "";
-        const num = feat.address || "";
-        const bairro = feat.context?.find(c => c.id.includes('neighborhood'))?.text || "";
-        return num ? `${rua}, ${num} - ${bairro}` : `${rua} - ${bairro}`;
-    }
+        // Clique no mapa (Apenas Destino)
+        map.on('click', (e) => {
+            const coords = { lat: e.lngLat.lat, lng: e.lngLat.lng };
+            atualizarDestino(coords);
+            reverseGeocode(coords, 'txt-destino');
+        });
 
-    function reverseGeocode(coords, id) {
-        fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${coords.lng},${coords.lat}.json?access_token=${mapboxgl.accessToken}&types=address,neighborhood&language=pt`)
-            .then(r => r.json())
-            .then(data => {
-                if (data.features?.length > 0) {
-                    document.getElementById(id).innerText = formatarEndereco(data.features[0]);
+        function reverseGeocode(coords, id) {
+            fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${coords.lng},${coords.lat}.json?access_token=${mapboxgl.accessToken}&types=address,neighborhood&language=pt`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.features?.length > 0) {
+                        document.getElementById(id).innerText = formatarEndereco(data.features[0]);
+                    }
+                });
+        }
+
+        function atualizarDestino(coords) {
+            pontoDestino = [coords.lng, coords.lat];
+            if (markerDestino) markerDestino.remove();
+            markerDestino = new mapboxgl.Marker({ color: '#ffaa00' }).setLngLat(pontoDestino).addTo(map);
+            if (pontoOrigem) calcularRota();
+        }
+
+        function calcularRota() {
+            const url = `https://router.project-osrm.org/route/v1/driving/${pontoOrigem[0]},${pontoOrigem[1]};${pontoDestino[0]},${pontoDestino[1]}?overview=full&geometries=geojson`;
+            fetch(url).then(r => r.json()).then(data => {
+                if (data.routes && data.routes.length > 0) {
+                    const rota = data.routes[0];
+                    const geojson = { 'type': 'Feature', 'geometry': rota.geometry };
+
+                    if (map.getSource('route')) {
+                        map.getSource('route').setData(geojson);
+                    } else {
+                        map.addSource('route', { 'type': 'geojson', 'data': geojson });
+                        map.addLayer({
+                            'id': 'route', 'type': 'line', 'source': 'route',
+                            'paint': { 'line-color': '#2ea6ff', 'line-width': 5 }
+                        });
+                    }
+                    
+                    kmTotal = (rota.distance / 1000).toFixed(1);
+                    valorTotal = (kmTotal * 2.7).toFixed(2);
+                    document.getElementById('price-tag').innerText = `R$ ${valorTotal} (${kmTotal} km)`;
+                    
+                    // ATIVA O BOTÃO
+                    const btn = document.getElementById('btn-pedir');
+                    btn.disabled = false;
+                    btn.style.backgroundColor = "#10b981";
+
+                    const bounds = new mapboxgl.LngLatBounds(pontoOrigem, pontoOrigem).extend(pontoDestino);
+                    map.fitBounds(bounds, { padding: 60 });
                 }
             });
-    }
+        }
 
-    function atualizarDestino(coords) {
-        pontoDestino = [coords.lng, coords.lat];
-        if (markerDestino) markerDestino.remove();
-        markerDestino = new mapboxgl.Marker({ color: '#ffaa00' }).setLngLat(pontoDestino).addTo(map);
-        if (pontoOrigem) calcularRota();
-    }
+        // GPS: Apenas para a Origem (uma única vez)
+        navigator.geolocation.getCurrentPosition(pos => {
+            pontoOrigem = [pos.coords.longitude, pos.coords.latitude];
+            if (markerOrigem) markerOrigem.remove();
+            markerOrigem = new mapboxgl.Marker({ color: '#2ea6ff' }).setLngLat(pontoOrigem).addTo(map);
+            reverseGeocode({ lat: pontoOrigem[1], lng: pontoOrigem[0] }, 'txt-origem');
+            map.flyTo({ center: pontoOrigem, zoom: 15 });
+        });
 
-    function calcularRota() {
-        const url = `https://router.project-osrm.org/route/v1/driving/${pontoOrigem[0]},${pontoOrigem[1]};${pontoDestino[0]},${pontoDestino[1]}?overview=full&geometries=geojson`;
-        fetch(url).then(r => r.json()).then(data => {
-            const rota = data.routes[0];
-            const geojson = { 'type': 'Feature', 'geometry': rota.geometry };
-
-            if (map.getSource('route')) {
-                map.getSource('route').setData(geojson);
-            } else {
-                map.addSource('route', { 'type': 'geojson', 'data': geojson });
-                map.addLayer({
-                    'id': 'route', 'type': 'line', 'source': 'route',
-                    'paint': { 'line-color': '#2ea6ff', 'line-width': 5 }
-                });
-            }
-            
-            kmTotal = (rota.distance / 1000).toFixed(1);
-            valorTotal = (kmTotal * 2.7).toFixed(2);
-            
-            document.getElementById('price-tag').innerText = `R$ ${valorTotal} (${kmTotal} km)`;
-            
-            // ATIVA O BOTÃO AQUI
+        // ENVIO PARA O N8N
+        function enviarParaN8N() {
             const btn = document.getElementById('btn-pedir');
-            btn.disabled = false;
-            btn.style.backgroundColor = "#10b981"; // Garante a cor verde
-            
-            const bounds = new mapboxgl.LngLatBounds(pontoOrigem, pontoOrigem).extend(pontoDestino);
-            map.fitBounds(bounds, { padding: 60 });
-        });
-    }
+            btn.innerText = "ENVIANDO...";
+            btn.disabled = true;
 
-    navigator.geolocation.getCurrentPosition(pos => {
-        pontoOrigem = [pos.coords.longitude, pos.coords.latitude];
-        if (markerOrigem) markerOrigem.remove();
-        markerOrigem = new mapboxgl.Marker({ color: '#2ea6ff' }).setLngLat(pontoOrigem).addTo(map);
-        reverseGeocode({ lat: pontoOrigem[1], lng: pontoOrigem[0] }, 'txt-origem');
-        map.flyTo({ center: pontoOrigem, zoom: 15 });
-    });
+            const payload = {
+                user_id: tg.initDataUnsafe?.user?.id || "WEB",
+                nome: tg.initDataUnsafe?.user?.first_name || "Usuário",
+                origem: document.getElementById('txt-origem').innerText,
+                destino: document.getElementById('txt-destino').innerText,
+                origem_lat: pontoOrigem[1],
+                origem_lng: pontoOrigem[0],
+                destino_lat: pontoDestino[1],
+                destino_lng: pontoDestino[0],
+                distancia_km: kmTotal,
+                valor_total: valorTotal
+            };
 
-    // FUNÇÃO DE ENVIO CORRIGIDA
-    function enviarParaN8N() {
-        const btn = document.getElementById('btn-pedir');
-        btn.innerText = "ENVIANDO...";
-        btn.disabled = true;
-
-        const dadosCorrida = {
-            user_id: tg.initDataUnsafe?.user?.id || "WEB",
-            nome: tg.initDataUnsafe?.user?.first_name || "Usuário",
-            origem: document.getElementById('txt-origem').innerText,
-            destino: document.getElementById('txt-destino').innerText,
-            origem_lat: pontoOrigem[1],
-            origem_lng: pontoOrigem[0],
-            destino_lat: pontoDestino[1],
-            destino_lng: pontoDestino[0],
-            distancia_km: kmTotal,
-            valor_total: valorTotal
-        };
-
-        fetch("https://primary-production-a103.up.railway.app/webhook/4a3ec249-66de-4148-bb53-8f45d18d1eef", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(dadosCorrida)
-        })
-        .then(response => {
-            if (response.ok) {
-                tg.showAlert("✅ Pedido enviado com sucesso!");
-                setTimeout(() => tg.close(), 1000);
-            } else {
-                throw new Error();
-            }
-        })
-        .catch(err => {
-            tg.showAlert("Pedido recebido!"); // Telegram às vezes bloqueia o fetch mas envia
-            tg.close();
-        });
-    }
-</script>
-
-
-    
+            fetch("https://primary-production-a103.up.railway.app/webhook/4a3ec249-66de-4148-bb53-8f45d18d1eef", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            })
+            .then(res => {
+                tg.showAlert("✅ Pedido enviado! Aguarde o motorista.");
+                setTimeout(() => tg.close(), 1500);
+            })
+            .catch(err => {
+                tg.showAlert("Pedido recebido!"); 
+                tg.close();
+            });
+        }
+    </script>
 </body>
 </html>
