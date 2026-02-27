@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Me leva - 1</title>
+    <title>Me leva - 2</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
@@ -48,6 +48,10 @@
         // TOKEN PÚBLICO
         mapboxgl.accessToken = 'pk.eyJ1IjoicmFmYWVsZGFuZGEiLCJhIjoiY21tM3V6aHQ3MDR1dTJxcHdiNnhpaHd0ayJ9.w-fjeHmzlyVes75Rg4pJuQ';
 
+        // Captura o ID da URL (?id=xxxx)
+        const urlParams = new URLSearchParams(window.location.search);
+        const idSolicitacao = urlParams.get('id'); 
+
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
@@ -56,7 +60,6 @@
         let markerOrigem = null, markerDestino = null;
         let kmTotal = 0, valorTotal = 0;
 
-        // Inicialização do Mapa com Zoom Habilitado
         const map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/mapbox/streets-v12',
@@ -68,7 +71,6 @@
             doubleClickZoom: true
         });
 
-        // Configuração do Buscador
         const geocoder = new MapboxGeocoder({
             accessToken: mapboxgl.accessToken,
             mapboxgl: mapboxgl,
@@ -80,7 +82,6 @@
 
         document.getElementById('geocoder').appendChild(geocoder.onAdd(map));
 
-        // Formatação de endereço: Rua, Número - Bairro
         function formatarEndereco(feat) {
             const rua = feat.text || "";
             const num = feat.address || "";
@@ -89,14 +90,13 @@
             return num ? `${rua}, ${num} - ${bairro}` : `${rua} - ${bairro}`;
         }
 
-        // Busca por endereço
         geocoder.on('result', (e) => {
             const coords = { lat: e.result.center[1], lng: e.result.center[0] };
             document.getElementById('txt-destino').innerText = formatarEndereco(e.result);
             atualizarDestino(coords);
         });
 
-        // Clique no mapa (Apenas Destino)
+        // Clique no mapa apenas para Destino
         map.on('click', (e) => {
             const coords = { lat: e.lngLat.lat, lng: e.lngLat.lng };
             atualizarDestino(coords);
@@ -141,7 +141,6 @@
                     valorTotal = (kmTotal * 2.7).toFixed(2);
                     document.getElementById('price-tag').innerText = `R$ ${valorTotal} (${kmTotal} km)`;
                     
-                    // ATIVA O BOTÃO
                     const btn = document.getElementById('btn-pedir');
                     btn.disabled = false;
                     btn.style.backgroundColor = "#10b981";
@@ -152,7 +151,6 @@
             });
         }
 
-        // GPS: Apenas para a Origem (uma única vez)
         navigator.geolocation.getCurrentPosition(pos => {
             pontoOrigem = [pos.coords.longitude, pos.coords.latitude];
             if (markerOrigem) markerOrigem.remove();
@@ -161,13 +159,14 @@
             map.flyTo({ center: pontoOrigem, zoom: 15 });
         });
 
-        // ENVIO PARA O N8N
+        // ENVIO PARA O N8N COM PARAMETRO ID
         function enviarParaN8N() {
             const btn = document.getElementById('btn-pedir');
             btn.innerText = "ENVIANDO...";
             btn.disabled = true;
 
             const payload = {
+                id_solicitacao: idSolicitacao, // Capturado da URL
                 user_id: tg.initDataUnsafe?.user?.id || "WEB",
                 nome: tg.initDataUnsafe?.user?.first_name || "Usuário",
                 origem: document.getElementById('txt-origem').innerText,
@@ -185,16 +184,15 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             })
-            .then(res => {
-                tg.showAlert("✅ Pedido enviado! Aguarde o motorista.");
-                setTimeout(() => tg.close(), 1500);
+            .then(() => {
+                tg.showAlert("✅ Pedido enviado!");
+                setTimeout(() => tg.close(), 1000);
             })
-            .catch(err => {
-                tg.showAlert("Pedido recebido!"); 
+            .catch(() => {
+                // Fecha mesmo se houver erro de CORS, pois o n8n geralmente recebe
                 tg.close();
             });
         }
     </script>
 </body>
 </html>
-
