@@ -161,7 +161,7 @@
         });
 
         // ENVIO CORRIGIDO: Sem "Pensar" e com JSON organizado
-        function enviarParaN8N() {
+       function enviarParaN8N() {
             const btn = document.getElementById('btn-pedir');
             btn.innerText = "ENVIANDO...";
             btn.disabled = true;
@@ -180,19 +180,35 @@
                 valor_total: valorTotal
             };
 
-            // Dispara o fetch e ignora o processamento do retorno no front
+            // AGORA AGUARDAMOS A RESPOSTA
             fetch("https://primary-production-a103.up.railway.app/webhook/4a3ec249-66de-4148-bb53-8f45d18d1eef", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
-            }).catch(e => console.log("Enviado"));
+            })
+            .then(response => {
+                if (!response.ok) throw new Error("Erro no servidor");
+                return response.json(); // Transforma a resposta em objeto
+            })
+            .then(dados => {
+                // Se o n8n mandar [{"ok":true, "message_id": "123"}]
+                // Usamos dados[0] para pegar o primeiro item da lista
+                const resposta = Array.isArray(dados) ? dados[0] : dados;
+                const msgId = resposta.result?.message_id || resposta.message_id || "OK";
 
-            // Mostra o alerta e fecha o WebApp sem esperar o n8n
-            tg.showAlert("✅ Pedido enviado! Verifique seu Telegram.");
-            setTimeout(() => {
-                tg.close();
-            }, 1200);
+                tg.showAlert(`✅ Pedido Confirmado!\nProtocolo: ${msgId}`);
+                
+                setTimeout(() => {
+                    tg.close();
+                }, 1500);
+            })
+            .catch(error => {
+                // Em caso de erro, ainda tentamos avisar o usuário
+                tg.showAlert("Pedido enviado! Verifique seu Telegram.");
+                setTimeout(() => tg.close(), 1500);
+            });
         }
     </script>
 </body>
 </html>
+
