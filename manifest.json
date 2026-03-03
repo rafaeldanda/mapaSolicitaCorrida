@@ -1,8 +1,7 @@
 {
   "name": "Me Leva - Motorista Oficial",
   "short_name": "Me Leva",
-  "description": "Rastreamento em tempo real",
-  "start_url": "index.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2ea6ff",
@@ -11,7 +10,7 @@
       "src": "icon.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ]
 }
