@@ -13,86 +13,103 @@
         .status-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; }
         .led { width: 12px; height: 12px; background-color: #ccc; border-radius: 50%; transition: 0.3s; }
         .led-active { background-color: #28a745; box-shadow: 0 0 10px #28a745; }
-        .log-box { font-size: 0.75rem; color: #666; background: #f9f9f9; padding: 10px; border-radius: 8px; height: 80px; overflow-y: hidden; margin-top: 15px; border: 1px solid #eee; }
-        .id-badge { font-size: 0.8rem; background: #eee; padding: 5px 10px; border-radius: 5px; color: #333; margin-top: 5px; display: inline-block; }
+        
+        /* Botão de Instalação */
+        #btnInstalar { 
+            display: none; /* Começa escondido */
+            width: 100%; padding: 18px; background: #28a745; color: white; 
+            border: none; border-radius: 12px; font-weight: bold; 
+            margin-bottom: 20px; cursor: pointer; 
+        }
+
+        .log-box { font-size: 0.75rem; color: #666; background: #f9f9f9; padding: 10px; border-radius: 8px; height: 60px; overflow: hidden; margin-top: 15px; border: 1px solid #eee; }
+        .id-badge { font-size: 0.8rem; background: #eee; padding: 5px 10px; border-radius: 5px; color: #333; }
     </style>
 </head>
 <body>
+
+    <button id="btnInstalar">📲 INSTALAR APLICATIVO</button>
+
     <div class="ping-box">
         <div class="status-container">
             <div id="led-signal" class="led"></div>
             <span id="txt-status" style="font-size: 0.8rem; font-weight: bold; color: #555;">SISTEMA ATIVO</span>
         </div>
         
-        <p style="margin: 0; color: #888;">Motorista ID: <span id="display-id" class="id-badge">...</span></p>
+        <p style="margin: 0; color: #888;">ID: <span id="display-id" class="id-badge">...</span></p>
         <div id="contador" class="contagem">0</div>
         
-        <div id="log" class="log-box">Iniciando rastreamento...</div>
+        <div id="log" class="log-box">Aguardando sinal...</div>
     </div>
 
     <script>
-        // --- LÓGICA DE IDENTIFICAÇÃO (ID) ---
+        // 1. GESTÃO DO ID (LocalStorage)
         const urlParams = new URLSearchParams(window.location.search);
-        let motoristaId = urlParams.get('id');
-
-        if (motoristaId) {
-            // Se veio na URL, salva no celular
-            localStorage.setItem('me_leva_id', motoristaId);
-        } else {
-            // Se não veio na URL, tenta ler o que foi salvo antes
-            motoristaId = localStorage.getItem('me_leva_id') || "Sem_ID";
-        }
-        
+        let motoristaId = urlParams.get('id') || localStorage.getItem('me_leva_id') || "Sem_ID";
+        if (urlParams.get('id')) localStorage.setItem('me_leva_id', motoristaId);
         document.getElementById('display-id').innerText = motoristaId;
-        // ------------------------------------
 
+        // 2. LÓGICA DE INSTALAÇÃO (PWA)
+        let deferredPrompt;
+        const btn = document.getElementById('btnInstalar');
+
+        // Só mostra o botão se NÃO estiver instalado
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Se estiver no navegador, mostra o botão
+            if (!window.matchMedia('(display-mode: standalone)').matches) {
+                btn.style.display = 'block';
+            }
+        });
+
+        btn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') btn.style.display = 'none';
+                deferredPrompt = null;
+            }
+        });
+
+        // 3. RASTREAMENTO E WEBHOOK
         const n8n_webhook = "https://primary-production-a103.up.railway.app/webhook/91e80c8e-2309-4dd4-8512-f0dc5c4af856";
-        let pingsEnviados = 0;
-        let lastPingTime = 0;
-        const led = document.getElementById('led-signal');
-        const log = document.getElementById('log');
-
-        async function requestWakeLock() {
-            try { if ('wakeLock' in navigator) { await navigator.wakeLock.request('screen'); } } catch (e) {}
-        }
-        requestWakeLock();
+        let pings = 0;
+        let lastPing = 0;
 
         function atualizarUI(msg) {
-            log.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
-            led.classList.add('led-active');
-            setTimeout(() => led.classList.remove('led-active'), 800);
+            document.getElementById('log').innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            document.getElementById('led-signal').classList.add('led-active');
+            setTimeout(() => document.getElementById('led-signal').classList.remove('led-active'), 800);
         }
 
-        async function processarLocalizacao(pos) {
+        async function enviarPosicao(pos) {
             const agora = Date.now();
-            if (agora - lastPingTime < 9000) return; // Trava em ~10 segundos
-
-            lastPingTime = agora;
+            if (agora - lastPing < 9000) return; // Garante intervalo de 10s
+            
+            lastPing = agora;
             const { latitude, longitude } = pos.coords;
 
             try {
-                // Adicionamos o &id= no final da URL
-                const url = `${n8n_webhook}?id=${motoristaId}&lat=${latitude}&lon=${longitude}&ping=${pingsEnviados + 1}`;
-                const response = await fetch(url);
-                if (response.ok) {
-                    pingsEnviados++;
-                    document.getElementById('contador').innerText = pingsEnviados;
-                    atualizarUI(`ID ${motoristaId}: Sinal enviado!`);
+                const res = await fetch(`${n8n_webhook}?id=${motoristaId}&lat=${latitude}&lon=${longitude}&ping=${pings + 1}`);
+                if (res.ok) {
+                    pings++;
+                    document.getElementById('contador').innerText = pings;
+                    atualizarUI("Sinal enviado!");
                 }
-            } catch (err) {
-                atualizarUI("Erro de conexão.");
-            }
+            } catch (e) { atualizarUI("Erro de conexão."); }
         }
 
+        // Inicia GPS
         if ("geolocation" in navigator) {
-            navigator.geolocation.watchPosition(processarLocalizacao, 
-            (err) => { atualizarUI("Erro GPS: " + err.code); }, 
-            { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
+            navigator.geolocation.watchPosition(enviarPosicao, null, { enableHighAccuracy: true });
         }
 
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
-        }
+        // Registro do SW
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
+        
+        // WakeLock para não dormir
+        if ('wakeLock' in navigator) { navigator.wakeLock.request('screen').catch(()=>{}); }
     </script>
 </body>
 </html>
