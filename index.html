@@ -6,65 +6,67 @@
     <title>Me Leva - Motorista</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2ea6ff">
-    
+    <link rel="icon" href="icon.png">
+
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 50px; background: #f0f0f0; margin: 0; }
-        .ping-box { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
-        .contagem { font-size: 3em; color: #2ea6ff; font-weight: bold; margin: 20px 0; }
-        .log { font-size: 0.8em; color: #666; margin-top: 20px; text-align: left; background: #eee; padding: 10px; height: 150px; overflow-y: scroll; border-radius: 8px; }
-        h1 { color: #333; font-size: 1.5rem; }
+        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f7f9; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+        .ping-box { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 350px; width: 90%; }
+        .contagem { font-size: 4em; color: #2ea6ff; font-weight: bold; margin: 15px 0; }
+        #btnInstalar { display: none; width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 20px; box-shadow: 0 4px 12px rgba(40,167,69,0.3); }
+        .log { font-size: 0.75em; color: #777; margin-top: 20px; text-align: left; background: #f9f9f9; padding: 10px; height: 120px; overflow-y: auto; border-radius: 8px; border: 1px solid #eee; }
     </style>
 </head>
 <body>
 
 <div class="ping-box">
-    <h1>Me Leva - Rastreamento</h1>
-    <p>Enviando localização...</p>
+    <h1>Me Leva</h1>
     <div id="contador" class="contagem">0</div>
-    <div id="log" class="log">Aguardando início...</div>
+    <button id="btnInstalar">📲 INSTALAR APLICATIVO</button>
+    <div id="log" class="log">Iniciando...</div>
 </div>
 
 <script>
     const n8n_webhook = "https://primary-production-a103.up.railway.app/webhook/91e80c8e-2309-4dd4-8512-f0dc5c4af856";
     let pingsEnviados = 0;
-    let chatId = "TESTE_SEQUENCIAL";
+    let deferredPrompt;
 
-    // REGISTRO DO SERVICE WORKER (Obrigatório para PWA)
+    // Lógica do Botão PWA
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        document.getElementById('btnInstalar').style.display = 'block';
+    });
+
+    document.getElementById('btnInstalar').addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') document.getElementById('btnInstalar').style.display = 'none';
+            deferredPrompt = null;
+        }
+    });
+
+    // Registro do Service Worker
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js')
-            .then(() => console.log("SW Ativo!"))
-            .catch(err => console.log("Erro no SW:", err));
+        navigator.serviceWorker.register('sw.js').catch(err => console.log("Erro SW:", err));
     }
 
-    function adicionarLog(msg) {
-        const logDiv = document.getElementById('log');
-        logDiv.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
-        logDiv.scrollTop = logDiv.scrollHeight;
-    }
-
+    // Lógica do Webhook
     async function enviarPing() {
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(async (pos) => {
-                const { latitude, longitude } = pos.coords;
                 try {
-                    const response = await fetch(`${n8n_webhook}?chatId=${chatId}&lat=${latitude}&lon=${longitude}&ping=${pingsEnviados + 1}&test=true`);
-                    if (response.ok) {
+                    const res = await fetch(`${n8n_webhook}?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&ping=${pingsEnviados + 1}`);
+                    if (res.ok) {
                         pingsEnviados++;
                         document.getElementById('contador').innerText = pingsEnviados;
-                        adicionarLog(`✅ Localização enviada.`);
                     }
-                } catch (err) {
-                    adicionarLog(`❌ Erro de conexão.`);
-                }
-            }, (err) => {
-                adicionarLog(`⚠️ Erro GPS: ${err.message}`);
-            }, { enableHighAccuracy: true });
+                } catch (e) {}
+            }, null, { enableHighAccuracy: true });
         }
     }
-
     setInterval(enviarPing, 5000);
     enviarPing();
 </script>
-
 </body>
 </html>
