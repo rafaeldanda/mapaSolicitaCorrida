@@ -3,74 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instalador Me Leva</title>
-    
+    <title>Me Leva</title>
     <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#2ea6ff">
-
     <style>
-        .container-instalar { padding: 20px; text-align: center; font-family: sans-serif; }
-        
-        /* Botão de Instalação Customizado */
-        #btnInstalar {
-            display: none; /* Só aparece se o PWA for validado */
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 18px 30px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 10px;
-            cursor: pointer;
-            width: 100%;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-        
-        #status-pwa { font-size: 12px; color: #666; margin-top: 10px; }
+        body { font-family: sans-serif; text-align: center; padding: 50px; }
+        #btnInstalar { display: none; padding: 20px; background: #28a745; color: white; border: none; border-radius: 10px; font-weight: bold; width: 100%; cursor: pointer; }
     </style>
 </head>
 <body>
-
-<div class="container-instalar">
     <button id="btnInstalar">📲 INSTALAR APLICATIVO</button>
-    <div id="status-pwa">Verificando compatibilidade...</div>
-</div>
+    <div id="status">Aguardando validação do Chrome...</div>
 
-<script>
-    let deferredPrompt;
-    const btn = document.getElementById('btnInstalar');
-    const status = document.getElementById('status-pwa');
+    <script>
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('btnInstalar').style.display = 'block';
+            document.getElementById('status').innerText = "✅ Pronto!";
+        });
 
-    // 1. O evento que o Android dispara quando o PWA está OK
-    window.addEventListener('beforeinstallprompt', (e) => {
-        console.log('Evento beforeinstallprompt disparado!');
-        e.preventDefault();
-        deferredPrompt = e;
-        
-        // Se este evento disparar, o botão aparece
-        btn.style.display = 'block';
-        status.innerText = "✅ Pronto para instalar no celular!";
-    });
-
-    // 2. Ação de clique
-    btn.addEventListener('click', async () => {
-        if (deferredPrompt) {
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') {
-                btn.style.display = 'none';
-                status.innerText = "🎉 Instalação iniciada!";
+        document.getElementById('btnInstalar').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt = null;
             }
-            deferredPrompt = null;
-        }
-    });
+        });
 
-    // 3. Registro do Service Worker (Caminho Relativo para o GitHub)
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js')
-            .then(() => status.innerText = "Aguardando validação do Chrome...")
-            .catch(err => status.innerText = "❌ Erro no SW: " + err);
-    }
-</script>
+        // Registro do SW com caminho relativo
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js');
+        }
+    </script>
 </body>
 </html>
