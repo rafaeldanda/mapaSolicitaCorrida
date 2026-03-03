@@ -1,10 +1,4 @@
-self.addEventListener('install', (event) => {
-    self.skipWaiting();
-});
-
-self.addEventListener('fetch', (event) => {
-    // O Chrome mobile exige que o fetch seja interceptado
-    event.respondWith(
-        fetch(event.request).catch(() => new Response("Offline"))
-    );
+self.addEventListener('install', (e) => self.skipWaiting());
+self.addEventListener('fetch', (e) => {
+    e.respondWith(fetch(e.request).catch(() => new Response("Offline")));
 });
