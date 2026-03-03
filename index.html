@@ -13,7 +13,8 @@
         .status-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; }
         .led { width: 12px; height: 12px; background-color: #ccc; border-radius: 50%; transition: 0.3s; }
         .led-active { background-color: #28a745; box-shadow: 0 0 10px #28a745; }
-        .log-box { font-size: 0.75rem; color: #666; background: #f9f9f9; padding: 10px; border-radius: 8px; height: 60px; overflow-y: hidden; margin-top: 15px; border: 1px solid #eee; }
+        .log-box { font-size: 0.75rem; color: #666; background: #f9f9f9; padding: 10px; border-radius: 8px; height: 80px; overflow-y: hidden; margin-top: 15px; border: 1px solid #eee; }
+        .id-badge { font-size: 0.8rem; background: #eee; padding: 5px 10px; border-radius: 5px; color: #333; margin-top: 5px; display: inline-block; }
     </style>
 </head>
 <body>
@@ -22,26 +23,37 @@
             <div id="led-signal" class="led"></div>
             <span id="txt-status" style="font-size: 0.8rem; font-weight: bold; color: #555;">SISTEMA ATIVO</span>
         </div>
-        <p style="margin: 0; color: #888;">Pings Enviados</p>
+        
+        <p style="margin: 0; color: #888;">Motorista ID: <span id="display-id" class="id-badge">...</span></p>
         <div id="contador" class="contagem">0</div>
+        
         <div id="log" class="log-box">Iniciando rastreamento...</div>
     </div>
 
     <script>
+        // --- LÓGICA DE IDENTIFICAÇÃO (ID) ---
+        const urlParams = new URLSearchParams(window.location.search);
+        let motoristaId = urlParams.get('id');
+
+        if (motoristaId) {
+            // Se veio na URL, salva no celular
+            localStorage.setItem('me_leva_id', motoristaId);
+        } else {
+            // Se não veio na URL, tenta ler o que foi salvo antes
+            motoristaId = localStorage.getItem('me_leva_id') || "Sem_ID";
+        }
+        
+        document.getElementById('display-id').innerText = motoristaId;
+        // ------------------------------------
+
         const n8n_webhook = "https://primary-production-a103.up.railway.app/webhook/91e80c8e-2309-4dd4-8512-f0dc5c4af856";
         let pingsEnviados = 0;
         let lastPingTime = 0;
         const led = document.getElementById('led-signal');
         const log = document.getElementById('log');
 
-        // 1. Manter a tela/processamento ativo (Wake Lock)
-        let wakeLock = null;
         async function requestWakeLock() {
-            try {
-                if ('wakeLock' in navigator) {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                }
-            } catch (err) { console.log("WakeLock erro: " + err.message); }
+            try { if ('wakeLock' in navigator) { await navigator.wakeLock.request('screen'); } } catch (e) {}
         }
         requestWakeLock();
 
@@ -53,34 +65,29 @@
 
         async function processarLocalizacao(pos) {
             const agora = Date.now();
-            // Garante o intervalo de aproximadamente 10 segundos
-            if (agora - lastPingTime < 9000) return; 
+            if (agora - lastPingTime < 9000) return; // Trava em ~10 segundos
 
             lastPingTime = agora;
             const { latitude, longitude } = pos.coords;
 
             try {
-                const url = `${n8n_webhook}?lat=${latitude}&lon=${longitude}&ping=${pingsEnviados + 1}`;
+                // Adicionamos o &id= no final da URL
+                const url = `${n8n_webhook}?id=${motoristaId}&lat=${latitude}&lon=${longitude}&ping=${pingsEnviados + 1}`;
                 const response = await fetch(url);
                 if (response.ok) {
                     pingsEnviados++;
                     document.getElementById('contador').innerText = pingsEnviados;
-                    atualizarUI("Sinal enviado!");
+                    atualizarUI(`ID ${motoristaId}: Sinal enviado!`);
                 }
             } catch (err) {
                 atualizarUI("Erro de conexão.");
             }
         }
 
-        // 2. Rastreamento contínuo (Melhor para segundo plano)
         if ("geolocation" in navigator) {
             navigator.geolocation.watchPosition(processarLocalizacao, 
-            (err) => { atualizarUI("Erro GPS: " + err.message); }, 
-            { 
-                enableHighAccuracy: true, 
-                maximumAge: 0, 
-                timeout: 10000 
-            });
+            (err) => { atualizarUI("Erro GPS: " + err.code); }, 
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
         }
 
         if ('serviceWorker' in navigator) {
