@@ -1,14 +1,6 @@
-self.addEventListener('install', (event) => {
-    self.skipWaiting();
-});
+self.addEventListener('install', (e) => self.skipWaiting());
+self.addEventListener('activate', (e) => e.waitUntil(clients.claim()));
 
-self.addEventListener('activate', (event) => {
-    event.waitUntil(clients.claim());
-});
-
-// Sem esse evento de fetch, o botão não aparece
-self.addEventListener('fetch', (event) => {
-    event.respondWith(
-        fetch(event.request).catch(() => new Response("Offline"))
-    );
+self.addEventListener('fetch', (e) => {
+    e.respondWith(fetch(e.request).catch(() => new Response("Offline")));
 });
