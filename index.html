@@ -3,87 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Me Leva - Motorista</title>
+    <title>Instalador Me Leva</title>
+    
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#2ea6ff">
-    <link rel="icon" href="./icon.png">
 
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f7f9; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-        .ping-box { background: white; padding: 30px; border-radius: 20px; shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 350px; }
-        .contagem { font-size: 4em; color: #2ea6ff; font-weight: bold; margin: 15px 0; }
+        .container-instalar { padding: 20px; text-align: center; font-family: sans-serif; }
         
-        /* Estilo do Botão de Instalação */
-        #btnInstalar { 
-            display: none; /* Começa oculto */
-            width: 100%; 
-            padding: 15px; 
-            background: #28a745; 
-            color: white; 
-            border: none; 
-            border-radius: 12px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            margin-top: 20px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        /* Botão de Instalação Customizado */
+        #btnInstalar {
+            display: none; /* Só aparece se o PWA for validado */
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 18px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
+        
+        #status-pwa { font-size: 12px; color: #666; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-<div class="ping-box">
-    <h1>Me Leva</h1>
-    <div id="contador" class="contagem">0</div>
-    
-    <button id="btnInstalar">📲 BAIXAR APLICATIVO</button>
-    
-    <div id="log" style="font-size: 0.7em; margin-top: 15px; color: #777;">Aguardando...</div>
+<div class="container-instalar">
+    <button id="btnInstalar">📲 INSTALAR APLICATIVO</button>
+    <div id="status-pwa">Verificando compatibilidade...</div>
 </div>
 
 <script>
     let deferredPrompt;
-    const btnInstalar = document.getElementById('btnInstalar');
+    const btn = document.getElementById('btnInstalar');
+    const status = document.getElementById('status-pwa');
 
-    // 1. Escuta o evento de instalação do Chrome
+    // 1. O evento que o Android dispara quando o PWA está OK
     window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault(); // Previne o banner padrão
-        deferredPrompt = e;  // Guarda o evento
-        btnInstalar.style.display = 'block'; // Mostra o seu botão
+        console.log('Evento beforeinstallprompt disparado!');
+        e.preventDefault();
+        deferredPrompt = e;
+        
+        // Se este evento disparar, o botão aparece
+        btn.style.display = 'block';
+        status.innerText = "✅ Pronto para instalar no celular!";
     });
 
-    // 2. Ação ao clicar no botão
-    btnInstalar.addEventListener('click', async () => {
+    // 2. Ação de clique
+    btn.addEventListener('click', async () => {
         if (deferredPrompt) {
-            deferredPrompt.prompt(); // Abre a janelinha de instalação
+            deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
             if (outcome === 'accepted') {
-                btnInstalar.style.display = 'none';
+                btn.style.display = 'none';
+                status.innerText = "🎉 Instalação iniciada!";
             }
             deferredPrompt = null;
         }
     });
 
-    // Registro do Service Worker (Caminho relativo para o Git)
+    // 3. Registro do Service Worker (Caminho Relativo para o GitHub)
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js')
-            .then(() => console.log("SW registrado!"))
-            .catch(err => console.log("Erro SW:", err));
+            .then(() => status.innerText = "Aguardando validação do Chrome...")
+            .catch(err => status.innerText = "❌ Erro no SW: " + err);
     }
-
-    // Lógica do seu Webhook (mantida)
-    const n8n_webhook = "https://primary-production-a103.up.railway.app/webhook/91e80c8e-2309-4dd4-8512-f0dc5c4af856";
-    let pings = 0;
-    async function enviarPing() {
-        if ("geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition(async (pos) => {
-                try {
-                    const res = await fetch(`${n8n_webhook}?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&ping=${pings + 1}`);
-                    if (res.ok) { pings++; document.getElementById('contador').innerText = pings; }
-                } catch (e) {}
-            }, null, { enableHighAccuracy: true });
-        }
-    }
-    setInterval(enviarPing, 5000);
 </script>
 </body>
 </html>
