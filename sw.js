@@ -1,27 +1,15 @@
-const CACHE_NAME = 'motorista-v1';
-const ASSETS = [
-  'index.html',
-  'manifest.json'
-];
+const CACHE_NAME = 'me-leva-v1';
 
-// Instala o Service Worker e guarda arquivos básicos no cache
+// Instala o Service Worker e limpa caches antigos
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(ASSETS))
-      .then(() => self.skipWaiting())
-  );
+    self.skipWaiting();
 });
 
-// Ativa e remove caches antigos
-self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
-});
-
-// Responde às requisições mesmo se estiver offline
+// Essencial para o Chrome liberar o botão de "Instalar"
 self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => response || fetch(event.request))
-  );
+    event.respondWith(
+        fetch(event.request).catch(() => {
+            return new Response("Você está offline, mas o app continua tentando conectar.");
+        })
+    );
 });
