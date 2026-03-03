@@ -90,8 +90,8 @@
 
         async function enviarPosicao(pos) {
             const agora = Date.now();
-            // Filtro para garantir o intervalo de 30 segundos
-            if (agora - lastPing < 29500) return; 
+            // Filtro para garantir o intervalo de 1 minuto
+            if (agora - lastPing < 59500) return; 
             
             lastPing = agora;
             const { latitude, longitude } = pos.coords;
@@ -130,4 +130,5 @@
     </script>
 </body>
 </html>
+
 
