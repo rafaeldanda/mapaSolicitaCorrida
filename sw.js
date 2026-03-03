@@ -1,18 +1,10 @@
-const CACHE_NAME = 'meleva-v1';
-
 self.addEventListener('install', (event) => {
     self.skipWaiting();
 });
 
-self.addEventListener('activate', (event) => {
-    event.waitUntil(clients.claim());
-});
-
-// Essencial para o Chrome habilitar o botão de instalação
 self.addEventListener('fetch', (event) => {
+    // O Chrome mobile exige que o fetch seja interceptado
     event.respondWith(
-        fetch(event.request).catch(() => {
-            return new Response("Offline");
-        })
+        fetch(event.request).catch(() => new Response("Offline"))
     );
 });
