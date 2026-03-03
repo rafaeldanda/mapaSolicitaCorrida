@@ -4,16 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Me Leva - Motorista</title>
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#2ea6ff">
-    <link rel="icon" href="icon.png">
+    <link rel="icon" href="./icon.png">
 
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f7f9; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
-        .ping-box { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 350px; width: 90%; }
+        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f7f9; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .ping-box { background: white; padding: 30px; border-radius: 20px; shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 350px; }
         .contagem { font-size: 4em; color: #2ea6ff; font-weight: bold; margin: 15px 0; }
-        #btnInstalar { display: none; width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 20px; box-shadow: 0 4px 12px rgba(40,167,69,0.3); }
-        .log { font-size: 0.75em; color: #777; margin-top: 20px; text-align: left; background: #f9f9f9; padding: 10px; height: 120px; overflow-y: auto; border-radius: 8px; border: 1px solid #eee; }
+        
+        /* Estilo do Botão de Instalação */
+        #btnInstalar { 
+            display: none; /* Começa oculto */
+            width: 100%; 
+            padding: 15px; 
+            background: #28a745; 
+            color: white; 
+            border: none; 
+            border-radius: 12px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-top: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
@@ -21,52 +34,56 @@
 <div class="ping-box">
     <h1>Me Leva</h1>
     <div id="contador" class="contagem">0</div>
-    <button id="btnInstalar">📲 INSTALAR APLICATIVO</button>
-    <div id="log" class="log">Iniciando...</div>
+    
+    <button id="btnInstalar">📲 BAIXAR APLICATIVO</button>
+    
+    <div id="log" style="font-size: 0.7em; margin-top: 15px; color: #777;">Aguardando...</div>
 </div>
 
 <script>
-    const n8n_webhook = "https://primary-production-a103.up.railway.app/webhook/91e80c8e-2309-4dd4-8512-f0dc5c4af856";
-    let pingsEnviados = 0;
     let deferredPrompt;
+    const btnInstalar = document.getElementById('btnInstalar');
 
-    // Lógica do Botão PWA
+    // 1. Escuta o evento de instalação do Chrome
     window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        document.getElementById('btnInstalar').style.display = 'block';
+        e.preventDefault(); // Previne o banner padrão
+        deferredPrompt = e;  // Guarda o evento
+        btnInstalar.style.display = 'block'; // Mostra o seu botão
     });
 
-    document.getElementById('btnInstalar').addEventListener('click', async () => {
+    // 2. Ação ao clicar no botão
+    btnInstalar.addEventListener('click', async () => {
         if (deferredPrompt) {
-            deferredPrompt.prompt();
+            deferredPrompt.prompt(); // Abre a janelinha de instalação
             const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') document.getElementById('btnInstalar').style.display = 'none';
+            if (outcome === 'accepted') {
+                btnInstalar.style.display = 'none';
+            }
             deferredPrompt = null;
         }
     });
 
-    // Registro do Service Worker
+    // Registro do Service Worker (Caminho relativo para o Git)
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').catch(err => console.log("Erro SW:", err));
+        navigator.serviceWorker.register('./sw.js')
+            .then(() => console.log("SW registrado!"))
+            .catch(err => console.log("Erro SW:", err));
     }
 
-    // Lógica do Webhook
+    // Lógica do seu Webhook (mantida)
+    const n8n_webhook = "https://primary-production-a103.up.railway.app/webhook/91e80c8e-2309-4dd4-8512-f0dc5c4af856";
+    let pings = 0;
     async function enviarPing() {
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(async (pos) => {
                 try {
-                    const res = await fetch(`${n8n_webhook}?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&ping=${pingsEnviados + 1}`);
-                    if (res.ok) {
-                        pingsEnviados++;
-                        document.getElementById('contador').innerText = pingsEnviados;
-                    }
+                    const res = await fetch(`${n8n_webhook}?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&ping=${pings + 1}`);
+                    if (res.ok) { pings++; document.getElementById('contador').innerText = pings; }
                 } catch (e) {}
             }, null, { enableHighAccuracy: true });
         }
     }
     setInterval(enviarPing, 5000);
-    enviarPing();
 </script>
 </body>
 </html>
