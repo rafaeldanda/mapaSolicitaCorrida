@@ -9,14 +9,10 @@
     <style>
         body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f7f9; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
         .ping-box { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 350px; }
-        
         .contagem { font-size: 4em; color: #2ea6ff; font-weight: bold; margin: 10px 0; }
-        
-        /* Luz de sinal */
         .status-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; }
         .led { width: 12px; height: 12px; background-color: #ccc; border-radius: 50%; transition: 0.3s; }
         .led-active { background-color: #28a745; box-shadow: 0 0 10px #28a745; }
-        
         .log-box { font-size: 0.75rem; color: #666; background: #f9f9f9; padding: 10px; border-radius: 8px; height: 60px; overflow-y: hidden; margin-top: 15px; border: 1px solid #eee; }
     </style>
 </head>
@@ -26,58 +22,67 @@
             <div id="led-signal" class="led"></div>
             <span id="txt-status" style="font-size: 0.8rem; font-weight: bold; color: #555;">SISTEMA ATIVO</span>
         </div>
-        
         <p style="margin: 0; color: #888;">Pings Enviados</p>
         <div id="contador" class="contagem">0</div>
-        
-        <div id="log" class="log-box">Aguardando GPS...</div>
+        <div id="log" class="log-box">Iniciando rastreamento...</div>
     </div>
 
     <script>
         const n8n_webhook = "https://primary-production-a103.up.railway.app/webhook/91e80c8e-2309-4dd4-8512-f0dc5c4af856";
         let pingsEnviados = 0;
+        let lastPingTime = 0;
         const led = document.getElementById('led-signal');
         const log = document.getElementById('log');
 
-        function atualizarUI(msg, sucesso = true) {
+        // 1. Manter a tela/processamento ativo (Wake Lock)
+        let wakeLock = null;
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                }
+            } catch (err) { console.log("WakeLock erro: " + err.message); }
+        }
+        requestWakeLock();
+
+        function atualizarUI(msg) {
             log.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
-            if (sucesso) {
-                led.classList.add('led-active');
-                setTimeout(() => led.classList.remove('led-active'), 1000);
+            led.classList.add('led-active');
+            setTimeout(() => led.classList.remove('led-active'), 800);
+        }
+
+        async function processarLocalizacao(pos) {
+            const agora = Date.now();
+            // Garante o intervalo de aproximadamente 10 segundos
+            if (agora - lastPingTime < 9000) return; 
+
+            lastPingTime = agora;
+            const { latitude, longitude } = pos.coords;
+
+            try {
+                const url = `${n8n_webhook}?lat=${latitude}&lon=${longitude}&ping=${pingsEnviados + 1}`;
+                const response = await fetch(url);
+                if (response.ok) {
+                    pingsEnviados++;
+                    document.getElementById('contador').innerText = pingsEnviados;
+                    atualizarUI("Sinal enviado!");
+                }
+            } catch (err) {
+                atualizarUI("Erro de conexão.");
             }
         }
 
-        async function enviarPing() {
-            if ("geolocation" in navigator) {
-                navigator.geolocation.getCurrentPosition(async (pos) => {
-                    const { latitude, longitude } = pos.coords;
-                    try {
-                        const url = `${n8n_webhook}?lat=${latitude}&lon=${longitude}&ping=${pingsEnviados + 1}`;
-                        const response = await fetch(url);
-                        
-                        if (response.ok) {
-                            pingsEnviados++;
-                            document.getElementById('contador').innerText = pingsEnviados;
-                            atualizarUI("Localização enviada com sucesso!");
-                        } else {
-                            atualizarUI("Erro ao conectar no servidor.", false);
-                        }
-                    } catch (err) {
-                        atualizarUI("Erro de rede. Tentando novamente...", false);
-                    }
-                }, (err) => {
-                    atualizarUI("⚠️ GPS bloqueado ou inativo.", false);
-                }, { enableHighAccuracy: true });
-            }
+        // 2. Rastreamento contínuo (Melhor para segundo plano)
+        if ("geolocation" in navigator) {
+            navigator.geolocation.watchPosition(processarLocalizacao, 
+            (err) => { atualizarUI("Erro GPS: " + err.message); }, 
+            { 
+                enableHighAccuracy: true, 
+                maximumAge: 0, 
+                timeout: 10000 
+            });
         }
 
-        // Configurado para 10 segundos (10.000 milissegundos)
-        setInterval(enviarPing, 10000);
-        
-        // Envia o primeiro sinal assim que abre
-        enviarPing();
-
-        // Registro do Service Worker
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js');
         }
