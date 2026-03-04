@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acompanhamento Mapbox - Real Time</title>
+    <title>Acompanhamento de Corrida - Mapbox</title>
     
     <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
     <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
@@ -12,76 +12,77 @@
         body { margin: 0; padding: 0; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; }
         
-        /* Overlay discreto apenas para feedback visual */
         .status-overlay {
             position: absolute; top: 10px; right: 10px; z-index: 1;
-            background: rgba(0, 0, 0, 0.6); color: white;
-            padding: 5px 12px; border-radius: 20px; font-size: 11px;
-            font-family: sans-serif; pointer-events: none;
+            background: rgba(0, 0, 0, 0.7); color: white;
+            padding: 6px 15px; border-radius: 20px; font-size: 12px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            pointer-events: none;
         }
     </style>
 </head>
 <body>
 
-<div class="status-overlay" id="status">Conectando...</div>
+<div class="status-overlay" id="status">Localizando corrida...</div>
 <div id="map"></div>
 
 <script>
     // --- CONFIGURAÇÕES ---
     const MAPBOX_TOKEN = 'pk.eyJ1IjoicmFmYWVsZGFuZGEiLCJhIjoiY21tM3V6aHQ3MDR1dTJxcHdiNnhpaHd0ayJ9.w-fjeHmzlyVes75Rg4pJuQ';
-    const N8N_URL = 'https://seu-n8n.com/webhook/localizacao';
-    const ID_MOTORISTA = 'MOT_789'; // Este ID viria da sua URL (ex: ?id=xxx)
+    const N8N_URL = 'https://primary-production-a103.up.railway.app/webhook/46695379-11d7-40f9-beb7-4bd63ea7ee5a';
+    
+    // Pega o ID da corrida da URL (?id=xxxx) ou usa um padrão
+    const urlParams = new URLSearchParams(window.location.search);
+    const ID_CORRIDA = urlParams.get('id') || 'CORRIDA_TESTE_001'; 
+    
     const INTERVALO_BUSCA = 30000; // 30 segundos
 
     mapboxgl.accessToken = MAPBOX_TOKEN;
 
-    // Inicializa o Mapa
     const map = new mapboxgl.Map({
         container: 'map',
         style: 'mapbox://styles/mapbox/streets-v12',
-        center: [-46.6333, -23.5505], // Inicial (SP)
+        center: [-46.6333, -23.5505],
         zoom: 15,
-        attributionControl: false // Deixa o mapa mais limpo
+        attributionControl: false
     });
 
-    // Criar o marcador (ícone do motorista)
-    // Você pode trocar a cor ou usar uma imagem de carro
-    const marker = new mapboxgl.Marker({ color: '#3fb1ce' })
+    // Marcador estilizado (ícone azul de transporte)
+    const marker = new mapboxgl.Marker({ color: '#007bff' })
         .setLngLat([-46.6333, -23.5505])
         .addTo(map);
 
-    // Função de AJAX para buscar no N8N/MongoDB
     async function buscarNovaPosicao() {
         try {
-            document.getElementById('status').innerText = "Atualizando...";
+            // Agora enviamos 'id_corrida' para o seu Webhook do n8n
+            const response = await fetch(`${N8N_URL}?id_corrida=${ID_CORRIDA}`);
             
-            // Envia o parâmetro 'id' via Query String
-            const response = await fetch(`${N8N_URL}?id=${ID_MOTORISTA}`);
+            if (!response.ok) throw new Error("Erro na rede");
+            
             const data = await response.json();
 
             if (data.lat && data.lng) {
                 const novaPos = [parseFloat(data.lng), parseFloat(data.lat)];
 
-                // Move o marcador e centraliza o mapa
                 marker.setLngLat(novaPos);
                 map.flyTo({ 
                     center: novaPos, 
                     speed: 0.8, 
-                    curve: 1, 
                     essential: true 
                 });
 
-                document.getElementById('status').innerText = "Motorista Online";
+                document.getElementById('status').innerText = "Em percurso";
+            } else {
+                document.getElementById('status').innerText = "Aguardando sinal...";
             }
         } catch (error) {
             console.error("Erro na busca:", error);
-            document.getElementById('status').innerText = "Erro na conexão";
+            document.getElementById('status').innerText = "Offline";
         }
     }
 
-    // Inicia o ciclo de acompanhamento
     map.on('load', () => {
-        buscarNovaPosicao(); // Primeira busca imediata
+        buscarNovaPosicao();
         setInterval(buscarNovaPosicao, INTERVALO_BUSCA);
     });
 </script>
