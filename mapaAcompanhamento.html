@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acompanhamento de Corrida</title>
+    <style>
+        /* Ocupa a tela inteira, sem margens ou botões */
+        html, body, #map { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=SUA_CHAVE_GOOGLE&callback=initMap" async defer></script>
+
+<script>
+    let map;
+    let marker;
+    const MOTORISTA_ID = "MOT_123"; // ID da corrida ou motorista
+    const N8N_GET_URL = "https://seu-n8n.com/webhook/buscar-posicao?id=" + MOTORISTA_ID;
+    const POLLING_INTERVAL = 30000; // Consulta o banco a cada 30 segundos
+
+    async function initMap() {
+        // Posição inicial (Pode ser a do passageiro ou uma padrão)
+        const initialPos = { lat: -23.5505, lng: -46.6333 };
+
+        map = new google.maps.Map(document.getElementById("map"), {
+            zoom: 16,
+            center: initialPos,
+            disableDefaultUI: true, // Remove todos os botões do Google (zoom, satélite, etc)
+            styles: [ // Estilo opcional: Deixa o mapa mais "limpo" para apps de transporte
+                { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] }
+            ]
+        });
+
+        // Ícone do carrinho
+        marker = new google.maps.Marker({
+            position: initialPos,
+            map: map,
+            icon: {
+                url: "https://cdn-icons-png.flaticon.com/512/744/744465.png", // Ícone de carro
+                scaledSize: new google.maps.Size(40, 40),
+                anchor: new google.maps.Point(20, 20)
+            },
+            optimized: false
+        });
+
+        // Inicia o ciclo de atualização automática
+        atualizarPosicaoNoMapa();
+        setInterval(atualizarPosicaoNoMapa, POLLING_INTERVAL);
+    }
+
+    async function atualizarPosicaoNoMapa() {
+        try {
+            // O N8N deve retornar um JSON: { "lat": -23.5, "lng": -46.6 }
+            const response = await fetch(N8N_GET_URL);
+            const dados = await response.json();
+
+            if (dados.lat && dados.lng) {
+                const novaPos = { lat: parseFloat(dados.lat), lng: parseFloat(dados.lng) };
+
+                // Move o marcador suavemente
+                marker.setPosition(novaPos);
+                
+                // Centraliza o mapa no motorista suavemente
+                map.panTo(novaPos);
+            }
+        } catch (error) {
+            console.error("Erro ao buscar posição do MongoDB:", error);
+        }
+    }
+</script>
+</body>
+</html>
