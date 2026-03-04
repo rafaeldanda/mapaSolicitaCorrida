@@ -31,10 +31,13 @@
     const MAPBOX_TOKEN = 'pk.eyJ1IjoicmFmYWVsZGFuZGEiLCJhIjoiY21tM3V6aHQ3MDR1dTJxcHdiNnhpaHd0ayJ9.w-fjeHmzlyVes75Rg4pJuQ';
     const N8N_URL = 'https://primary-production-a103.up.railway.app/webhook/46695379-11d7-40f9-beb7-4bd63ea7ee5a';
     
-    // Pega o ID da corrida da URL (?id=xxxx) ou usa um padrão
+    // CORREÇÃO: Captura o parâmetro 'id_corrida' da URL
     const urlParams = new URLSearchParams(window.location.search);
-    const ID_CORRIDA = urlParams.get('id') || 'CORRIDA_TESTE_001'; 
+    const ID_CORRIDA = urlParams.get('id_corrida') || 'CORRIDA_TESTE_001'; 
     
+    // Log para você ver no F12 se o ID está certo
+    console.log("ID da Corrida Ativo:", ID_CORRIDA);
+
     const INTERVALO_BUSCA = 30000; // 30 segundos
 
     mapboxgl.accessToken = MAPBOX_TOKEN;
@@ -47,20 +50,22 @@
         attributionControl: false
     });
 
-    // Marcador estilizado (ícone azul de transporte)
     const marker = new mapboxgl.Marker({ color: '#007bff' })
         .setLngLat([-46.6333, -23.5505])
         .addTo(map);
 
     async function buscarNovaPosicao() {
         try {
-            // Agora enviamos 'id_corrida' para o seu Webhook do n8n
+            document.getElementById('status').innerText = "Atualizando...";
+            
+            // Enviando o ID correto para o N8N
             const response = await fetch(`${N8N_URL}?id_corrida=${ID_CORRIDA}`);
             
             if (!response.ok) throw new Error("Erro na rede");
             
             const data = await response.json();
 
+            // O N8N deve retornar { "lat": -23.xxx, "lng": -46.xxx }
             if (data.lat && data.lng) {
                 const novaPos = [parseFloat(data.lng), parseFloat(data.lat)];
 
@@ -71,13 +76,13 @@
                     essential: true 
                 });
 
-                document.getElementById('status').innerText = "Em percurso";
+                document.getElementById('status').innerText = "Motorista em percurso";
             } else {
-                document.getElementById('status').innerText = "Aguardando sinal...";
+                document.getElementById('status').innerText = "Aguardando sinal do GPS...";
             }
         } catch (error) {
             console.error("Erro na busca:", error);
-            document.getElementById('status').innerText = "Offline";
+            document.getElementById('status').innerText = "Erro de conexão";
         }
     }
 
