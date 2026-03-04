@@ -3,74 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acompanhamento de Corrida</title>
+    <title>Acompanhamento Mapbox - Real Time</title>
+    
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
+
     <style>
-        /* Ocupa a tela inteira, sem margens ou botões */
-        html, body, #map { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        
+        /* Overlay discreto apenas para feedback visual */
+        .status-overlay {
+            position: absolute; top: 10px; right: 10px; z-index: 1;
+            background: rgba(0, 0, 0, 0.6); color: white;
+            padding: 5px 12px; border-radius: 20px; font-size: 11px;
+            font-family: sans-serif; pointer-events: none;
+        }
     </style>
 </head>
 <body>
 
+<div class="status-overlay" id="status">Conectando...</div>
 <div id="map"></div>
 
-<script src="https://maps.googleapis.com/maps/api/js?key=SUA_CHAVE_GOOGLE&callback=initMap" async defer></script>
-
 <script>
-    let map;
-    let marker;
-    const MOTORISTA_ID = "MOT_123"; // ID da corrida ou motorista
-    const N8N_GET_URL = "https://seu-n8n.com/webhook/buscar-posicao?id=" + MOTORISTA_ID;
-    const POLLING_INTERVAL = 30000; // Consulta o banco a cada 30 segundos
+    // --- CONFIGURAÇÕES ---
+    const MAPBOX_TOKEN = 'pk.eyJ1IjoicmFmYWVsZGFuZGEiLCJhIjoiY21tM3V6aHQ3MDR1dTJxcHdiNnhpaHd0ayJ9.w-fjeHmzlyVes75Rg4pJuQ';
+    const N8N_URL = 'https://seu-n8n.com/webhook/localizacao';
+    const ID_MOTORISTA = 'MOT_789'; // Este ID viria da sua URL (ex: ?id=xxx)
+    const INTERVALO_BUSCA = 30000; // 30 segundos
 
-    async function initMap() {
-        // Posição inicial (Pode ser a do passageiro ou uma padrão)
-        const initialPos = { lat: -23.5505, lng: -46.6333 };
+    mapboxgl.accessToken = MAPBOX_TOKEN;
 
-        map = new google.maps.Map(document.getElementById("map"), {
-            zoom: 16,
-            center: initialPos,
-            disableDefaultUI: true, // Remove todos os botões do Google (zoom, satélite, etc)
-            styles: [ // Estilo opcional: Deixa o mapa mais "limpo" para apps de transporte
-                { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] }
-            ]
-        });
+    // Inicializa o Mapa
+    const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [-46.6333, -23.5505], // Inicial (SP)
+        zoom: 15,
+        attributionControl: false // Deixa o mapa mais limpo
+    });
 
-        // Ícone do carrinho
-        marker = new google.maps.Marker({
-            position: initialPos,
-            map: map,
-            icon: {
-                url: "https://cdn-icons-png.flaticon.com/512/744/744465.png", // Ícone de carro
-                scaledSize: new google.maps.Size(40, 40),
-                anchor: new google.maps.Point(20, 20)
-            },
-            optimized: false
-        });
+    // Criar o marcador (ícone do motorista)
+    // Você pode trocar a cor ou usar uma imagem de carro
+    const marker = new mapboxgl.Marker({ color: '#3fb1ce' })
+        .setLngLat([-46.6333, -23.5505])
+        .addTo(map);
 
-        // Inicia o ciclo de atualização automática
-        atualizarPosicaoNoMapa();
-        setInterval(atualizarPosicaoNoMapa, POLLING_INTERVAL);
-    }
-
-    async function atualizarPosicaoNoMapa() {
+    // Função de AJAX para buscar no N8N/MongoDB
+    async function buscarNovaPosicao() {
         try {
-            // O N8N deve retornar um JSON: { "lat": -23.5, "lng": -46.6 }
-            const response = await fetch(N8N_GET_URL);
-            const dados = await response.json();
+            document.getElementById('status').innerText = "Atualizando...";
+            
+            // Envia o parâmetro 'id' via Query String
+            const response = await fetch(`${N8N_URL}?id=${ID_MOTORISTA}`);
+            const data = await response.json();
 
-            if (dados.lat && dados.lng) {
-                const novaPos = { lat: parseFloat(dados.lat), lng: parseFloat(dados.lng) };
+            if (data.lat && data.lng) {
+                const novaPos = [parseFloat(data.lng), parseFloat(data.lat)];
 
-                // Move o marcador suavemente
-                marker.setPosition(novaPos);
-                
-                // Centraliza o mapa no motorista suavemente
-                map.panTo(novaPos);
+                // Move o marcador e centraliza o mapa
+                marker.setLngLat(novaPos);
+                map.flyTo({ 
+                    center: novaPos, 
+                    speed: 0.8, 
+                    curve: 1, 
+                    essential: true 
+                });
+
+                document.getElementById('status').innerText = "Motorista Online";
             }
         } catch (error) {
-            console.error("Erro ao buscar posição do MongoDB:", error);
+            console.error("Erro na busca:", error);
+            document.getElementById('status').innerText = "Erro na conexão";
         }
     }
+
+    // Inicia o ciclo de acompanhamento
+    map.on('load', () => {
+        buscarNovaPosicao(); // Primeira busca imediata
+        setInterval(buscarNovaPosicao, INTERVALO_BUSCA);
+    });
 </script>
+
 </body>
 </html>
