@@ -128,37 +128,52 @@
 
     // 3. Preenche o HTML e o Mapa
     function renderizarInterface(dados) {
-        document.getElementById('titulo-id').innerText = `Corrida #${dados.corridaId.split('-')[1] || 'Detalhes'}`;
-        document.getElementById('status').innerText = dados.status || "Finalizada";
-        document.getElementById('origem-txt').innerText = dados.origem;
-        document.getElementById('destino-txt').innerText = dados.destino;
-        document.getElementById('distancia').innerText = `${dados.distanciaPassageiro} km`;
-        document.getElementById('valor').innerText = `R$ ${parseFloat(dados.valorTotal).toFixed(2).replace('.', ',')}`;
+    document.getElementById('titulo-id').innerText = `Corrida #${dados.corridaId.split('-')[1] || 'Detalhes'}`;
+    document.getElementById('status').innerText = dados.status || "Finalizada";
+    document.getElementById('origem-txt').innerText = dados.origem;
+    document.getElementById('destino-txt').innerText = dados.destino;
+    document.getElementById('distancia').innerText = `${dados.distanciaPassageiro} km`;
+    document.getElementById('valor').innerText = `R$ ${parseFloat(dados.valorTotal).toFixed(2).replace('.', ',')}`;
+    
+    document.getElementById('motorista-nome').innerText = dados.motorista.nome;
+    document.getElementById('veiculo-info').innerText = `${dados.motorista.carro.modelo} • ${dados.motorista.carro.cor} • ${dados.motorista.carro.placa}`;
+    document.getElementById('motorista-pix').innerText = `Chave PIX: ${dados.motorista.pix}`;
+
+    // --- CORREÇÃO DOS PONTOS ---
+    // Forçamos a ordem [Longitude, Latitude] que é o que o Mapbox espera
+    const pOrigem = [dados.rota.coords.origem[0], dados.rota.coords.origem[1]];
+    const pDestino = [dados.rota.coords.destino[0], dados.rota.coords.destino[1]];
+
+    const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/light-v11',
+        center: pOrigem, // Centraliza na origem
+        zoom: 14,
+        interactive: true
+    });
+
+    map.on('load', () => {
+        // Adiciona Marcador de Origem (Azul)
+        new mapboxgl.Marker({ color: '#2ea6ff' })
+            .setLngLat(pOrigem)
+            .addTo(map);
+
+        // Adiciona Marcador de Destino (Laranja)
+        new mapboxgl.Marker({ color: '#ffaa00' })
+            .setLngLat(pDestino)
+            .addTo(map);
+
+        // Ajusta o zoom para mostrar os dois pontos
+        const bounds = new mapboxgl.LngLatBounds();
+        bounds.extend(pOrigem);
+        bounds.extend(pDestino);
         
-        document.getElementById('motorista-nome').innerText = dados.motorista.nome;
-        document.getElementById('veiculo-info').innerText = `${dados.motorista.carro.modelo} • ${dados.motorista.carro.cor} • ${dados.motorista.carro.placa}`;
-        document.getElementById('motorista-pix').innerText = `Chave PIX: ${dados.motorista.pix}`;
-
-        // Inicializa o Mapa
-        const map = new mapboxgl.Map({
-            container: 'map',
-            style: 'mapbox://styles/mapbox/light-v11',
-            center: dados.rota.coords.origem,
-            zoom: 12,
-            interactive: true
+        map.fitBounds(bounds, { 
+            padding: 50,
+            maxZoom: 15 // Evita que o mapa dê zoom demais se os pontos forem muito próximos
         });
-
-        map.on('load', () => {
-            const pOrigem = dados.rota.coords.origem;
-            const pDestino = dados.rota.coords.destino;
-
-            new mapboxgl.Marker({ color: '#2ea6ff' }).setLngLat(pOrigem).addTo(map);
-            new mapboxgl.Marker({ color: '#ffaa00' }).setLngLat(pDestino).addTo(map);
-
-            const bounds = new mapboxgl.LngLatBounds(pOrigem, pDestino);
-            map.fitBounds(bounds, { padding: 50 });
-        });
-    }
+    });
+}
 </script>
 
 </body>
