@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Me leva</title>
+    <title>Me leva - Precisão GPS</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.js'></script>
     <link href='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.css' rel='stylesheet' />
@@ -11,16 +11,16 @@
     <link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css' type='text/css'>
 
     <style>
-        body { font-family: sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; background: #fff; overflow: hidden; }
-        #map { flex-grow: 1; width: 100%; height: 100%; }
-        .panel { padding: 15px; background: white; border-top: 1px solid #ddd; z-index: 10; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
-        .address-card { background: #f9f9f9; border-radius: 8px; padding: 10px; margin-bottom: 10px; border-left: 4px solid #2ea6ff; }
-        .label { font-size: 10px; font-weight: bold; color: #2ea6ff; text-transform: uppercase; }
-        .value { font-size: 13px; color: #333; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        #price-tag { font-size: 18px; font-weight: bold; color: #28a745; text-align: center; margin: 10px 0; }
-        .btn-confirmar { width: 100%; padding: 15px; background-color: #10b981; color: #ffffff; border: none; border-radius: 10px; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.3s; }
-        .btn-confirmar:disabled { background-color: #ccc; cursor: not-allowed; }
-        .geocoder-container { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; z-index: 20; }
+        body { font-family: sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; background: #f4f4f4; overflow: hidden; }
+        #map { flex-grow: 1; width: 100%; }
+        .panel { padding: 15px; background: white; border-top: 1px solid #ddd; z-index: 10; box-shadow: 0 -4px 12px rgba(0,0,0,0.1); border-radius: 20px 20px 0 0; }
+        .address-card { background: #f9f9f9; border-radius: 8px; padding: 10px; margin-bottom: 8px; border-left: 4px solid #2ea6ff; }
+        .label { font-size: 10px; font-weight: bold; color: #2ea6ff; text-transform: uppercase; margin-bottom: 2px; }
+        .value { font-size: 13px; color: #333; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #price-tag { font-size: 18px; font-weight: bold; color: #10b981; text-align: center; margin: 10px 0; }
+        .btn-confirmar { width: 100%; padding: 16px; background-color: #10b981; color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: bold; cursor: pointer; }
+        .btn-confirmar:disabled { background-color: #ccc; }
+        .geocoder-container { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); width: 92%; z-index: 20; }
     </style>
 </head>
 <body>
@@ -30,21 +30,19 @@
 
     <div class="panel">
         <div class="address-card">
-            <div class="label">Origem (GPS de Alta Precisão)</div>
-            <div id="txt-origem" class="value">Localizando com precisão...</div>
+            <div class="label">Ponto de Partida (GPS)</div>
+            <div id="txt-origem" class="value">Buscando sinal de satélite... 🛰️</div>
         </div>
         <div class="address-card" style="border-left-color: #ffaa00;">
-            <div class="label">Destino</div>
-            <div id="txt-destino" class="value">Busque o destino acima 🔍</div>
+            <div class="label">Destino Final</div>
+            <div id="txt-destino" class="value">Toque no mapa ou use a busca 🔍</div>
         </div>
-        <div id="price-tag">Selecione o destino</div>
+        <div id="price-tag">Aguardando definição da rota</div>
         <button id="btn-pedir" class="btn-confirmar" disabled onclick="enviarParaN8N()">CONFIRMAR PEDIDO</button>
     </div>
 
     <script>
         mapboxgl.accessToken = 'pk.eyJ1IjoicmFmYWVsZGFuZGEiLCJhIjoiY21tM3V6aHQ3MDR1dTJxcHdiNnhpaHd0ayJ9.w-fjeHmzlyVes75Rg4pJuQ';
-        const urlParams = new URLSearchParams(window.location.search);
-        const idSolicitacao = urlParams.get('id'); 
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
@@ -57,88 +55,78 @@
             container: 'map',
             style: 'mapbox://styles/mapbox/streets-v12',
             center: [-51.2177, -30.0346],
-            zoom: 14
+            zoom: 13
         });
 
         const geocoder = new MapboxGeocoder({
             accessToken: mapboxgl.accessToken,
             mapboxgl: mapboxgl,
             countries: 'br',
-            types: 'address,poi',
-            placeholder: '🔍 Para onde vamos?',
+            types: 'address,poi', // Aceita endereços e Pontos de Interesse
+            placeholder: '🔍 Digite o destino...',
             marker: false
         });
 
         document.getElementById('geocoder').appendChild(geocoder.onAdd(map));
 
-        function formatarEndereco(feat) {
-            const rua = feat.text || "";
-            const num = feat.address || "";
-            const bairro = feat.context?.find(c => c.id.includes('neighborhood'))?.text || "";
-            return num ? `${rua}, ${num} - ${bairro}` : `${rua} - ${bairro}`;
-        }
-
-        // --- GEOLOCALIZAÇÃO DE ALTA PRECISÃO ---
-        navigator.geolocation.getCurrentPosition(pos => {
-            pontoOrigem = [pos.coords.longitude, pos.coords.latitude];
-            
-            // Marker Único para Origem
-            markerOrigem = new mapboxgl.Marker({ color: '#2ea6ff' })
-                .setLngLat(pontoOrigem)
-                .addTo(map);
-
-            reverseGeocode({ lat: pontoOrigem[1], lng: pontoOrigem[0] }, 'txt-origem');
-            map.flyTo({ center: pontoOrigem, zoom: 16 }); // Zoom mais perto para conferência
-        }, 
-        err => { 
-            console.error("Erro GPS:", err);
-            document.getElementById('txt-origem').innerText = "Erro ao obter GPS. Verifique as permissões.";
-        }, 
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
-
+        // Captura o destino pela busca
         geocoder.on('result', (e) => {
             const coords = { lat: e.result.center[1], lng: e.result.center[0] };
-            document.getElementById('txt-destino').innerText = formatarEndereco(e.result);
+            document.getElementById('txt-destino').innerText = e.result.place_name;
             atualizarDestino(coords);
         });
 
+        // Captura o destino pelo TOQUE NO MAPA (Mais preciso para portas de prédios)
         map.on('click', (e) => {
             const coords = { lat: e.lngLat.lat, lng: e.lngLat.lng };
             atualizarDestino(coords);
             reverseGeocode(coords, 'txt-destino');
         });
 
-        function reverseGeocode(coords, id) {
-            // Adicionado limite de 1 resultado e tipos específicos para evitar confusão
+        // GEOLOCALIZAÇÃO COM ALTA PRECISÃO (GPS REAL)
+        navigator.geolocation.getCurrentPosition(pos => {
+            pontoOrigem = [pos.coords.longitude, pos.coords.latitude];
+            
+            if (!markerOrigem) {
+                markerOrigem = new mapboxgl.Marker({ color: '#2ea6ff' }).setLngLat(pontoOrigem).addTo(map);
+            } else {
+                markerOrigem.setLngLat(pontoOrigem);
+            }
+
+            reverseGeocode({ lat: pontoOrigem[1], lng: pontoOrigem[0] }, 'txt-origem');
+            map.flyTo({ center: pontoOrigem, zoom: 17, duration: 2000 }); // Zoom 17 é ideal para ver portarias
+        }, 
+        err => { 
+            document.getElementById('txt-origem').innerText = "Erro no GPS. Verifique as permissões.";
+        }, 
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+
+        function reverseGeocode(coords, idElemento) {
             fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${coords.lng},${coords.lat}.json?access_token=${mapboxgl.accessToken}&types=address&language=pt&limit=1`)
                 .then(r => r.json())
                 .then(data => {
                     if (data.features?.length > 0) {
-                        document.getElementById(id).innerText = formatarEndereco(data.features[0]);
+                        document.getElementById(idElemento).innerText = data.features[0].place_name;
+                    } else {
+                        document.getElementById(idElemento).innerText = "Local selecionado no mapa";
                     }
                 });
         }
 
         function atualizarDestino(coords) {
             pontoDestino = [coords.lng, coords.lat];
-            
-            // Gerencia o marcador de destino para não duplicar
             if (markerDestino) {
                 markerDestino.setLngLat(pontoDestino);
             } else {
-                markerDestino = new mapboxgl.Marker({ color: '#ffaa00' })
-                    .setLngLat(pontoDestino)
-                    .addTo(map);
+                markerDestino = new mapboxgl.Marker({ color: '#ffaa00' }).setLngLat(pontoDestino).addTo(map);
             }
-
             if (pontoOrigem) calcularRota();
         }
 
         function calcularRota() {
-            // Usando OSRM para traçar o caminho exato nas ruas
             const url = `https://router.project-osrm.org/route/v1/driving/${pontoOrigem[0]},${pontoOrigem[1]};${pontoDestino[0]},${pontoDestino[1]}?overview=full&geometries=geojson`;
             fetch(url).then(r => r.json()).then(data => {
-                if (data.routes && data.routes.length > 0) {
+                if (data.routes?.length > 0) {
                     const rota = data.routes[0];
                     kmTotal = (rota.distance / 1000).toFixed(1);
                     valorTotal = (kmTotal * 2.7).toFixed(2);
@@ -146,29 +134,24 @@
                     document.getElementById('price-tag').innerText = `R$ ${valorTotal} (${kmTotal} km)`;
                     const btn = document.getElementById('btn-pedir');
                     btn.disabled = false;
-                    btn.style.backgroundColor = "#10b981";
                     
-                    // Ajusta o mapa para mostrar os dois pontos
-                    map.fitBounds(new mapboxgl.LngLatBounds(pontoOrigem, pontoDestino), { padding: 80 });
+                    map.fitBounds(new mapboxgl.LngLatBounds(pontoOrigem, pontoDestino), { padding: 70 });
                 }
             });
         }
 
         async function enviarParaN8N() {
             const btn = document.getElementById('btn-pedir');
-            btn.innerText = "PROCESSANDO...";
+            btn.innerText = "SOLICITANDO...";
             btn.disabled = true;
 
             const payload = {
-                id_solicitacao: idSolicitacao,
                 user_id: tg.initDataUnsafe?.user?.id || "WEB",
                 nome: tg.initDataUnsafe?.user?.first_name || "Usuário",
-                origem: document.getElementById('txt-origem').innerText,
-                destino: document.getElementById('txt-destino').innerText,
-                origem_lat: pontoOrigem[1],
-                origem_lng: pontoOrigem[0],
-                destino_lat: pontoDestino[1],
-                destino_lng: pontoDestino[0],
+                origem_texto: document.getElementById('txt-origem').innerText,
+                destino_texto: document.getElementById('txt-destino').innerText,
+                origem_coords: [pontoOrigem[1], pontoOrigem[0]], // [Lat, Lng]
+                destino_coords: [pontoDestino[1], pontoDestino[0]], // [Lat, Lng]
                 distancia_km: kmTotal,
                 valor_total: valorTotal
             };
@@ -179,20 +162,11 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
                 });
-
-                btn.innerText = "Sucesso! Voltando ao chat...";
-                btn.style.backgroundColor = "#2ea6ff";
-
-                setTimeout(() => { tg.close(); }, 2500);
-
-            } catch (error) {
-                btn.innerText = "Erro ao enviar. Tente novamente.";
-                btn.style.backgroundColor = "#dc2626";
-                setTimeout(() => {
-                    btn.innerText = "CONFIRMAR PEDIDO";
-                    btn.disabled = false;
-                    btn.style.backgroundColor = "#10b981";
-                }, 3000);
+                btn.innerText = "PEDIDO ENVIADO!";
+                setTimeout(() => { tg.close(); }, 2000);
+            } catch (e) {
+                btn.innerText = "ERRO - TENTE DE NOVO";
+                btn.disabled = false;
             }
         }
     </script>
