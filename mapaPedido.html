@@ -83,21 +83,35 @@
             atualizarDestino(coords);
         });
 
-        map.on('click', (e) => {
-            const coords = { lat: e.lngLat.lat, lng: e.lngLat.lng };
-            atualizarDestino(coords);
-            reverseGeocode(coords, 'txt-destino');
-        });
+       // Variáveis para os Marcadores (para podermos movê-los)
+let markerOrigem = null;
+let markerDestino = null;
 
-        function reverseGeocode(coords, id) {
-            fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${coords.lng},${coords.lat}.json?access_token=${mapboxgl.accessToken}&types=address&language=pt`)
-                .then(r => r.json())
-                .then(data => {
-                    if (data.features?.length > 0) {
-                        document.getElementById(id).innerText = formatarEndereco(data.features[0]);
-                    }
-                });
-        }
+map.on('click', (e) => {
+    const coords = { lat: e.lngLat.lat, lng: e.lngLat.lng };
+    
+    // Se ainda não definiu o destino, o clique define o destino
+    // Se já tem destino, o clique pode atualizar o destino (comportamento padrão)
+    atualizarDestino(coords);
+    reverseGeocode(coords, 'txt-destino');
+});
+
+// FUNÇÃO ATUALIZADA: Agora ela atualiza a variável global pontoOrigem
+function reverseGeocode(coords, id) {
+    fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${coords.lng},${coords.lat}.json?access_token=${mapboxgl.accessToken}&types=address&language=pt`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.features?.length > 0) {
+                const enderecoFormatado = formatarEndereco(data.features[0]);
+                document.getElementById(id).innerText = enderecoFormatado;
+                
+                // CRUCIAL: Se estivermos mudando a ORIGEM, atualizamos a variável numérica
+                if (id === 'txt-origem') {
+                    pontoOrigem = [coords.lng, coords.lat];
+                }
+            }
+        });
+}
 
         function atualizarDestino(coords) {
             pontoDestino = [coords.lng, coords.lat];
