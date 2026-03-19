@@ -30,8 +30,8 @@
 
     <div class="panel">
         <div class="address-card">
-            <div class="label">Origem (GPS)</div>
-            <div id="txt-origem" class="value">Localizando...</div>
+            <div class="label">Origem (GPS de Alta Precisão)</div>
+            <div id="txt-origem" class="value">Localizando com precisão...</div>
         </div>
         <div class="address-card" style="border-left-color: #ffaa00;">
             <div class="label">Destino</div>
@@ -50,6 +50,7 @@
         tg.expand();
 
         let pontoOrigem = null, pontoDestino = null;
+        let markerOrigem = null, markerDestino = null;
         let kmTotal = 0, valorTotal = 0;
 
         const map = new mapboxgl.Map({
@@ -63,7 +64,7 @@
             accessToken: mapboxgl.accessToken,
             mapboxgl: mapboxgl,
             countries: 'br',
-            types: 'address',
+            types: 'address,poi',
             placeholder: '🔍 Para onde vamos?',
             marker: false
         });
@@ -76,6 +77,24 @@
             const bairro = feat.context?.find(c => c.id.includes('neighborhood'))?.text || "";
             return num ? `${rua}, ${num} - ${bairro}` : `${rua} - ${bairro}`;
         }
+
+        // --- GEOLOCALIZAÇÃO DE ALTA PRECISÃO ---
+        navigator.geolocation.getCurrentPosition(pos => {
+            pontoOrigem = [pos.coords.longitude, pos.coords.latitude];
+            
+            // Marker Único para Origem
+            markerOrigem = new mapboxgl.Marker({ color: '#2ea6ff' })
+                .setLngLat(pontoOrigem)
+                .addTo(map);
+
+            reverseGeocode({ lat: pontoOrigem[1], lng: pontoOrigem[0] }, 'txt-origem');
+            map.flyTo({ center: pontoOrigem, zoom: 16 }); // Zoom mais perto para conferência
+        }, 
+        err => { 
+            console.error("Erro GPS:", err);
+            document.getElementById('txt-origem').innerText = "Erro ao obter GPS. Verifique as permissões.";
+        }, 
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
 
         geocoder.on('result', (e) => {
             const coords = { lat: e.result.center[1], lng: e.result.center[0] };
@@ -90,7 +109,8 @@
         });
 
         function reverseGeocode(coords, id) {
-            fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${coords.lng},${coords.lat}.json?access_token=${mapboxgl.accessToken}&types=address&language=pt`)
+            // Adicionado limite de 1 resultado e tipos específicos para evitar confusão
+            fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${coords.lng},${coords.lat}.json?access_token=${mapboxgl.accessToken}&types=address&language=pt&limit=1`)
                 .then(r => r.json())
                 .then(data => {
                     if (data.features?.length > 0) {
@@ -101,38 +121,41 @@
 
         function atualizarDestino(coords) {
             pontoDestino = [coords.lng, coords.lat];
-            new mapboxgl.Marker({ color: '#ffaa00' }).setLngLat(pontoDestino).addTo(map);
+            
+            // Gerencia o marcador de destino para não duplicar
+            if (markerDestino) {
+                markerDestino.setLngLat(pontoDestino);
+            } else {
+                markerDestino = new mapboxgl.Marker({ color: '#ffaa00' })
+                    .setLngLat(pontoDestino)
+                    .addTo(map);
+            }
+
             if (pontoOrigem) calcularRota();
         }
 
         function calcularRota() {
+            // Usando OSRM para traçar o caminho exato nas ruas
             const url = `https://router.project-osrm.org/route/v1/driving/${pontoOrigem[0]},${pontoOrigem[1]};${pontoDestino[0]},${pontoDestino[1]}?overview=full&geometries=geojson`;
             fetch(url).then(r => r.json()).then(data => {
                 if (data.routes && data.routes.length > 0) {
                     const rota = data.routes[0];
                     kmTotal = (rota.distance / 1000).toFixed(1);
                     valorTotal = (kmTotal * 2.7).toFixed(2);
+                    
                     document.getElementById('price-tag').innerText = `R$ ${valorTotal} (${kmTotal} km)`;
                     const btn = document.getElementById('btn-pedir');
                     btn.disabled = false;
                     btn.style.backgroundColor = "#10b981";
-                    map.fitBounds(new mapboxgl.LngLatBounds(pontoOrigem, pontoDestino), { padding: 60 });
+                    
+                    // Ajusta o mapa para mostrar os dois pontos
+                    map.fitBounds(new mapboxgl.LngLatBounds(pontoOrigem, pontoDestino), { padding: 80 });
                 }
             });
         }
 
-        navigator.geolocation.getCurrentPosition(pos => {
-            pontoOrigem = [pos.coords.longitude, pos.coords.latitude];
-            new mapboxgl.Marker({ color: '#2ea6ff' }).setLngLat(pontoOrigem).addTo(map);
-            reverseGeocode({ lat: pontoOrigem[1], lng: pontoOrigem[0] }, 'txt-origem');
-            map.flyTo({ center: pontoOrigem, zoom: 15 });
-        });
-
-        // NOVA FUNÇÃO: ATUALIZA O BOTÃO EM VEZ DE DAR ALERT
         async function enviarParaN8N() {
             const btn = document.getElementById('btn-pedir');
-            const originalText = btn.innerText;
-            
             btn.innerText = "PROCESSANDO...";
             btn.disabled = true;
 
@@ -157,20 +180,14 @@
                     body: JSON.stringify(payload)
                 });
 
-                // SUCESSO: MUDA O TEXTO DO BOTÃO
-                btn.innerText = "Pedido enviado! Verifique seu Telegram";
-                btn.style.backgroundColor = "#2ea6ff"; // Muda para azul para destacar
+                btn.innerText = "Sucesso! Voltando ao chat...";
+                btn.style.backgroundColor = "#2ea6ff";
 
-                // Fecha o WebApp automaticamente após 3 segundos para dar tempo de ler
-                setTimeout(() => {
-                    tg.close();
-                }, 3000);
+                setTimeout(() => { tg.close(); }, 2500);
 
             } catch (error) {
-                // ERRO: AVISA NO BOTÃO E PERMITE TENTAR NOVAMENTE APÓS 3 SEGUNDOS
                 btn.innerText = "Erro ao enviar. Tente novamente.";
-                btn.style.backgroundColor = "#dc2626"; // Vermelho
-                
+                btn.style.backgroundColor = "#dc2626";
                 setTimeout(() => {
                     btn.innerText = "CONFIRMAR PEDIDO";
                     btn.disabled = false;
