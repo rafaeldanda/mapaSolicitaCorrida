@@ -50,7 +50,6 @@
         tg.expand();
 
         let pontoOrigem = null, pontoDestino = null;
-        let markerOrigem = null, markerDestino = null;
         let kmTotal = 0, valorTotal = 0;
 
         const map = new mapboxgl.Map({
@@ -78,22 +77,6 @@
             return num ? `${rua}, ${num} - ${bairro}` : `${rua} - ${bairro}`;
         }
 
-        // --- GPS DE ALTA PRECISÃO ---
-        navigator.geolocation.getCurrentPosition(pos => {
-            pontoOrigem = [pos.coords.longitude, pos.coords.latitude];
-            
-            if (markerOrigem) {
-                markerOrigem.setLngLat(pontoOrigem);
-            } else {
-                markerOrigem = new mapboxgl.Marker({ color: '#2ea6ff' }).setLngLat(pontoOrigem).addTo(map);
-            }
-
-            reverseGeocode({ lat: pontoOrigem[1], lng: pontoOrigem[0] }, 'txt-origem');
-            map.flyTo({ center: pontoOrigem, zoom: 15 });
-        }, 
-        err => { console.error(err); }, 
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
-
         geocoder.on('result', (e) => {
             const coords = { lat: e.result.center[1], lng: e.result.center[0] };
             document.getElementById('txt-destino').innerText = formatarEndereco(e.result);
@@ -107,7 +90,7 @@
         });
 
         function reverseGeocode(coords, id) {
-            fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${coords.lng},${coords.lat}.json?access_token=${mapboxgl.accessToken}&types=address&language=pt&limit=1`)
+            fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${coords.lng},${coords.lat}.json?access_token=${mapboxgl.accessToken}&types=address&language=pt`)
                 .then(r => r.json())
                 .then(data => {
                     if (data.features?.length > 0) {
@@ -118,11 +101,7 @@
 
         function atualizarDestino(coords) {
             pontoDestino = [coords.lng, coords.lat];
-            if (markerDestino) {
-                markerDestino.setLngLat(pontoDestino);
-            } else {
-                markerDestino = new mapboxgl.Marker({ color: '#ffaa00' }).setLngLat(pontoDestino).addTo(map);
-            }
+            new mapboxgl.Marker({ color: '#ffaa00' }).setLngLat(pontoDestino).addTo(map);
             if (pontoOrigem) calcularRota();
         }
 
@@ -136,13 +115,24 @@
                     document.getElementById('price-tag').innerText = `R$ ${valorTotal} (${kmTotal} km)`;
                     const btn = document.getElementById('btn-pedir');
                     btn.disabled = false;
+                    btn.style.backgroundColor = "#10b981";
                     map.fitBounds(new mapboxgl.LngLatBounds(pontoOrigem, pontoDestino), { padding: 60 });
                 }
             });
         }
 
+        navigator.geolocation.getCurrentPosition(pos => {
+            pontoOrigem = [pos.coords.longitude, pos.coords.latitude];
+            new mapboxgl.Marker({ color: '#2ea6ff' }).setLngLat(pontoOrigem).addTo(map);
+            reverseGeocode({ lat: pontoOrigem[1], lng: pontoOrigem[0] }, 'txt-origem');
+            map.flyTo({ center: pontoOrigem, zoom: 15 });
+        });
+
+        // NOVA FUNÇÃO: ATUALIZA O BOTÃO EM VEZ DE DAR ALERT
         async function enviarParaN8N() {
             const btn = document.getElementById('btn-pedir');
+            const originalText = btn.innerText;
+            
             btn.innerText = "PROCESSANDO...";
             btn.disabled = true;
 
@@ -166,11 +156,26 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
                 });
-                btn.innerText = "CONFIRMAR PEDIDO"; // Volta ao texto original
-                setTimeout(() => { tg.close(); }, 1500);
+
+                // SUCESSO: MUDA O TEXTO DO BOTÃO
+                btn.innerText = "Pedido enviado! Verifique seu Telegram";
+                btn.style.backgroundColor = "#2ea6ff"; // Muda para azul para destacar
+
+                // Fecha o WebApp automaticamente após 3 segundos para dar tempo de ler
+                setTimeout(() => {
+                    tg.close();
+                }, 3000);
+
             } catch (error) {
-                btn.innerText = "ERRO AO ENVIAR";
-                btn.disabled = false;
+                // ERRO: AVISA NO BOTÃO E PERMITE TENTAR NOVAMENTE APÓS 3 SEGUNDOS
+                btn.innerText = "Erro ao enviar. Tente novamente.";
+                btn.style.backgroundColor = "#dc2626"; // Vermelho
+                
+                setTimeout(() => {
+                    btn.innerText = "CONFIRMAR PEDIDO";
+                    btn.disabled = false;
+                    btn.style.backgroundColor = "#10b981";
+                }, 3000);
             }
         }
     </script>
