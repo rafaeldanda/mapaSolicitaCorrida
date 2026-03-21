@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Atendimento | Admin</title>
+    <style>
+        :root { --primary: #2ea6ff; --success: #10b981; --text: #333; --bg: #f5f7fa; --danger: #ef4444; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; background: var(--bg); color: var(--text); }
+        
+        .header { background: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 100; }
+        .header-info h1 { font-size: 16px; margin: 0; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
+        .operador-tag { font-size: 10px; color: #aaa; text-transform: uppercase; font-weight: bold; display: flex; align-items: center; gap: 5px; }
+        
+        .live-dot { width: 6px; height: 6px; background: var(--success); border-radius: 50%; display: inline-block; animation: blink 1.5s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+        .btn-logout { background: none; border: 1px solid #ddd; padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; color: #888; }
+
+        .search-container { background: white; padding: 12px 20px; border-bottom: 1px solid #eee; position: sticky; top: 52px; z-index: 99; display: flex; gap: 8px; justify-content: center; }
+        .search-box { width: 100%; max-width: 400px; padding: 10px 15px; border: 1px solid #eee; border-radius: 10px; font-size: 13px; outline: none; background: #fafafa; }
+        .btn-busca { background: var(--primary); color: white; border: none; padding: 0 15px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 11px; text-transform: uppercase; }
+
+        .container { padding: 20px; max-width: 550px; margin: 0 auto; }
+        
+        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; border-left: 5px solid var(--danger); position: relative; animation: fadeIn 0.4s ease; }
+        .card.resolvido { border-left-color: var(--success); opacity: 0.9; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card-header { display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-bottom: 12px; border-bottom: 1px solid #f9f9f9; padding-bottom: 8px; }
+        .motivo-tag { background: #fee2e2; color: var(--danger); padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-bottom: 15px; display: inline-block; }
+        .status-resolvido-tag { background: #d1fae5; color: var(--success); padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-bottom: 15px; display: inline-block; float: right; }
+
+        /* Grid de Informações Ajustado */
+        .info-grid { background: #f9fafb; border-radius: 8px; padding: 12px; margin-bottom: 15px; border: 1px solid #f0f0f0; }
+        .info-section-title { font-size: 9px; color: #bbb; font-weight: 800; text-transform: uppercase; margin: 10px 0 5px 0; border-bottom: 1px solid #eee; padding-bottom: 2px; }
+        .info-section-title:first-child { margin-top: 0; }
+        
+        .info-item { margin: 4px 0; font-size: 12px; display: flex; align-items: flex-start; }
+        .label { font-weight: bold; color: #999; font-size: 10px; text-transform: uppercase; margin-right: 6px; display: inline-block; width: 85px; flex-shrink: 0; }
+        .valor-total { color: var(--success); font-weight: bold; }
+
+        .relato-container { background: #fff; border-left: 3px solid #ddd; padding: 10px 15px; margin: 15px 0; }
+        .relato-label { font-size: 10px; color: var(--danger); font-weight: bold; display: block; margin-bottom: 4px; }
+        .relato-txt { font-style: italic; color: #444; font-size: 14px; line-height: 1.5; }
+
+        .reply-box { margin-top: 15px; border-top: 1px dashed #eee; padding-top: 15px; }
+        textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-family: inherit; font-size: 13px; box-sizing: border-box; resize: none; height: 75px; }
+        .btn-enviar { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 14px; }
+        
+        .msg-ja-respondida { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 12px; border-radius: 10px; text-align: center; font-size: 13px; font-weight: bold; }
+        #loading-overlay { text-align: center; padding: 50px; color: #888; font-size: 13px; }
+    </style>
+</head>
+<body>
+
+<script>
+    if (localStorage.getItem('painel_logado') !== 'true') { window.location.href = 'loginSuporte.html'; }
+    function logout() { localStorage.clear(); window.location.href = 'loginSuporte.html'; }
+</script>
+
+<div class="header">
+    <div class="header-info">
+        <h1>Atendimento</h1>
+        <span class="operador-tag" id="nome-exibicao"><span class="live-dot"></span> Monitorando...</span>
+    </div>
+    <button class="btn-logout" onclick="logout()">SAIR</button>
+</div>
+
+<div class="search-container">
+    <input type="text" id="inputBusca" class="search-box" placeholder="🔎 ID da Corrida...">
+    <button class="btn-busca" onclick="buscarPorWebhook()">Buscar</button>
+</div>
+
+<div class="container" id="lista-container">
+    <div id="loading-overlay">Carregando contestações em tempo real...</div>
+</div>
+
+<script>
+    const OPERADOR_ATUAL = localStorage.getItem('operador_nome') || "Desconhecido";
+    document.getElementById('nome-exibicao').innerHTML = `<span class="live-dot"></span> Operador: ${OPERADOR_ATUAL}`;
+
+    const URL_LISTA = 'https://primary-production-a103.up.railway.app/webhook/d2494948-3dd8-40ed-a262-b4cef2d5c814';
+    const URL_BUSCA_UNICA = 'https://primary-production-a103.up.railway.app/webhook/fb5e433b-fedc-4f6f-b5b8-7297098da150';
+    const URL_RESPONDER = 'https://primary-production-a103.up.railway.app/webhook/810fe7e7-5b89-4c39-9b1c-1a6c4d9528cf';
+
+    let estaBuscando = false;
+
+    async function carregarDados() {
+        if(estaBuscando) return;
+        try {
+            const response = await fetch(URL_LISTA);
+            const dados = await response.json();
+            renderizarLista(dados);
+        } catch (error) { console.error("Erro auto-refresh:", error); }
+    }
+
+    async function buscarPorWebhook() {
+        const idBusca = document.getElementById('inputBusca').value.trim();
+        if (!idBusca) { estaBuscando = false; carregarDados(); return; }
+        estaBuscando = true;
+        document.getElementById('lista-container').innerHTML = '<div id="loading-overlay">Buscando...</div>';
+        try {
+            const response = await fetch(URL_BUSCA_UNICA, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ corridaId: idBusca })
+            });
+            const resultado = await response.json();
+            renderizarLista(resultado);
+        } catch (e) { document.getElementById('lista-container').innerHTML = 'Erro na busca.'; }
+    }
+
+    function renderizarLista(dadosBrutos) {
+        const container = document.getElementById('lista-container');
+        const lista = Array.isArray(dadosBrutos) ? dadosBrutos : [dadosBrutos];
+
+        if (!lista || lista.length === 0 || !lista[0].corridaId) {
+            container.innerHTML = '<div id="loading-overlay">Tudo em dia! Nenhuma nova contestação.</div>';
+            return;
+        }
+
+        container.innerHTML = '';
+
+        lista.forEach(item => {
+            const card = document.createElement('div');
+            const eRespondida = item.status === "respondida";
+            card.className = `card ${eRespondida ? 'resolvido' : ''}`;
+            
+            const dataEnvio = item.contestacao?.dataEnvio ? new Date(item.contestacao.dataEnvio).toLocaleDateString('pt-BR') : '--/--/----';
+            const idUnico = item._id?.$oid || item._id;
+
+            let areaResposta = `
+                <div class="reply-box" id="box-${idUnico}">
+                    <textarea id="input-${idUnico}" placeholder="Digite a solução para o passageiro..."></textarea>
+                    <button class="btn-enviar" onclick="enviarResposta('${idUnico}', '${item.corridaId}')">ENVIAR RESPOSTA</button>
+                </div>
+            `;
+
+            if (eRespondida) {
+                areaResposta = `<div class="reply-box"><div class="msg-ja-respondida">✓ Resolvida por: ${item.operador || 'Suporte'}</div></div>`;
+            }
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <span>CORRIDA #${item.corridaId?.split('-')[1] || '---'}</span>
+                    <span>${dataEnvio}</span>
+                </div>
+                
+                <span class="motivo-tag">${item.contestacao?.motivo || 'OUTROS'}</span>
+                ${eRespondida ? '<span class="status-resolvido-tag">RESOLVIDA</span>' : ''}
+                
+                <div class="info-grid">
+                    <div class="info-section-title">Dados do Passageiro</div>
+                    <div class="info-item"><span class="label">Nome</span> ${item.nomePassageiro || 'Não informado'}</div>
+                    <div class="info-item"><span class="label">WhatsApp</span> ${item.telefonePassageiro || '---'}</div>
+                    
+                    <div class="info-section-title">Detalhes da Viagem</div>
+                    <div class="info-item"><span class="label">Motorista</span> ${item.motorista || '---'}</div>
+                    <div class="info-item"><span class="label">Origem</span> ${item.origem || '---'}</div>
+                    <div class="info-item"><span class="label">Destino</span> ${item.destino || '---'}</div>
+                    <div class="info-item"><span class="label">Valor</span> <span class="valor-total">R$ ${(item.valorTotal || 0).toFixed(2).replace('.', ',')}</span></div>
+                </div>
+
+                <div class="relato-container">
+                    <span class="relato-label">MENSAGEM DO CLIENTE</span>
+                    <span class="relato-txt">"${item.contestacao?.detalhes || '...'}"</span>
+                </div>
+
+                ${areaResposta}
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    async function enviarResposta(mongoId, corridaId) {
+        const texto = document.getElementById(`input-${mongoId}`).value;
+        const btn = document.querySelector(`#box-${mongoId} button`);
+        if (!texto) return alert("Escreva uma resposta.");
+
+        try {
+            btn.disabled = true;
+            btn.innerText = "ENVIANDO...";
+            
+            const payload = {
+                "id_banco": mongoId,
+                "corridaId": corridaId,
+                "respostaSuporte": texto,
+                "status": "respondida",
+                "operador": OPERADOR_ATUAL,
+                "dataResposta": new Date().toISOString()
+            };
+
+            const res = await fetch(URL_RESPONDER, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                document.getElementById(`box-${mongoId}`).innerHTML = '<div class="msg-ja-respondida">✓ Resposta enviada com sucesso!</div>';
+                setTimeout(carregarDados, 2000);
+            }
+        } catch (e) { alert("Erro ao enviar."); btn.disabled = false; btn.innerText = "ENVIAR RESPOSTA"; }
+    }
+
+    window.onload = () => {
+        carregarDados();
+        setInterval(carregarDados, 60000); 
+    };
+</script>
+</body>
+</html>
