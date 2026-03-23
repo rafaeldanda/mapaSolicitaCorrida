@@ -72,15 +72,25 @@
 
             const data = await response.json();
             
-            // Verifica se o n8n retornou sucesso (usuário bate com o digitado)
-            const userRetornado = Array.isArray(data) ? data[0]?.usuario : data.usuario;
+            // Tratamento caso o n8n retorne um Array ou um Objeto simples
+            const infoUsuario = Array.isArray(data) ? data[0] : data;
 
-            if (userRetornado === user) {
-                // SALVA OS DADOS PARA O PAINEL USAR
-                localStorage.setItem('painel_logado', 'true');
-                localStorage.setItem('operador_nome', user); // Aqui guardamos o nome do operador!
+            // 1. Verifica se as credenciais batem
+            if (infoUsuario && infoUsuario.usuario === user) {
                 
-                window.location.href = 'listaContestacao.html';
+                // 2. Salva os dados no navegador
+                localStorage.setItem('painel_logado', 'true');
+                localStorage.setItem('operador_nome', infoUsuario.usuario);
+                localStorage.setItem('is_admin', infoUsuario.admin === true ? 'true' : 'false');
+
+                // 3. LÓGICA DE REDIRECIONAMENTO:
+                // Se for admin, vai para o Mapa/Painel Admin. Se não, vai para as contestações.
+                if (infoUsuario.admin === true) {
+                    window.location.href = 'painelAdmin.html';
+                } else {
+                    window.location.href = 'listaContestacao.html';
+                }
+
             } else {
                 throw new Error("Credenciais inválidas");
             }
@@ -93,7 +103,6 @@
         }
     }
 
-    // Permite dar Enter para logar
     document.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') fazerLogin();
     });
