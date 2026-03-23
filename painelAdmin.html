@@ -3,197 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard | Centro de Comando</title>
+    <title>Admin Dashboard | Real-Time</title>
     <script src='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.js'></script>
     <link href='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.css' rel='stylesheet' />
     <style>
-        :root { --primary: #2ea6ff; --success: #10b981; --warning: #ffaa00; --danger: #ef4444; --dark: #1a1c23; }
-        body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; background: #0b0d11; color: white; overflow: hidden; }
-
-        /* Barra de Busca Superior */
-        .topbar {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000;
-            width: 90%; max-width: 700px; display: flex; gap: 10px; background: rgba(30, 30, 30, 0.7);
-            backdrop-filter: blur(15px); padding: 10px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-        }
-        .search-input { flex: 1; padding: 12px; border: none; border-radius: 10px; background: rgba(0,0,0,0.5); color: white; outline: none; font-size: 14px; }
-        .btn-search { background: var(--primary); color: white; border: none; padding: 0 25px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-search:hover { background: #1a94f0; }
-
-        /* Mapa Central */
+        :root { --primary: #2ea6ff; --success: #10b981; --warning: #ffaa00; --danger: #ef4444; }
+        body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; background: #0b0d11; }
+        
         #map { position: absolute; top: 0; bottom: 0; width: 100%; }
 
-        /* Painel de Estatísticas Inferior */
+        .topbar {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000;
+            width: 90%; max-width: 700px; display: flex; gap: 10px; background: rgba(30, 30, 30, 0.8);
+            backdrop-filter: blur(10px); padding: 10px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .search-input { flex: 1; padding: 12px; border: none; border-radius: 10px; background: rgba(0,0,0,0.5); color: white; outline: none; }
+        .btn-search { background: var(--primary); color: white; border: none; padding: 0 25px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+
         .stats-panel {
             position: absolute; bottom: 30px; left: 20px; z-index: 1000;
-            background: rgba(20, 22, 28, 0.85); backdrop-filter: blur(10px);
-            padding: 18px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); width: 230px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            background: rgba(20, 22, 28, 0.9); padding: 18px; border-radius: 15px; width: 230px; border: 1px solid rgba(255,255,255,0.1);
         }
-        .stat-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 13px; font-weight: 500; }
-        .stat-label { display: flex; align-items: center; gap: 10px; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; }
-        .dot.active { background: var(--success); box-shadow: 0 0 12px var(--success); }
-        .dot.busy { background: var(--danger); box-shadow: 0 0 12px var(--danger); }
-        .dot.pending { background: var(--warning); box-shadow: 0 0 12px var(--warning); }
-        .stat-count { font-weight: 800; font-size: 15px; color: #fff; }
-
-        /* Indicador de Update */
-        #loader { position: fixed; top: 25px; right: 25px; z-index: 2000; background: var(--success); color: white; padding: 6px 16px; border-radius: 20px; font-size: 10px; font-weight: 900; letter-spacing: 1px; display: none; }
+        .stat-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; color: white; font-size: 13px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; display: inline-block; }
+        .dot.active { background: var(--success); box-shadow: 0 0 10px var(--success); }
+        .dot.busy { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
+        .dot.pending { background: var(--warning); box-shadow: 0 0 10px var(--warning); }
+        .stat-count { font-weight: bold; font-size: 16px; }
     </style>
 </head>
 <body>
 
-<div id="loader">LIVE UPDATING</div>
-
 <div class="topbar">
-    <input type="text" id="queryBusca" class="search-input" placeholder="Buscar por Nome, CPF ou ID Corrida...">
-    <button class="btn-search" onclick="filtrarMapa()">BUSCAR</button>
+    <input type="text" id="queryBusca" class="search-input" placeholder="Buscar Corrida, CPF ou Nome...">
+    <button class="btn-search">BUSCAR</button>
 </div>
 
 <div id="map"></div>
 
 <div class="stats-panel">
-    <div class="stat-item">
-        <div class="stat-label"><div class="dot active"></div> Motoristas Livres</div>
-        <span class="stat-count" id="count-livre">0</span>
-    </div>
-    <div class="stat-item">
-        <div class="stat-label"><div class="dot busy"></div> Em Corrida</div>
-        <span class="stat-count" id="count-ocupado">0</span>
-    </div>
-    <div class="stat-item">
-        <div class="stat-label"><div class="dot pending"></div> Chamadas Abertas</div>
-        <span class="stat-count" id="count-espera">0</span>
-    </div>
+    <div class="stat-item"><span><i class="dot active"></i>Motoristas Livres</span><span class="stat-count" id="count-livre">0</span></div>
+    <div class="stat-item"><span><i class="dot busy"></i>Em Corrida</span><span class="stat-count" id="count-ocupado">0</span></div>
+    <div class="stat-item"><span><i class="dot pending"></i>Chamadas Abertas</span><span class="stat-count" id="count-espera">0</span></div>
 </div>
 
 <script>
-    // Configurações Iniciais
     mapboxgl.accessToken = 'pk.eyJ1IjoicmFmYWVsZGFuZGEiLCJhIjoiY21tM3V6aHQ3MDR1dTJxcHdiNnhpaHd0ayJ9.w-fjeHmzlyVes75Rg4pJuQ';
     
     const map = new mapboxgl.Map({
         container: 'map',
         style: 'mapbox://styles/mapbox/dark-v11',
-        center: [-51.2177, -30.0346], // Inicia em Porto Alegre
-        zoom: 12,
-        pitch: 45 // Leve inclinação para dar profundidade ao admin
+        center: [-51.209, -30.085],
+        zoom: 12
     });
 
     let markers = [];
-    let circleLayers = [];
+    let layerIds = [];
 
     async function fetchData() {
-        const loader = document.getElementById('loader');
-        loader.style.display = 'block';
-        
         try {
             const response = await fetch('https://primary-production-a103.up.railway.app/webhook/332ac826-ee61-4613-b47e-f861512d035f');
-            const data = await response.json();
+            const json = await response.json();
             
-            // Tratamento caso o n8n envie dentro de um array [ {online...} ]
-            const payload = Array.isArray(data) ? data[0] : data;
+            // CORREÇÃO DA LEGENDA: Força a leitura do objeto correto, seja array ou objeto puro
+            const dados = Array.isArray(json) ? json[0] : json;
             
-            atualizarMapa(payload);
-        } catch (error) {
-            console.error("Erro ao sincronizar com n8n:", error);
-        }
-        setTimeout(() => loader.style.display = 'none', 1500);
+            atualizarMapa(dados);
+        } catch (e) { console.error("Erro dados:", e); }
     }
 
     function atualizarMapa(dados) {
-        // 1. Limpeza total do estado anterior
+        // Limpa marcadores
         markers.forEach(m => m.remove());
         markers = [];
         
-        circleLayers.forEach(id => {
-            if (map.getLayer(`lyr-${id}`)) map.removeLayer(`lyr-${id}`);
-            if (map.getSource(`src-${id}`)) map.removeSource(`src-${id}`);
+        // Limpa camadas de círculos
+        layerIds.forEach(id => {
+            if (map.getLayer('lyr-'+id)) map.removeLayer('lyr-'+id);
+            if (map.getSource('src-'+id)) map.removeSource('src-'+id);
         });
-        circleLayers = [];
+        layerIds = [];
 
-        // 2. Garantir que as listas existam (evita erro .forEach de undefined)
         const online = dados.online || [];
         const emCorrida = dados.em_corrida || [];
         const solicitadas = dados.solicitadas || [];
 
-        // 3. Renderizar cada categoria
-        online.forEach((m, i) => {
-            const id = m._id?.$oid || m._id || `on-${i}`;
-            renderizarPonto(m.location.coordinates, "#10b981", `<b>Motorista:</b> ${m.nome}<br><b>Placa:</b> ${m.carro?.placa || '---'}`, id);
-        });
-
-        emCorrida.forEach((m, i) => {
-            const id = m._id?.$oid || m._id || `busy-${i}`;
-            renderizarPonto(m.location.coordinates, "#ef4444", `<b>Em Corrida:</b> ${m.nome}<br><b>Placa:</b> ${m.carro?.placa || '---'}`, id);
-        });
-
+        // Renderiza Categorias
+        online.forEach((m, i) => renderizarElemento(m.location.coordinates, "#10b981", m.nome, "on"+i));
+        emCorrida.forEach((m, i) => renderizarElemento(m.location.coordinates, "#ef4444", m.nome, "busy"+i));
         solicitadas.forEach((c, i) => {
-            const id = c._id?.$oid || c._id || `req-${i}`;
             const coords = c.location_origem?.coordinates || c.location?.coordinates;
-            if(coords) {
-                renderizarPonto(coords, "#ffaa00", `<b>Passageiro:</b> ${c.passageiro?.nome}<br><b>Destino:</b> ${c.destino}`, id);
-            }
+            if(coords) renderizarElemento(coords, "#ffaa00", c.passageiro?.nome, "req"+i);
         });
 
-        // 4. Atualizar Legenda
+        // ATUALIZAÇÃO DA LEGENDA (Aqui o 0 vira 2)
         document.getElementById('count-livre').innerText = online.length;
         document.getElementById('count-ocupado').innerText = emCorrida.length;
         document.getElementById('count-espera').innerText = solicitadas.length;
     }
 
-    function renderizarPonto(coords, cor, popupHtml, idUnico) {
-        // Criar Marcador Visual
+    // Função para calcular o raio em pixels para manter ~5km em qualquer zoom
+    const getRadius = () => {
+        return {
+            'base': 1.5,
+            'stops': [
+                [10, 15],   // Zoom longe
+                [12, 55],   // Zoom cidade (Porto Alegre)
+                [14, 220],  // Zoom bairro
+                [16, 850]   // Zoom rua
+            ]
+        };
+    };
+
+    function renderizarElemento(coords, cor, nome, id) {
+        // Marcador
         const marker = new mapboxgl.Marker({ color: cor })
             .setLngLat(coords)
-            .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(popupHtml))
+            .setPopup(new mapboxgl.Popup().setHTML(`<b>${nome}</b>`))
             .addTo(map);
         markers.push(marker);
 
-        // Criar Fonte e Camada do Círculo de 5km
-        const sourceId = `src-${idUnico}`;
-        const layerId = `lyr-${idUnico}`;
-
-        map.addSource(sourceId, {
+        // Círculo de 5km (Dinâmico)
+        const sId = 'src-'+id;
+        const lId = 'lyr-'+id;
+        
+        map.addSource(sId, {
             "type": "geojson",
-            "data": {
-                "type": "Feature",
-                "geometry": { "type": "Point", "coordinates": coords }
-            }
+            "data": { "type": "Feature", "geometry": { "type": "Point", "coordinates": coords } }
         });
 
         map.addLayer({
-            "id": layerId,
+            "id": lId,
             "type": "circle",
-            "source": sourceId,
+            "source": sId,
             "paint": {
-                // Ajuste de raio: no zoom 12 (cidade), o círculo cobre ~5km visualmente
-                "circle-radius": {
-                    'base': 1.75,
-                    'stops': [[10, 15], [12, 60], [15, 400], [20, 4000]]
-                },
+                "circle-radius": getRadius(), // Chama a função de escala proporcional
                 "circle-color": cor,
                 "circle-opacity": 0.15,
-                "circle-stroke-width": 1.5,
+                "circle-stroke-width": 1,
                 "circle-stroke-color": cor
             }
         });
-        circleLayers.push(idUnico);
+        layerIds.push(id);
     }
 
-    function filtrarMapa() {
-        const termo = document.getElementById('queryBusca').value.toLowerCase();
-        if(!termo) return fetchData();
-        alert("Buscando registro: " + termo);
-    }
-
-    // Inicialização
     map.on('load', () => {
         fetchData();
-        setInterval(fetchData, 60000); // Sincroniza a cada 1 minuto
+        setInterval(fetchData, 60000);
     });
 </script>
-
 </body>
 </html>
