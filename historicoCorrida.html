@@ -171,13 +171,18 @@
             btn.disabled = true;
             btn.innerText = "Enviando...";
 
-            // NOVO BODY AJUSTADO CONFORME SUA SOLICITAÇÃO
+            // PAYLOAD COM DADOS DO PASSAGEIRO PARA MANTER FIDELIDADE
             const payload = {
                 "corridaId": dadosCorridaGlobal.corridaId,
                 "origem": dadosCorridaGlobal.origem,
                 "destino": dadosCorridaGlobal.destino,
                 "valorTotal": dadosCorridaGlobal.valorTotal,
                 "motorista": dadosCorridaGlobal.motorista.nome,
+                "passageiro": {
+                    "nome": dadosCorridaGlobal.passageiro?.nome || "Não informado",
+                    "id": dadosCorridaGlobal.passageiro?.id || "N/A",
+                    "telefone": dadosCorridaGlobal.passageiro?.telefone || ""
+                },
                 "contestacao": {
                     "motivo": document.getElementById('motivo-select').value,
                     "detalhes": document.getElementById('desc-contestacao').value,
