@@ -11,24 +11,35 @@
         body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; background: #0b0d11; color: white; overflow: hidden; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; }
 
-        /* BARRA DE BUSCA REATIVADA */
+        /* HEADER COM LOGOUT */
+        .admin-header {
+            position: absolute; top: 20px; right: 20px; z-index: 1001;
+            display: flex; align-items: center; gap: 15px;
+        }
+        .btn-logout { 
+            background: rgba(239, 68, 68, 0.2); color: #ff6b6b; border: 1px solid #ef4444; 
+            padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;
+            transition: 0.3s; backdrop-filter: blur(5px);
+        }
+        .btn-logout:hover { background: #ef4444; color: white; }
+
+        /* BARRA DE BUSCA */
         .topbar {
             position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000;
-            width: 90%; max-width: 600px; display: flex; gap: 10px; background: rgba(30, 30, 30, 0.85);
+            width: 90%; max-width: 500px; display: flex; gap: 10px; background: rgba(30, 30, 30, 0.85);
             backdrop-filter: blur(10px); padding: 12px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);
             box-shadow: 0 8px 32px rgba(0,0,0,0.5);
         }
         .search-input { flex: 1; padding: 12px; border: none; border-radius: 10px; background: rgba(0,0,0,0.5); color: white; outline: none; font-size: 14px; }
-        .btn-search { background: var(--primary); color: white; border: none; padding: 0 25px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-search:hover { background: #1a94f0; transform: scale(1.02); }
+        .btn-search { background: var(--primary); color: white; border: none; padding: 0 20px; border-radius: 10px; font-weight: bold; cursor: pointer; }
 
         /* PAINEL DE LEGENDA */
         .stats-panel {
             position: absolute; bottom: 30px; left: 20px; z-index: 1000;
-            background: rgba(20, 22, 28, 0.95); padding: 20px; border-radius: 15px; width: 240px; border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(20, 22, 28, 0.95); padding: 20px; border-radius: 15px; width: 220px; border: 1px solid rgba(255,255,255,0.1);
         }
         .stat-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 13px; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 10px; display: inline-block; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 10px; display: inline-block; }
         .dot.active { background: var(--success); box-shadow: 0 0 10px var(--success); }
         .dot.busy { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
         .dot.pending { background: var(--warning); box-shadow: 0 0 10px var(--warning); }
@@ -36,6 +47,20 @@
     </style>
 </head>
 <body>
+
+<script>
+    if (localStorage.getItem('painel_logado') !== 'true') { 
+        window.location.href = 'loginSuporte.html'; 
+    }
+    function logout() { 
+        localStorage.clear(); 
+        window.location.href = 'loginSuporte.html'; 
+    }
+</script>
+
+<div class="admin-header">
+    <button class="btn-logout" onclick="logout()">SAIR</button>
+</div>
 
 <div class="topbar">
     <input type="text" id="queryBusca" class="search-input" placeholder="Buscar Nome, CPF ou Placa...">
@@ -45,9 +70,9 @@
 <div id="map"></div>
 
 <div class="stats-panel">
-    <div class="stat-item"><span><i class="dot active"></i>Motoristas Livres</span><span class="stat-count" id="count-livre">0</span></div>
+    <div class="stat-item"><span><i class="dot active"></i>Livres</span><span class="stat-count" id="count-livre">0</span></div>
     <div class="stat-item"><span><i class="dot busy"></i>Em Corrida</span><span class="stat-count" id="count-ocupado">0</span></div>
-    <div class="stat-item"><span><i class="dot pending"></i>Chamadas Abertas</span><span class="stat-count" id="count-espera">0</span></div>
+    <div class="stat-item"><span><i class="dot pending"></i>Solicitadas</span><span class="stat-count" id="count-espera">0</span></div>
 </div>
 
 <script>
@@ -70,7 +95,7 @@
             const res = await response.json();
             const dados = Array.isArray(res) ? res[0] : res;
             
-            ultimosDados = dados; // Salva para a busca funcionar
+            ultimosDados = dados;
             atualizarMapa(dados);
         } catch (e) { console.error("Erro ao carregar dados:", e); }
     }
@@ -84,24 +109,24 @@
         });
         layerIds = [];
 
-        // 1. ONLINE (VERDE)
+        // Renderização ONLINE
         (dados.online || []).forEach((m, i) => {
-            renderizarPonto(m.location.coordinates, "#10b981", `<b>Motorista Livre</b><br>${m.nome}`, "on"+i);
+            renderizarPonto(m.location.coordinates, "#10b981", `<b>Livre:</b> ${m.nome}`, "on"+i);
         });
 
-        // 2. EM CORRIDA (VERMELHO)
+        // Renderização EM CORRIDA
         (dados.em_corrida || []).forEach((c, i) => {
             const coords = c.location_origem ? c.location_origem.coordinates : (c.location ? c.location.coordinates : null);
             if(coords) renderizarPonto(coords, "#ef4444", `<b>Status:</b> ${c.status}`, "busy"+i);
         });
 
-        // 3. SOLICITADAS (LARANJA)
+        // Renderização SOLICITADAS
         (dados.solicitadas || []).forEach((m, i) => {
             const coords = m.location ? m.location.coordinates : (m.location_origem ? m.location_origem.coordinates : null);
             if(coords) renderizarPonto(coords, "#ffaa00", `<b>Status:</b> ${m.status}`, "req"+i);
         });
 
-        // ATUALIZAÇÃO DA LEGENDA
+        // Legenda
         document.getElementById('count-livre').innerText = (dados.online || []).length;
         document.getElementById('count-ocupado').innerText = (dados.em_corrida || []).length;
         document.getElementById('count-espera').innerText = (dados.solicitadas || []).length;
@@ -130,10 +155,7 @@
     function filtrarMapa() {
         const termo = document.getElementById('queryBusca').value.toLowerCase().trim();
         if (!termo) return;
-
-        // Procura em todas as listas
         const todasAsListas = [...ultimosDados.online, ...ultimosDados.em_corrida, ...ultimosDados.solicitadas];
-        
         const encontrado = todasAsListas.find(item => {
             const nome = (item.nome || "").toLowerCase();
             const cpf = (item.cpf || "").replace(/\D/g, '');
@@ -145,9 +167,7 @@
         if (encontrado) {
             const coords = encontrado.location ? encontrado.location.coordinates : encontrado.location_origem.coordinates;
             map.flyTo({ center: coords, zoom: 16, duration: 2000 });
-        } else {
-            alert("Nenhum registro encontrado.");
-        }
+        } else { alert("Nenhum registro encontrado."); }
     }
 
     map.on('load', () => {
