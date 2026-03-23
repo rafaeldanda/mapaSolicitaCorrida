@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard | Real-Time</title>
+    <title>Admin | Centro de Comando Real-Time</title>
     <script src='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.js'></script>
     <link href='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.css' rel='stylesheet' />
     <style>
         :root { --primary: #2ea6ff; --success: #10b981; --warning: #ffaa00; --danger: #ef4444; }
-        body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; background: #0b0d11; }
+        body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; background: #0b0d11; color: white; overflow: hidden; }
         
         #map { position: absolute; top: 0; bottom: 0; width: 100%; }
 
@@ -22,20 +22,21 @@
 
         .stats-panel {
             position: absolute; bottom: 30px; left: 20px; z-index: 1000;
-            background: rgba(20, 22, 28, 0.9); padding: 18px; border-radius: 15px; width: 230px; border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(20, 22, 28, 0.95); padding: 20px; border-radius: 15px; width: 240px; border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        .stat-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; color: white; font-size: 13px; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; display: inline-block; }
+        .stat-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 13px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 10px; display: inline-block; }
         .dot.active { background: var(--success); box-shadow: 0 0 10px var(--success); }
         .dot.busy { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
         .dot.pending { background: var(--warning); box-shadow: 0 0 10px var(--warning); }
-        .stat-count { font-weight: bold; font-size: 16px; }
+        .stat-count { font-weight: 800; font-size: 18px; color: #fff; min-width: 20px; text-align: right; }
     </style>
 </head>
 <body>
 
 <div class="topbar">
-    <input type="text" id="queryBusca" class="search-input" placeholder="Buscar Corrida, CPF ou Nome...">
+    <input type="text" id="queryBusca" class="search-input" placeholder="ID Corrida, CPF ou Nome...">
     <button class="btn-search">BUSCAR</button>
 </div>
 
@@ -54,78 +55,78 @@
         container: 'map',
         style: 'mapbox://styles/mapbox/dark-v11',
         center: [-51.209, -30.085],
-        zoom: 12
+        zoom: 12,
+        pitch: 30
     });
 
     let markers = [];
-    let layerIds = [];
+    let currentLayers = [];
 
     async function fetchData() {
         try {
             const response = await fetch('https://primary-production-a103.up.railway.app/webhook/332ac826-ee61-4613-b47e-f861512d035f');
-            const json = await response.json();
+            const resData = await response.json();
             
-            // CORREÇÃO DA LEGENDA: Força a leitura do objeto correto, seja array ou objeto puro
-            const dados = Array.isArray(json) ? json[0] : json;
+            // GARANTE A LEITURA DA GAVETA CORRETA (Fidelidade n8n)
+            const dados = Array.isArray(resData) ? resData[0] : resData;
             
             atualizarMapa(dados);
-        } catch (e) { console.error("Erro dados:", e); }
+        } catch (e) { console.error("Erro na busca de dados:", e); }
     }
 
     function atualizarMapa(dados) {
-        // Limpa marcadores
+        // 1. Limpa marcadores visuais
         markers.forEach(m => m.remove());
         markers = [];
         
-        // Limpa camadas de círculos
-        layerIds.forEach(id => {
-            if (map.getLayer('lyr-'+id)) map.removeLayer('lyr-'+id);
-            if (map.getSource('src-'+id)) map.removeSource('src-'+id);
+        // 2. Limpa camadas de círculos do Mapbox de forma segura
+        currentLayers.forEach(id => {
+            if (map.getLayer('lyr-' + id)) map.removeLayer('lyr-' + id);
+            if (map.getSource('src-' + id)) map.removeSource('src-' + id);
         });
-        layerIds = [];
+        currentLayers = [];
 
+        // 3. Extrai listas com fallback para vazio []
         const online = dados.online || [];
         const emCorrida = dados.em_corrida || [];
         const solicitadas = dados.solicitadas || [];
 
-        // Renderiza Categorias
-        online.forEach((m, i) => renderizarElemento(m.location.coordinates, "#10b981", m.nome, "on"+i));
-        emCorrida.forEach((m, i) => renderizarElemento(m.location.coordinates, "#ef4444", m.nome, "busy"+i));
-        solicitadas.forEach((c, i) => {
-            const coords = c.location_origem?.coordinates || c.location?.coordinates;
-            if(coords) renderizarElemento(coords, "#ffaa00", c.passageiro?.nome, "req"+i);
+        // 4. Renderiza Motoristas Online (Verde)
+        online.forEach((m, i) => {
+            renderizarPonto(m.location?.coordinates, "#10b981", `<b>Motorista Livre</b><br>${m.nome}`, "on-" + (m._id?.$oid || i));
         });
 
-        // ATUALIZAÇÃO DA LEGENDA (Aqui o 0 vira 2)
+        // 5. Renderiza Motoristas em Corrida (Vermelho)
+        emCorrida.forEach((m, i) => {
+            renderizarPonto(m.location?.coordinates, "#ef4444", `<b>Em Corrida</b><br>${m.nome}`, "busy-" + (m._id?.$oid || i));
+        });
+
+        // 6. Renderiza Chamadas Pendentes (Laranja)
+        solicitadas.forEach((c, i) => {
+            const coords = c.location_origem?.coordinates || c.location?.coordinates;
+            renderizarPonto(coords, "#ffaa00", `<b>Solicitada</b><br>${c.passageiro?.nome}`, "req-" + (c._id?.$oid || i));
+        });
+
+        // 7. ATUALIZAÇÃO DA LEGENDA (Corrigido para refletir o número real)
         document.getElementById('count-livre').innerText = online.length;
         document.getElementById('count-ocupado').innerText = emCorrida.length;
         document.getElementById('count-espera').innerText = solicitadas.length;
     }
 
-    // Função para calcular o raio em pixels para manter ~5km em qualquer zoom
-    const getRadius = () => {
-        return {
-            'base': 1.5,
-            'stops': [
-                [10, 15],   // Zoom longe
-                [12, 55],   // Zoom cidade (Porto Alegre)
-                [14, 220],  // Zoom bairro
-                [16, 850]   // Zoom rua
-            ]
-        };
-    };
+    function renderizarPonto(coords, cor, popupHtml, idBase) {
+        if (!coords || coords.length < 2) return; // Segurança contra dados nulos
 
-    function renderizarElemento(coords, cor, nome, id) {
         // Marcador
         const marker = new mapboxgl.Marker({ color: cor })
             .setLngLat(coords)
-            .setPopup(new mapboxgl.Popup().setHTML(`<b>${nome}</b>`))
+            .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(popupHtml))
             .addTo(map);
         markers.push(marker);
 
-        // Círculo de 5km (Dinâmico)
-        const sId = 'src-'+id;
-        const lId = 'lyr-'+id;
+        // Gera ID único para não dar erro de "Source already exists"
+        const uniqueId = idBase + "-" + Math.floor(Math.random() * 1000);
+        const sId = 'src-' + uniqueId;
+        const lId = 'lyr-' + uniqueId;
         
         map.addSource(sId, {
             "type": "geojson",
@@ -137,19 +138,23 @@
             "type": "circle",
             "source": sId,
             "paint": {
-                "circle-radius": getRadius(), // Chama a função de escala proporcional
+                // Escala de 5km que aumenta/diminui com o Zoom
+                "circle-radius": {
+                    'base': 1.75,
+                    'stops': [[10, 15], [12, 60], [15, 350], [20, 4000]]
+                },
                 "circle-color": cor,
-                "circle-opacity": 0.15,
+                "circle-opacity": 0.18,
                 "circle-stroke-width": 1,
                 "circle-stroke-color": cor
             }
         });
-        layerIds.push(id);
+        currentLayers.push(uniqueId);
     }
 
     map.on('load', () => {
         fetchData();
-        setInterval(fetchData, 60000);
+        setInterval(fetchData, 60000); // Atualiza de minuto em minuto
     });
 </script>
 </body>
