@@ -31,7 +31,6 @@
         .motivo-tag { background: #fee2e2; color: var(--danger); padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-bottom: 15px; display: inline-block; }
         .status-resolvido-tag { background: #d1fae5; color: var(--success); padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-bottom: 15px; display: inline-block; float: right; }
 
-        /* Grid de Informações Ajustado */
         .info-grid { background: #f9fafb; border-radius: 8px; padding: 12px; margin-bottom: 15px; border: 1px solid #f0f0f0; }
         .info-section-title { font-size: 9px; color: #bbb; font-weight: 800; text-transform: uppercase; margin: 10px 0 5px 0; border-bottom: 1px solid #eee; padding-bottom: 2px; }
         .info-section-title:first-child { margin-top: 0; }
@@ -50,6 +49,9 @@
         
         .msg-ja-respondida { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 12px; border-radius: 10px; text-align: center; font-size: 13px; font-weight: bold; }
         #loading-overlay { text-align: center; padding: 50px; color: #888; font-size: 13px; }
+
+        .link-whatsapp { color: var(--primary); text-decoration: none; font-weight: bold; }
+        .link-whatsapp:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -130,6 +132,10 @@
             const dataEnvio = item.contestacao?.dataEnvio ? new Date(item.contestacao.dataEnvio).toLocaleDateString('pt-BR') : '--/--/----';
             const idUnico = item._id?.$oid || item._id;
 
+            // Formatação do link do WhatsApp (remove caracteres não numéricos)
+            const foneLimpo = item.telefonePassageiro ? item.telefonePassageiro.replace(/\D/g, '') : '';
+            const linkWhats = foneLimpo ? `https://wa.me/55${foneLimpo}` : '#';
+
             let areaResposta = `
                 <div class="reply-box" id="box-${idUnico}">
                     <textarea id="input-${idUnico}" placeholder="Digite a solução para o passageiro..."></textarea>
@@ -152,8 +158,11 @@
                 
                 <div class="info-grid">
                     <div class="info-section-title">Dados do Passageiro</div>
-                    <div class="info-item"><span class="label">Nome</span> ${item.nomePassageiro || 'Não informado'}</div>
-                    <div class="info-item"><span class="label">WhatsApp</span> ${item.telefonePassageiro || '---'}</div>
+                    <div class="info-item"><span class="label">Nome</span> ${item.passageiro || 'Não informado'}</div>
+                    <div class="info-item">
+                        <span class="label">WhatsApp</span> 
+                        <a href="${linkWhats}" target="_blank" class="link-whatsapp">${item.telefonePassageiro || '---'}</a>
+                    </div>
                     
                     <div class="info-section-title">Detalhes da Viagem</div>
                     <div class="info-item"><span class="label">Motorista</span> ${item.motorista || '---'}</div>
