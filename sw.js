@@ -14,7 +14,7 @@
     // 3. FUNÇÃO DE ENVIO (O SEGREDO PARA BACKGROUND)
     async function enviarPosicao(pos) {
         const agora = Date.now();
-        if (agora - lastPing < 10000) return; // Filtro de ~1 minuto
+        if (agora - lastPing < 58000) return; // Filtro de ~1 minuto
         
         lastPing = agora;
         const { latitude, longitude, speed } = pos.coords;
