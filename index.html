@@ -94,7 +94,7 @@
         async function enviarPosicao(pos) {
             const agora = Date.now();
             // Intervalo de segurança ~60s
-            if (agora - lastPing < 58000) return; 
+            if (agora - lastPing < 28000) return; 
             
             lastPing = agora;
             const { latitude, longitude, speed } = pos.coords;
