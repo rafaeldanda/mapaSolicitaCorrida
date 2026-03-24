@@ -1,28 +1,28 @@
-const CACHE_NAME = "meleva-v2"; // muda versão sempre
+const CACHE_NAME = "meleva-v2";
 
-self.addEventListener("install", event => {
-self.skipWaiting(); // ativa novo SW imediatamente
+self.addEventListener("install", (event) => {
+self.skipWaiting();
 });
 
-self.addEventListener("activate", event => {
+self.addEventListener("activate", (event) => {
 event.waitUntil(
-caches.keys().then(keys => {
-return Promise.all(
-keys.map(key => {
+caches.keys().then((keys) =>
+Promise.all(
+keys.map((key) => {
 if (key !== CACHE_NAME) {
 return caches.delete(key);
 }
 })
-);
-})
+)
+)
 );
 
 ```
-self.clients.claim(); // assume controle imediato
+self.clients.claim();
 ```
 
 });
 
-self.addEventListener("fetch", event => {
+self.addEventListener("fetch", (event) => {
 event.respondWith(fetch(event.request));
 });
