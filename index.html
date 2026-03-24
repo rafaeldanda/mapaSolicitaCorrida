@@ -2,66 +2,59 @@
 
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Me Leva - Motorista</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Me Leva - Motorista</title>
 
-```
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2ea6ff">
 
 <style>
-    body {
-        font-family: Arial, sans-serif;
-        background: #f4f7f9;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        margin: 0;
-    }
+body {
+    font-family: Arial;
+    background: #f4f7f9;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+.box {
+    background: white;
+    padding: 20px;
+    border-radius: 20px;
+    text-align: center;
+    width: 300px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+.contador {
+    font-size: 3em;
+    color: #2ea6ff;
+}
+.led {
+    width: 12px;
+    height: 12px;
+    background: #ccc;
+    border-radius: 50%;
+    margin: 10px auto;
+}
+.on { background: #28a745; }
+.log { font-size: 12px; color: #555; }
+.token { font-size: 12px; background: #e3f2fd; padding: 5px; border-radius: 10px; }
 
-    .box {
-        background: white;
-        padding: 25px;
-        border-radius: 20px;
-        text-align: center;
-        width: 300px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    }
-
-    .contador {
-        font-size: 3em;
-        color: #2ea6ff;
-    }
-
-    .led {
-        width: 12px;
-        height: 12px;
-        background: #ccc;
-        border-radius: 50%;
-        margin: 10px auto;
-    }
-
-    .ativo {
-        background: #28a745;
-    }
-
-    .log {
-        font-size: 12px;
-        margin-top: 10px;
-        color: #555;
-    }
-
-    .token {
-        font-size: 12px;
-        background: #e3f2fd;
-        padding: 5px;
-        border-radius: 10px;
-        display: inline-block;
-    }
+#btnInstalar {
+    display:none;
+    width:100%;
+    padding:12px;
+    margin-bottom:10px;
+    background:#28a745;
+    color:white;
+    border:none;
+    border-radius:10px;
+    font-weight:bold;
+    cursor:pointer;
+}
 </style>
-```
 
 </head>
 
@@ -69,7 +62,8 @@
 
 <div class="box">
 
-```
+<button id="btnInstalar">📲 Instalar App</button>
+
 <h2>🚗 Motorista</h2>
 
 <p>Token:</p>
@@ -79,9 +73,7 @@
 <p>Sinais enviados</p>
 
 <div id="led" class="led"></div>
-
 <div id="log" class="log">Iniciando...</div>
-```
 
 </div>
 
@@ -110,24 +102,26 @@ function log(msg) {
 
 function blink() {
     const led = document.getElementById("led");
-    led.classList.add("ativo");
-    setTimeout(() => led.classList.remove("ativo"), 500);
+    led.classList.add("on");
+    setTimeout(() => led.classList.remove("on"), 500);
 }
 
-// ================= ENVIO =================
+// ================= VARIÁVEIS =================
 let contador = 0;
+let ultimaPosicao = null;
 let ultimoEnvio = 0;
 
+// ================= ENVIO =================
 async function enviar(lat, lon, speed = 0) {
 
     const agora = Date.now();
 
-    // intervalo 60s
-    if (agora - ultimoEnvio < 30000) return;
+    // intervalo 10s
+    if (agora - ultimoEnvio < 10000) return;
 
     ultimoEnvio = agora;
 
-    const url = `${webhook}?token=${token}&lat=${lat}&lon=${lon}&speed=${speed}&ping=${contador+1}`;
+    const url = `${webhook}?token=${token}&lat=${lat}&lon=${lon}&speed=${speed || 0}&ping=${contador+1}`;
 
     try {
         const res = await fetch(url);
@@ -157,13 +151,12 @@ function iniciarGPS() {
 
     navigator.geolocation.watchPosition(
         (pos) => {
-            const { latitude, longitude, speed } = pos.coords;
+            ultimaPosicao = pos;
 
-            console.log("GPS:", latitude, longitude);
+            const { latitude, longitude } = pos.coords;
+            console.log("GPS atualizado:", latitude, longitude);
 
-            log("📍 GPS ativo");
-
-            enviar(latitude, longitude, speed);
+            log("📍 GPS OK");
         },
         (err) => {
             log("Erro GPS: " + err.code);
@@ -171,10 +164,22 @@ function iniciarGPS() {
         {
             enableHighAccuracy: true,
             maximumAge: 0,
-            timeout: 30000
+            timeout: 20000
         }
     );
 }
+
+// ================= LOOP DE ENVIO =================
+setInterval(() => {
+
+    if (ultimaPosicao) {
+        const { latitude, longitude, speed } = ultimaPosicao.coords;
+        enviar(latitude, longitude, speed);
+    } else {
+        log("⏳ Aguardando GPS...");
+    }
+
+}, 10000);
 
 // ================= PERMISSÃO =================
 navigator.permissions.query({ name: "geolocation" }).then(result => {
@@ -189,13 +194,43 @@ navigator.permissions.query({ name: "geolocation" }).then(result => {
 
 });
 
-// ================= TESTE SEM GPS =================
-// descomenta se quiser testar backend
-/*
-setInterval(() => {
-    enviar(-30.0346, -51.2177, 0);
-}, 10000);
-*/
+// ================= INSTALAÇÃO PWA =================
+let deferredPrompt;
+const btnInstalar = document.getElementById("btnInstalar");
+
+function isPWAInstalled() {
+    return window.matchMedia('(display-mode: standalone)').matches
+        || window.navigator.standalone === true;
+}
+
+if (isPWAInstalled()) {
+    console.log("App já instalado");
+} else {
+    window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        btnInstalar.style.display = "block";
+    });
+}
+
+btnInstalar.addEventListener("click", async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+
+    const { outcome } = await deferredPrompt.userChoice;
+
+    if (outcome === "accepted") {
+        btnInstalar.style.display = "none";
+    }
+
+    deferredPrompt = null;
+});
+
+window.addEventListener("appinstalled", () => {
+    console.log("App instalado");
+    btnInstalar.style.display = "none";
+});
 
 // ================= SERVICE WORKER =================
 if ("serviceWorker" in navigator) {
