@@ -123,7 +123,7 @@ async function enviar(lat, lon, speed = 0) {
     const agora = Date.now();
 
     // intervalo 60s
-    if (agora - ultimoEnvio < 5000) return;
+    if (agora - ultimoEnvio < 30000) return;
 
     ultimoEnvio = agora;
 
@@ -171,7 +171,7 @@ function iniciarGPS() {
         {
             enableHighAccuracy: true,
             maximumAge: 0,
-            timeout: 20000
+            timeout: 30000
         }
     );
 }
