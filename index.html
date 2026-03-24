@@ -1,138 +1,208 @@
 <!DOCTYPE html>
+
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Me Leva - Motorista</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#2ea6ff">
-    <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f7f9; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-        .ping-box { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 350px; }
-        .contagem { font-size: 4em; color: #2ea6ff; font-weight: bold; margin: 10px 0; }
-        .status-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; }
-        .led { width: 12px; height: 12px; background-color: #ccc; border-radius: 50%; transition: 0.3s; }
-        .led-active { background-color: #28a745; box-shadow: 0 0 10px #28a745; }
-        #btnInstalar { display: none; width: 100%; padding: 18px; background: #28a745; color: white; border: none; border-radius: 12px; font-weight: bold; margin-bottom: 20px; cursor: pointer; font-size: 1rem; }
-        .log-box { font-size: 0.75rem; color: #666; background: #f9f9f9; padding: 10px; border-radius: 8px; height: 60px; overflow: hidden; margin-top: 15px; border: 1px solid #eee; }
-        .token-badge { font-size: 0.8rem; background: #e3f2fd; padding: 5px 12px; border-radius: 20px; color: #1976d2; font-weight: bold; border: 1px solid #bbdefb; }
-    </style>
+
+```
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2ea6ff">
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f7f9;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+
+    .box {
+        background: white;
+        padding: 25px;
+        border-radius: 20px;
+        text-align: center;
+        width: 300px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+
+    .contador {
+        font-size: 3em;
+        color: #2ea6ff;
+    }
+
+    .led {
+        width: 12px;
+        height: 12px;
+        background: #ccc;
+        border-radius: 50%;
+        margin: 10px auto;
+    }
+
+    .ativo {
+        background: #28a745;
+    }
+
+    .log {
+        font-size: 12px;
+        margin-top: 10px;
+        color: #555;
+    }
+
+    .token {
+        font-size: 12px;
+        background: #e3f2fd;
+        padding: 5px;
+        border-radius: 10px;
+        display: inline-block;
+    }
+</style>
+```
+
 </head>
+
 <body>
 
-    <button id="btnInstalar">📲 INSTALAR APP MOTORISTA</button>
+<div class="box">
 
-    <div class="ping-box">
-        <div class="status-container">
-            <div id="led-signal" class="led"></div>
-            <span id="txt-status" style="font-size: 0.8rem; font-weight: bold; color: #555;">SISTEMA ONLINE</span>
-        </div>
-        
-        <p style="margin: 0; color: #888; font-size: 0.9rem; margin-bottom: 5px;">Token:</p>
-        <span id="display-token" class="token-badge">Carregando...</span>
-        
-        <div id="contador" class="contagem">0</div>
-        <p style="margin: 0; color: #aaa; font-size: 0.8rem;">Sinais enviados</p>
-        
-        <div id="log" class="log-box">Iniciando rastreador...</div>
-    </div>
+```
+<h2>🚗 Motorista</h2>
 
-    <script>
-        // 1. GESTÃO DO TOKEN
-        const urlParams = new URLSearchParams(window.location.search);
-        let motoristaToken = urlParams.get('token');
-        if (motoristaToken) {
-            localStorage.setItem('me_leva_token', motoristaToken);
-        } else {
-            motoristaToken = localStorage.getItem('me_leva_token') || "Sem_Token";
-        }
-        document.getElementById('display-token').innerText = motoristaToken;
+<p>Token:</p>
+<div id="token" class="token">...</div>
 
-        // 2. LÓGICA DE INSTALAÇÃO
-        let deferredPrompt;
-        const btn = document.getElementById('btnInstalar');
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            btn.style.display = 'block';
-        });
-        btn.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') btn.style.display = 'none';
-                deferredPrompt = null;
-            }
-        });
+<div id="contador" class="contador">0</div>
+<p>Sinais enviados</p>
 
-        // 3. RASTREAMENTO E WEBHOOK (Otimizado para Background)
-        const n8n_webhook = "https://primary-production-a103.up.railway.app/webhook/91e80c8e-2309-4dd4-8512-f0dc5c4af856";
-        let pings = 0;
-        let lastPing = 0;
-        let wakeLock = null;
+<div id="led" class="led"></div>
 
-        async function requestWakeLock() {
-            if ('wakeLock' in navigator) {
-                try {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                } catch (err) { console.error("WakeLock Erro:", err); }
-            }
-        }
+<div id="log" class="log">Iniciando...</div>
+```
 
-        // Reativa WakeLock ao voltar para o app
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') requestWakeLock();
-        });
+</div>
 
-        function atualizarUI(msg) {
-            document.getElementById('log').innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
-            const led = document.getElementById('led-signal');
-            led.classList.add('led-active');
-            setTimeout(() => led.classList.remove('led-active'), 1000);
-        }
+<script>
 
-        async function enviarPosicao(pos) {
+// ================= CONFIG =================
+const webhook = "https://primary-production-a103.up.railway.app/webhook/91e80c8e-2309-4dd4-8512-f0dc5c4af856";
+
+// ================= TOKEN =================
+const params = new URLSearchParams(window.location.search);
+let token = params.get("token");
+
+if (token) {
+    localStorage.setItem("meleva_token", token);
+} else {
+    token = localStorage.getItem("meleva_token") || "SEM_TOKEN";
+}
+
+document.getElementById("token").innerText = token;
+
+// ================= UI =================
+function log(msg) {
+    console.log(msg);
+    document.getElementById("log").innerText = msg;
+}
+
+function blink() {
+    const led = document.getElementById("led");
+    led.classList.add("ativo");
+    setTimeout(() => led.classList.remove("ativo"), 500);
+}
+
+// ================= ENVIO =================
+let contador = 0;
+let ultimoEnvio = 0;
+
+async function enviar(lat, lon, speed = 0) {
+
     const agora = Date.now();
-    if (agora - lastPing < 58000) return; 
-    
-    lastPing = agora;
-    const { latitude, longitude, speed } = pos.coords;
 
-    // Criamos a URL com os dados
-    const url = `${n8n_webhook}?token=${motoristaToken}&lat=${latitude}&lon=${longitude}&ping=${pings + 1}&speed=${speed || 0}`;
+    // intervalo 60s
+    if (agora - ultimoEnvio < 60000) return;
 
-    // TENTATIVA 1: sendBeacon (O melhor para background)
-    // O navegador garante o envio mesmo que o app esteja minimizado
-    const enviado = navigator.sendBeacon(url);
+    ultimoEnvio = agora;
 
-    if (enviado) {
-        pings++;
-        document.getElementById('contador').innerText = pings;
-        atualizarUI("Sinal enviado via Beacon (Back)");
-    } else {
-        // TENTATIVA 2: Fetch com Keepalive (Caso o Beacon falhe)
-        fetch(url, { method: 'POST', keepalive: true, mode: 'no-cors' })
-            .then(() => {
-                pings++;
-                document.getElementById('contador').innerText = pings;
-                atualizarUI("Sinal enviado via Fetch (Back)");
-            });
+    const url = `${webhook}?token=${token}&lat=${lat}&lon=${lon}&speed=${speed}&ping=${contador+1}`;
+
+    try {
+        const res = await fetch(url);
+        const text = await res.text();
+
+        console.log("Servidor:", text);
+
+        contador++;
+        document.getElementById("contador").innerText = contador;
+
+        log("✔ Enviado");
+        blink();
+
+    } catch (e) {
+        console.error(e);
+        log("❌ Erro: " + e.message);
     }
 }
 
-        if ("geolocation" in navigator) {
-            requestWakeLock();
-            navigator.geolocation.watchPosition(enviarPosicao, 
-                (err) => { atualizarUI("Erro GPS: " + err.code); }, 
-                { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 }
-            );
-        } else {
-            atualizarUI("GPS não disponível.");
-        }
+// ================= GPS =================
+function iniciarGPS() {
 
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
+    if (!navigator.geolocation) {
+        log("GPS não suportado");
+        return;
+    }
+
+    navigator.geolocation.watchPosition(
+        (pos) => {
+            const { latitude, longitude, speed } = pos.coords;
+
+            console.log("GPS:", latitude, longitude);
+
+            log("📍 GPS ativo");
+
+            enviar(latitude, longitude, speed);
+        },
+        (err) => {
+            log("Erro GPS: " + err.code);
+        },
+        {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 20000
         }
-    </script>
+    );
+}
+
+// ================= PERMISSÃO =================
+navigator.permissions.query({ name: "geolocation" }).then(result => {
+
+    console.log("Permissão:", result.state);
+
+    if (result.state === "denied") {
+        log("❌ Permissão negada");
+    } else {
+        iniciarGPS();
+    }
+
+});
+
+// ================= TESTE SEM GPS =================
+// descomenta se quiser testar backend
+/*
+setInterval(() => {
+    enviar(-30.0346, -51.2177, 0);
+}, 10000);
+*/
+
+// ================= SERVICE WORKER =================
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js");
+}
+
+</script>
+
 </body>
 </html>
