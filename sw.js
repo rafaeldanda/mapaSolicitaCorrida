@@ -1,28 +1,53 @@
-const CACHE_NAME = "meleva-v2";
+let deferredPrompt;
+const btnInstalar = document.getElementById("btnInstalar");
 
-self.addEventListener("install", (event) => {
-self.skipWaiting();
-});
-
-self.addEventListener("activate", (event) => {
-event.waitUntil(
-caches.keys().then((keys) =>
-Promise.all(
-keys.map((key) => {
-if (key !== CACHE_NAME) {
-return caches.delete(key);
+// 🔍 Verifica se já está instalado
+function isPWAInstalled() {
+return window.matchMedia('(display-mode: standalone)').matches
+|| window.navigator.standalone === true;
 }
-})
-)
-)
-);
+
+// 🚀 Se já estiver instalado, esconde botão
+if (isPWAInstalled()) {
+console.log("App já instalado");
+btnInstalar.style.display = "none";
+} else {
 
 ```
-self.clients.claim();
+// Captura evento de instalação
+window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+
+    btnInstalar.style.display = "block";
+});
+```
+
+}
+
+// Clique no botão
+btnInstalar.addEventListener("click", async () => {
+if (!deferredPrompt) return;
+
+```
+deferredPrompt.prompt();
+
+const { outcome } = await deferredPrompt.userChoice;
+
+if (outcome === "accepted") {
+    console.log("Usuário instalou");
+    btnInstalar.style.display = "none";
+} else {
+    console.log("Usuário cancelou");
+}
+
+deferredPrompt = null;
 ```
 
 });
 
-self.addEventListener("fetch", (event) => {
-event.respondWith(fetch(event.request));
+// Evento após instalação
+window.addEventListener("appinstalled", () => {
+console.log("App instalado com sucesso");
+btnInstalar.style.display = "none";
 });
