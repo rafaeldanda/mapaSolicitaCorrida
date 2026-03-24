@@ -116,7 +116,7 @@ async function enviar(lat, lon, speed = 0) {
 
     const agora = Date.now();
 
-    // intervalo 10s
+    // envio a cada 10s
     if (agora - ultimoEnvio < 10000) return;
 
     ultimoEnvio = agora;
@@ -169,8 +169,8 @@ function iniciarGPS() {
     );
 }
 
-// ================= LOOP DE ENVIO =================
-setInterval(() => {
+// ================= LOOP ESTÁVEL =================
+function loopEnvio() {
 
     if (ultimaPosicao) {
         const { latitude, longitude, speed } = ultimaPosicao.coords;
@@ -179,7 +179,10 @@ setInterval(() => {
         log("⏳ Aguardando GPS...");
     }
 
-}, 10000);
+    setTimeout(loopEnvio, 10000);
+}
+
+loopEnvio();
 
 // ================= PERMISSÃO =================
 navigator.permissions.query({ name: "geolocation" }).then(result => {
@@ -194,7 +197,25 @@ navigator.permissions.query({ name: "geolocation" }).then(result => {
 
 });
 
-// ================= INSTALAÇÃO PWA =================
+// ================= RETORNO DA TELA =================
+document.addEventListener("visibilitychange", () => {
+
+    if (document.visibilityState === "visible") {
+
+        console.log("Tela voltou!");
+        log("🔄 Retomando...");
+
+        iniciarGPS();
+
+        if (ultimaPosicao) {
+            const { latitude, longitude, speed } = ultimaPosicao.coords;
+            enviar(latitude, longitude, speed);
+        }
+    }
+
+});
+
+// ================= INSTALAÇÃO =================
 let deferredPrompt;
 const btnInstalar = document.getElementById("btnInstalar");
 
@@ -203,9 +224,7 @@ function isPWAInstalled() {
         || window.navigator.standalone === true;
 }
 
-if (isPWAInstalled()) {
-    console.log("App já instalado");
-} else {
+if (!isPWAInstalled()) {
     window.addEventListener("beforeinstallprompt", (e) => {
         e.preventDefault();
         deferredPrompt = e;
@@ -217,18 +236,13 @@ btnInstalar.addEventListener("click", async () => {
     if (!deferredPrompt) return;
 
     deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
 
-    const { outcome } = await deferredPrompt.userChoice;
-
-    if (outcome === "accepted") {
-        btnInstalar.style.display = "none";
-    }
-
+    btnInstalar.style.display = "none";
     deferredPrompt = null;
 });
 
 window.addEventListener("appinstalled", () => {
-    console.log("App instalado");
     btnInstalar.style.display = "none";
 });
 
