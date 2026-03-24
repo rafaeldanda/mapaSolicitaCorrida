@@ -92,24 +92,33 @@
         }
 
         async function enviarPosicao(pos) {
-            const agora = Date.now();
-            // Intervalo de segurança ~60s
-            if (agora - lastPing < 28000) return; 
-            
-            lastPing = agora;
-            const { latitude, longitude, speed } = pos.coords;
+    const agora = Date.now();
+    if (agora - lastPing < 58000) return; 
+    
+    lastPing = agora;
+    const { latitude, longitude, speed } = pos.coords;
 
-            try {
-                const response = await fetch(`${n8n_webhook}?token=${motoristaToken}&lat=${latitude}&lon=${longitude}&ping=${pings + 1}&speed=${speed || 0}`);
-                if (response.ok) {
-                    pings++;
-                    document.getElementById('contador').innerText = pings;
-                    atualizarUI("Localização enviada!");
-                }
-            } catch (e) { 
-                atualizarUI("Erro de conexão."); 
-            }
-        }
+    // Criamos a URL com os dados
+    const url = `${n8n_webhook}?token=${motoristaToken}&lat=${latitude}&lon=${longitude}&ping=${pings + 1}&speed=${speed || 0}`;
+
+    // TENTATIVA 1: sendBeacon (O melhor para background)
+    // O navegador garante o envio mesmo que o app esteja minimizado
+    const enviado = navigator.sendBeacon(url);
+
+    if (enviado) {
+        pings++;
+        document.getElementById('contador').innerText = pings;
+        atualizarUI("Sinal enviado via Beacon (Back)");
+    } else {
+        // TENTATIVA 2: Fetch com Keepalive (Caso o Beacon falhe)
+        fetch(url, { method: 'POST', keepalive: true, mode: 'no-cors' })
+            .then(() => {
+                pings++;
+                document.getElementById('contador').innerText = pings;
+                atualizarUI("Sinal enviado via Fetch (Back)");
+            });
+    }
+}
 
         if ("geolocation" in navigator) {
             requestWakeLock();
