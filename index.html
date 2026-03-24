@@ -1,71 +1,129 @@
-// ... (mantenha a parte do Token e Instalação igual)
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Me Leva - Motorista</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2ea6ff">
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f7f9; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .ping-box { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 350px; }
+        .contagem { font-size: 4em; color: #2ea6ff; font-weight: bold; margin: 10px 0; }
+        .status-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        .led { width: 12px; height: 12px; background-color: #ccc; border-radius: 50%; transition: 0.3s; }
+        .led-active { background-color: #28a745; box-shadow: 0 0 10px #28a745; }
+        #btnInstalar { display: none; width: 100%; padding: 18px; background: #28a745; color: white; border: none; border-radius: 12px; font-weight: bold; margin-bottom: 20px; cursor: pointer; font-size: 1rem; }
+        .log-box { font-size: 0.75rem; color: #666; background: #f9f9f9; padding: 10px; border-radius: 8px; height: 60px; overflow: hidden; margin-top: 15px; border: 1px solid #eee; }
+        .token-badge { font-size: 0.8rem; background: #e3f2fd; padding: 5px 12px; border-radius: 20px; color: #1976d2; font-weight: bold; border: 1px solid #bbdefb; }
+    </style>
+</head>
+<body>
 
-// 3. RASTREAMENTO E WEBHOOK (Melhorado para Background)
-const n8n_webhook = "https://primary-production-a103.up.railway.app/webhook/91e80c8e-2309-4dd4-8512-f0dc5c4af856";
-let pings = 0;
-let lastPing = 0;
-let wakeLock = null;
+    <button id="btnInstalar">📲 INSTALAR APP MOTORISTA</button>
 
-async function requestWakeLock() {
-    try {
-        wakeLock = await navigator.wakeLock.request('screen');
-        console.log('Wake Lock ativo: Tela não irá desligar');
-    } catch (err) {
-        console.error(`${err.name}, ${err.message}`);
-    }
-}
-
-// Reativar wake lock se o app voltar do background
-document.addEventListener('visibilitychange', async () => {
-    if (wakeLock !== null && document.visibilityState === 'visible') {
-        requestWakeLock();
-    }
-});
-
-function atualizarUI(msg) {
-    document.getElementById('log').innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
-    const led = document.getElementById('led-signal');
-    led.classList.add('led-active');
-    setTimeout(() => led.classList.remove('led-active'), 1000);
-}
-
-async function enviarPosicao(pos) {
-    const agora = Date.now();
-    // Ajustado para 60 segundos (intervalo padrão de rastreamento)
-    if (agora - lastPing < 58000) return; 
-    
-    lastPing = agora;
-    const { latitude, longitude, heading, speed } = pos.coords;
-
-    try {
-        // Envio com dados mais completos (direção e velocidade ajudam no n8n)
-        const response = await fetch(`${n8n_webhook}?token=${motoristaToken}&lat=${latitude}&lon=${longitude}&ping=${pings + 1}&speed=${speed || 0}`);
+    <div class="ping-box">
+        <div class="status-container">
+            <div id="led-signal" class="led"></div>
+            <span id="txt-status" style="font-size: 0.8rem; font-weight: bold; color: #555;">SISTEMA ONLINE</span>
+        </div>
         
-        if (response.ok) {
-            pings++;
-            document.getElementById('contador').innerText = pings;
-            atualizarUI("Posição enviada com sucesso!");
-        }
-    } catch (e) { 
-        atualizarUI("Erro de conexão. Tentando manter GPS..."); 
-    }
-}
+        <p style="margin: 0; color: #888; font-size: 0.9rem; margin-bottom: 5px;">Token:</p>
+        <span id="display-token" class="token-badge">Carregando...</span>
+        
+        <div id="contador" class="contagem">0</div>
+        <p style="margin: 0; color: #aaa; font-size: 0.8rem;">Sinais enviados</p>
+        
+        <div id="log" class="log-box">Iniciando rastreador...</div>
+    </div>
 
-// Iniciar GPS e WakeLock
-if ("geolocation" in navigator) {
-    requestWakeLock();
-    
-    // watchPosition é mais resiliente que setInterval para background
-    navigator.geolocation.watchPosition(enviarPosicao, 
-        (err) => { 
-            atualizarUI("Erro GPS: " + err.code); 
-        }, 
-        { 
-            enableHighAccuracy: true, // Força uso do GPS (não só Wi-Fi)
-            maximumAge: 0, 
-            timeout: 30000 
+    <script>
+        // 1. GESTÃO DO TOKEN
+        const urlParams = new URLSearchParams(window.location.search);
+        let motoristaToken = urlParams.get('token');
+        if (motoristaToken) {
+            localStorage.setItem('me_leva_token', motoristaToken);
+        } else {
+            motoristaToken = localStorage.getItem('me_leva_token') || "Sem_Token";
         }
-    );
-} else {
-    atualizarUI("GPS não disponível.");
-}
+        document.getElementById('display-token').innerText = motoristaToken;
+
+        // 2. LÓGICA DE INSTALAÇÃO
+        let deferredPrompt;
+        const btn = document.getElementById('btnInstalar');
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            btn.style.display = 'block';
+        });
+        btn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') btn.style.display = 'none';
+                deferredPrompt = null;
+            }
+        });
+
+        // 3. RASTREAMENTO E WEBHOOK (Otimizado para Background)
+        const n8n_webhook = "https://primary-production-a103.up.railway.app/webhook/91e80c8e-2309-4dd4-8512-f0dc5c4af856";
+        let pings = 0;
+        let lastPing = 0;
+        let wakeLock = null;
+
+        async function requestWakeLock() {
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                } catch (err) { console.error("WakeLock Erro:", err); }
+            }
+        }
+
+        // Reativa WakeLock ao voltar para o app
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') requestWakeLock();
+        });
+
+        function atualizarUI(msg) {
+            document.getElementById('log').innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            const led = document.getElementById('led-signal');
+            led.classList.add('led-active');
+            setTimeout(() => led.classList.remove('led-active'), 1000);
+        }
+
+        async function enviarPosicao(pos) {
+            const agora = Date.now();
+            // Intervalo de segurança ~60s
+            if (agora - lastPing < 58000) return; 
+            
+            lastPing = agora;
+            const { latitude, longitude, speed } = pos.coords;
+
+            try {
+                const response = await fetch(`${n8n_webhook}?token=${motoristaToken}&lat=${latitude}&lon=${longitude}&ping=${pings + 1}&speed=${speed || 0}`);
+                if (response.ok) {
+                    pings++;
+                    document.getElementById('contador').innerText = pings;
+                    atualizarUI("Localização enviada!");
+                }
+            } catch (e) { 
+                atualizarUI("Erro de conexão."); 
+            }
+        }
+
+        if ("geolocation" in navigator) {
+            requestWakeLock();
+            navigator.geolocation.watchPosition(enviarPosicao, 
+                (err) => { atualizarUI("Erro GPS: " + err.code); }, 
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 }
+            );
+        } else {
+            atualizarUI("GPS não disponível.");
+        }
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</body>
+</html>
