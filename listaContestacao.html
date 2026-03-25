@@ -8,67 +8,62 @@
         :root { --primary: #2ea6ff; --success: #10b981; --text: #333; --bg: #f5f7fa; --danger: #ef4444; --warning: #f59e0b; }
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; background: var(--bg); color: var(--text); }
         
+        /* Header & Search */
         .header { background: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 100; }
         .header-info h1 { font-size: 16px; margin: 0; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
         .operador-tag { font-size: 10px; color: #aaa; text-transform: uppercase; font-weight: bold; display: flex; align-items: center; gap: 5px; }
-        
         .live-dot { width: 6px; height: 6px; background: var(--success); border-radius: 50%; display: inline-block; animation: blink 1.5s infinite; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-
         .btn-logout { background: none; border: 1px solid #ddd; padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; color: #888; }
-
         .search-container { background: white; padding: 12px 20px; border-bottom: 1px solid #eee; position: sticky; top: 52px; z-index: 99; display: flex; gap: 8px; justify-content: center; }
         .search-box { width: 100%; max-width: 400px; padding: 10px 15px; border: 1px solid #eee; border-radius: 10px; font-size: 13px; outline: none; background: #fafafa; }
         .btn-busca { background: var(--primary); color: white; border: none; padding: 0 15px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 11px; text-transform: uppercase; }
 
+        /* Container & Cards */
         .container { padding: 20px; max-width: 550px; margin: 0 auto; }
-        
         .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; border-left: 5px solid var(--danger); position: relative; animation: fadeIn 0.4s ease; }
         .card.resolvido { border-left-color: var(--success); opacity: 0.9; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
         .card-header { display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-bottom: 12px; border-bottom: 1px solid #f9f9f9; padding-bottom: 8px; }
         .motivo-tag { background: #fee2e2; color: var(--danger); padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-bottom: 15px; display: inline-block; }
         .status-resolvido-tag { background: #d1fae5; color: var(--success); padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-bottom: 15px; display: inline-block; float: right; }
 
-        /* Estilo dos Botões de Bloqueio */
-        .admin-actions { display: flex; gap: 10px; margin-bottom: 15px; }
+        /* Ações de Bloqueio */
+        .admin-actions { display: flex; gap: 8px; margin-bottom: 15px; }
         .btn-block { flex: 1; padding: 8px; border: 1px solid #eee; border-radius: 8px; font-size: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.2s; background: white; }
         .btn-block-pass { color: var(--warning); border-color: var(--warning); }
         .btn-block-pass:hover { background: var(--warning); color: white; }
         .btn-block-driver { color: var(--danger); border-color: var(--danger); }
         .btn-block-driver:hover { background: var(--danger); color: white; }
 
+        /* Info Grid */
         .info-grid { background: #f9fafb; border-radius: 8px; padding: 12px; margin-bottom: 15px; border: 1px solid #f0f0f0; }
         .info-section-title { font-size: 9px; color: #bbb; font-weight: 800; text-transform: uppercase; margin: 10px 0 5px 0; border-bottom: 1px solid #eee; padding-bottom: 2px; }
         .info-section-title:first-child { margin-top: 0; }
-        
         .info-item { margin: 4px 0; font-size: 12px; display: flex; align-items: flex-start; }
         .label { font-weight: bold; color: #999; font-size: 10px; text-transform: uppercase; margin-right: 6px; display: inline-block; width: 85px; flex-shrink: 0; }
         .valor-total { color: var(--success); font-weight: bold; }
 
+        /* Relato & Resposta */
         .relato-container { background: #fff; border-left: 3px solid #ddd; padding: 10px 15px; margin: 15px 0; }
         .relato-label { font-size: 10px; color: var(--danger); font-weight: bold; display: block; margin-bottom: 4px; }
         .relato-txt { font-style: italic; color: #444; font-size: 14px; line-height: 1.5; }
-
         .reply-box { margin-top: 15px; border-top: 1px dashed #eee; padding-top: 15px; }
-        textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-family: inherit; font-size: 13px; box-sizing: border-box; resize: none; height: 75px; }
+        textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-family: inherit; font-size: 13px; box-sizing: border-box; resize: none; height: 75px; outline: none; }
         .btn-enviar { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 14px; }
-        
-        /* MODAL FLUTUANTE */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
-        .modal-card { background: white; width: 90%; max-width: 400px; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; animation: modalIn 0.3s ease; }
-        @keyframes modalIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .modal-card h3 { margin-top: 0; font-size: 18px; color: var(--text); }
-        .modal-card p { font-size: 13px; color: #666; margin-bottom: 20px; }
-        .modal-card .btn-confirm { background: var(--danger); color: white; border: none; padding: 12px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
-        .modal-card .btn-cancel { background: #eee; color: #666; border: none; padding: 10px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 8px; font-size: 12px; }
-
         .msg-ja-respondida { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 12px; border-radius: 10px; text-align: center; font-size: 13px; font-weight: bold; }
         #loading-overlay { text-align: center; padding: 50px; color: #888; font-size: 13px; }
-
         .link-whatsapp { color: var(--primary); text-decoration: none; font-weight: bold; }
-        .link-whatsapp:hover { text-decoration: underline; }
+
+        /* Modal Flutuante */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+        .modal-card { background: white; width: 90%; max-width: 380px; padding: 25px; border-radius: 15px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); text-align: center; animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        @keyframes modalIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .modal-card h3 { margin: 0 0 10px 0; font-size: 18px; }
+        .modal-card p { font-size: 13px; color: #666; margin-bottom: 15px; }
+        .modal-card textarea { height: 100px; margin-bottom: 15px; border: 1px solid #eee; background: #fcfcfc; }
+        .btn-confirm { background: var(--danger); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; font-size: 14px; }
+        .btn-cancel { background: none; color: #aaa; border: none; padding: 10px; cursor: pointer; width: 100%; margin-top: 5px; font-size: 12px; text-transform: uppercase; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -76,8 +71,8 @@
 <div class="modal-overlay" id="modalBlock">
     <div class="modal-card">
         <h3 id="modalTitle">Bloquear Usuário</h3>
-        <p id="modalSubtitle">Informe o motivo do bloqueio para o registro interno.</p>
-        <textarea id="justificativaTexto" placeholder="Ex: Comportamento inadequado, falta de pagamento..."></textarea>
+        <p id="modalSubtitle">Por favor, descreva o motivo do bloqueio.</p>
+        <textarea id="justificativaTexto" placeholder="Escreva aqui a justificativa técnica..."></textarea>
         <button class="btn-confirm" id="confirmBlockBtn" onclick="processarBloqueio()">CONFIRMAR BLOQUEIO</button>
         <button class="btn-cancel" onclick="fecharModal()">CANCELAR</button>
     </div>
@@ -101,14 +96,18 @@
 </div>
 
 <script>
+    if (localStorage.getItem('painel_logado') !== 'true') { window.location.href = 'loginSuporte.html'; }
+    function logout() { localStorage.clear(); window.location.href = 'loginSuporte.html'; }
+
     const OPERADOR_ATUAL = localStorage.getItem('operador_nome') || "Desconhecido";
     document.getElementById('nome-exibicao').innerHTML = `<span class="live-dot"></span> Operador: ${OPERADOR_ATUAL}`;
 
     const URL_LISTA = 'https://primary-production-a103.up.railway.app/webhook/d2494948-3dd8-40ed-a262-b4cef2d5c814';
     const URL_BUSCA_UNICA = 'https://primary-production-a103.up.railway.app/webhook/fb5e433b-fedc-4f6f-b5b8-7297098da150';
     const URL_RESPONDER = 'https://primary-production-a103.up.railway.app/webhook/810fe7e7-5b89-4c39-9b1c-1a6c4d9528cf';
-    
-    // Variáveis globais para o bloqueio atual
+    const URL_BLOQUEIO = 'https://primary-production-a103.up.railway.app/webhook/121a0985-06d7-4889-8126-1cc78dd558c7';
+
+    let estaBuscando = false;
     let bloqueioAtivo = { tipo: '', idRef: '', corridaId: '' };
 
     async function carregarDados() {
@@ -118,6 +117,22 @@
             const dados = await response.json();
             renderizarLista(dados);
         } catch (error) { console.error("Erro auto-refresh:", error); }
+    }
+
+    async function buscarPorWebhook() {
+        const idBusca = document.getElementById('inputBusca').value.trim();
+        if (!idBusca) { estaBuscando = false; carregarDados(); return; }
+        estaBuscando = true;
+        document.getElementById('lista-container').innerHTML = '<div id="loading-overlay">Buscando...</div>';
+        try {
+            const response = await fetch(URL_BUSCA_UNICA, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ corridaId: idBusca })
+            });
+            const resultado = await response.json();
+            renderizarLista(resultado);
+        } catch (e) { document.getElementById('lista-container').innerHTML = 'Erro na busca.'; }
     }
 
     function renderizarLista(dadosBrutos) {
@@ -173,7 +188,6 @@
                         <span class="label">WhatsApp</span> 
                         <a href="${linkWhats}" target="_blank" class="link-whatsapp">${item.telefonePassageiro || '---'}</a>
                     </div>
-                    
                     <div class="info-section-title">Detalhes da Viagem</div>
                     <div class="info-item"><span class="label">Motorista</span> ${item.motorista || '---'}</div>
                     <div class="info-item"><span class="label">Origem</span> ${item.origem || '---'}</div>
@@ -192,7 +206,7 @@
         });
     }
 
-    // FUNÇÕES DO MODAL
+    // Modal Functions
     function abrirModalBloqueio(tipo, idRef, corridaId) {
         bloqueioAtivo = { tipo, idRef, corridaId };
         document.getElementById('modalTitle').innerText = `Bloquear ${tipo}`;
@@ -212,24 +226,21 @@
 
         const btn = document.getElementById('confirmBlockBtn');
         btn.disabled = true;
-        btn.innerText = "PROCESSANDO...";
-
-        const payload = {
-            acao: "BLOQUEIO",
-            alvo: bloqueioAtivo.tipo,
-            id_banco: bloqueioAtivo.idRef,
-            corridaId: bloqueioAtivo.corridaId,
-            justificativa: justificativa,
-            operador: OPERADOR_ATUAL,
-            dataEvento: new Date().toISOString()
-        };
+        btn.innerText = "ENVIANDO...";
 
         try {
-            // Aqui você pode usar o mesmo Webhook de responder ou um específico para bloqueios
-            const res = await fetch(URL_RESPONDER, {
+            const res = await fetch(URL_BLOQUEIO, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({
+                    acao: "BLOQUEIO",
+                    alvo: bloqueioAtivo.tipo,
+                    id_banco: bloqueioAtivo.idRef,
+                    corridaId: bloqueioAtivo.corridaId,
+                    justificativa: justificativa,
+                    operador: OPERADOR_ATUAL,
+                    dataEvento: new Date().toISOString()
+                })
             });
 
             if (res.ok) {
@@ -237,30 +248,8 @@
                 fecharModal();
                 carregarDados();
             }
-        } catch (e) {
-            alert("Erro ao processar bloqueio.");
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "CONFIRMAR BLOQUEIO";
-        }
-    }
-
-    // [Manter demais funções originais de busca e envio de resposta...]
-    let estaBuscando = false;
-    async function buscarPorWebhook() {
-        const idBusca = document.getElementById('inputBusca').value.trim();
-        if (!idBusca) { estaBuscando = false; carregarDados(); return; }
-        estaBuscando = true;
-        document.getElementById('lista-container').innerHTML = '<div id="loading-overlay">Buscando...</div>';
-        try {
-            const response = await fetch(URL_BUSCA_UNICA, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ corridaId: idBusca })
-            });
-            const resultado = await response.json();
-            renderizarLista(resultado);
-        } catch (e) { document.getElementById('lista-container').innerHTML = 'Erro na busca.'; }
+        } catch (e) { alert("Erro ao processar bloqueio."); }
+        finally { btn.disabled = false; btn.innerText = "CONFIRMAR BLOQUEIO"; }
     }
 
     async function enviarResposta(mongoId, corridaId) {
@@ -271,20 +260,17 @@
         try {
             btn.disabled = true;
             btn.innerText = "ENVIANDO...";
-            
-            const payload = {
-                "id_banco": mongoId,
-                "corridaId": corridaId,
-                "respostaSuporte": texto,
-                "status": "respondida",
-                "operador": OPERADOR_ATUAL,
-                "dataResposta": new Date().toISOString()
-            };
-
             const res = await fetch(URL_RESPONDER, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({
+                    "id_banco": mongoId,
+                    "corridaId": corridaId,
+                    "respostaSuporte": texto,
+                    "status": "respondida",
+                    "operador": OPERADOR_ATUAL,
+                    "dataResposta": new Date().toISOString()
+                })
             });
 
             if (res.ok) {
@@ -293,8 +279,6 @@
             }
         } catch (e) { alert("Erro ao enviar."); btn.disabled = false; btn.innerText = "ENVIAR RESPOSTA"; }
     }
-
-    function logout() { localStorage.clear(); window.location.href = 'loginSuporte.html'; }
 
     window.onload = () => {
         carregarDados();
