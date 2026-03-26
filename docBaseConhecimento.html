@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base de Conhecimento | Me Leva</title>
+    <style>
+        :root { 
+            --primary: #2ea6ff; --success: #10b981; --text: #333; --bg: #f5f7fa; 
+            --info: #6366f1; --danger: #ef4444; --gray: #888;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; background: var(--bg); color: var(--text); }
+        
+        /* HEADER */
+        .header { background: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 100; }
+        .header h1 { font-size: 14px; margin: 0; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
+
+        /* BUSCA */
+        .search-container { background: white; padding: 12px 20px; border-bottom: 1px solid #eee; position: sticky; top: 52px; z-index: 99; display: flex; gap: 8px; justify-content: center; }
+        .search-box { width: 100%; max-width: 400px; padding: 10px 15px; border: 1px solid #eee; border-radius: 10px; font-size: 13px; outline: none; background: #fafafa; transition: border 0.3s; }
+        .search-box:focus { border-color: var(--primary); }
+        .btn-busca { background: var(--primary); color: white; border: none; padding: 0 15px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 11px; text-transform: uppercase; }
+        .btn-novo { background: var(--success); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 10px; text-transform: uppercase; }
+
+        .container { padding: 20px; max-width: 1200px; margin: 0 auto; }
+        
+        /* LAYOUT COLUNAS */
+        .lists-wrapper { display: flex; gap: 20px; flex-direction: column; }
+        .list-section { flex: 1; min-width: 0; }
+
+        @media (min-width: 768px) {
+            .lists-wrapper { flex-direction: row; }
+        }
+
+        /* SEÇÕES */
+        .section-title { font-size: 11px; font-weight: 800; text-transform: uppercase; margin: 20px 0 15px 0; display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #ddd; padding-bottom: 5px; }
+        .section-title span { background: #eee; padding: 2px 10px; border-radius: 12px; color: var(--gray); font-size: 10px; }
+
+        #sec-motoristas .section-title { color: var(--danger); border-bottom-color: #fee2e2; }
+        #sec-motoristas .card { border-left: 5px solid var(--danger); }
+        #sec-passageiros .section-title { color: var(--success); border-bottom-color: #d1fae5; }
+        #sec-passageiros .card { border-left: 5px solid var(--success); }
+
+        /* CARDS */
+        .card { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 15px; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card-header { display: flex; justify-content: space-between; font-size: 10px; color: #aaa; margin-bottom: 8px; font-weight: bold; }
+        .titulo-doc { font-size: 16px; font-weight: bold; color: var(--text); margin-bottom: 10px; }
+        .conteudo-container { background: #f9fafb; border-radius: 8px; padding: 12px; font-size: 13px; color: #555; white-space: pre-wrap; border: 1px solid #f0f0f0; line-height: 1.5; }
+
+        /* MODAL */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+        .modal-card { background: white; width: 90%; max-width: 450px; border-radius: 16px; padding: 25px; }
+        .form-group { margin-bottom: 15px; }
+        .form-label { font-size: 11px; font-weight: bold; color: var(--gray); text-transform: uppercase; display: block; margin-bottom: 5px; }
+        .form-input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-family: inherit; }
+        .btn-salvar { width: 100%; background: var(--success); color: white; border: none; padding: 14px; border-radius: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 10px; }
+        
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Base de Conhecimento</h1>
+    <button class="btn-novo" onclick="toggleModal(true)">+ Novo Registro</button>
+</div>
+
+<div class="search-container">
+    <input type="text" id="inputBusca" class="search-box" placeholder="Filtrar por ID ou Título..." oninput="filtrarLocal()">
+</div>
+
+<div class="container" id="main-content">
+    <div id="loading" style="text-align: center; padding: 50px; color: #999;">Sincronizando base de dados...</div>
+    
+    <div class="lists-wrapper hidden" id="lists-wrapper">
+        <div id="sec-passageiros" class="list-section">
+            <div class="section-title">👤 Passageiros <span id="count-pas">0</span></div>
+            <div id="lista-passageiros"></div>
+        </div>
+        <div id="sec-motoristas" class="list-section">
+            <div class="section-title">📦 Motoristas <span id="count-mot">0</span></div>
+            <div id="lista-motoristas"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modalCadastro" onclick="if(event.target == this) toggleModal(false)">
+    <div class="modal-card">
+        <h2 style="margin-top:0; font-size:18px;">Novo Artigo</h2>
+        <form id="formCadastro" onsubmit="enviarCadastro(event)">
+            <div class="form-group">
+                <label class="form-label">Tipo de Usuário</label>
+                <select id="tipo_doc" class="form-input">
+                    <option value="true">Passageiro</option>
+                    <option value="false">Motorista</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Título</label>
+                <input type="text" id="cad_titulo" class="form-input" placeholder="Título do documento" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Conteúdo (msn)</label>
+                <textarea id="cad_msn" class="form-input" rows="5" placeholder="Texto explicativo..." required></textarea>
+            </div>
+            <button type="submit" id="btnSalvar" class="btn-salvar">Salvar Documento</button>
+            <button type="button" onclick="toggleModal(false)" style="width:100%; background:none; border:none; color:#aaa; font-size:12px; margin-top:10px; cursor:pointer;">Cancelar</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    const URL_LISTA = 'https://primary-production-a103.up.railway.app/webhook/e9cfc952-60f6-4e9d-84ff-c4e5641428bf';
+    const URL_CADASTRO = 'https://primary-production-a103.up.railway.app/webhook/101fea24-35d8-4777-8ae4-5e60af9f7ec8';
+
+    // MEMÓRIA LOCAL: Guardamos tudo aqui para filtrar sem precisar carregar de novo
+    let dadosCompletos = [];
+
+    window.onload = carregarDados;
+
+    async function carregarDados() {
+        try {
+            const res = await fetch(URL_LISTA);
+            const dadosBrutos = await res.json();
+            
+            // Padroniza a entrada dos dados
+            if (dadosBrutos && dadosBrutos.documentos) {
+                dadosCompletos = dadosBrutos.documentos;
+            } else if (Array.isArray(dadosBrutos)) {
+                dadosCompletos = dadosBrutos;
+            } else {
+                dadosCompletos = [dadosBrutos];
+            }
+
+            renderizarLista(dadosCompletos);
+        } catch (e) {
+            document.getElementById('loading').innerText = "Erro ao carregar base de dados.";
+        }
+    }
+
+    // NOVA FUNÇÃO: Filtra na hora conforme você digita
+    function filtrarLocal() {
+        const termo = document.getElementById('inputBusca').value.toLowerCase().trim();
+        
+        const filtrados = dadosCompletos.filter(item => {
+            const id = (item.docId || "").toLowerCase();
+            const titulo = (item.titulo || "").toLowerCase();
+            return id.includes(termo) || titulo.includes(termo);
+        });
+
+        renderizarLista(filtrados);
+    }
+
+    function renderizarLista(lista) {
+        const containerMot = document.getElementById('lista-motoristas');
+        const containerPas = document.getElementById('lista-passageiros');
+        const listsWrapper = document.getElementById('lists-wrapper');
+        const loading = document.getElementById('loading');
+
+        loading.classList.add('hidden');
+        containerMot.innerHTML = '';
+        containerPas.innerHTML = '';
+
+        // Ordenação (Mais novos primeiro)
+        lista.sort((a, b) => new Date(b.dataCriacao || 0) - new Date(a.dataCriacao || 0));
+
+        let cMot = 0; let cPas = 0;
+
+        lista.forEach(item => {
+            if (!item || !item.titulo) return;
+
+            const card = document.createElement('div');
+            card.className = 'card';
+            const ePassageiro = item.passageiro === true || String(item.passageiro) === "true";
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <span>${item.docId || 'ID PENDENTE'}</span>
+                    <span>${item.dataCriacao ? new Date(item.dataCriacao).toLocaleDateString('pt-BR') : '-'}</span>
+                </div>
+                <div class="titulo-doc">${item.titulo}</div>
+                <div class="conteudo-container">${item.msn}</div>
+            `;
+
+            if (ePassageiro) {
+                containerPas.appendChild(card);
+                cPas++;
+            } else {
+                containerMot.appendChild(card);
+                cMot++;
+            }
+        });
+
+        document.getElementById('count-mot').innerText = cMot;
+        document.getElementById('count-pas').innerText = cPas;
+        
+        listsWrapper.classList.remove('hidden');
+        document.getElementById('sec-motoristas').classList.toggle('hidden', cMot === 0);
+        document.getElementById('sec-passageiros').classList.toggle('hidden', cPas === 0);
+        
+        if (lista.length === 0) {
+            loading.classList.remove('hidden');
+            loading.innerText = "Nenhum resultado para este filtro.";
+        } else {
+            loading.classList.add('hidden');
+        }
+    }
+
+    function toggleModal(show) {
+        document.getElementById('modalCadastro').style.display = show ? 'flex' : 'none';
+        if(!show) document.getElementById('formCadastro').reset();
+    }
+
+    async function enviarCadastro(event) {
+        event.preventDefault();
+        const btn = document.getElementById('btnSalvar');
+        const payload = {
+            titulo: document.getElementById('cad_titulo').value,
+            msn: document.getElementById('cad_msn').value,
+            passageiro: document.getElementById('tipo_doc').value === "true"
+        };
+
+        try {
+            btn.disabled = true; btn.innerText = "Enviando...";
+            const res = await fetch(URL_CADASTRO, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                toggleModal(false);
+                setTimeout(carregarDados, 1500); // Recarrega do banco para atualizar a memória local
+            }
+        } catch (e) { alert("Erro ao salvar."); } 
+        finally { btn.disabled = false; btn.innerText = "Salvar Documento"; }
+    }
+</script>
+
+</body>
+</html>
