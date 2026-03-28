@@ -1,75 +1,89 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Atendimento | Me Leva</title>
-
-    <script src='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.js'></script>
-    <link href='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.css' rel='stylesheet' />
-
-    <style>
-        body { font-family: sans-serif; margin:0; background:#f5f7fa; }
-        .container { max-width:600px; margin:auto; padding:20px; }
-        .card { background:white; padding:15px; border-radius:10px; margin-bottom:15px; }
-        .map-wrapper { width:100%; height:200px; border-radius:10px; overflow:hidden; background:#ddd; margin-top:10px; }
-    </style>
-</head>
-<body>
-
-<div class="container" id="lista-container">
-    Carregando...
-</div>
+<!-- MANTÉM TODO TEU HTML IGUAL ATÉ O <script> -->
 
 <script>
 mapboxgl.accessToken = 'pk.eyJ1IjoicmFmYWVsZGFuZGEiLCJhIjoiY21tM3V6aHQ3MDR1dTJxcHdiNnhpaHd0ayJ9.w-fjeHmzlyVes75Rg4pJuQ';
 
-// 🔥 converte endereço em coordenada
-async function geocodificar(endereco) {
-    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(endereco)}.json?access_token=${mapboxgl.accessToken}`;
-    const res = await fetch(url);
-    const data = await res.json();
-
-    if (!data.features || !data.features.length) return null;
-
-    return data.features[0].center; // [lng, lat]
-}
+const OPERADOR_ATUAL = localStorage.getItem('operador_nome') || "Admin";
+document.getElementById('nome-exibicao').innerHTML = `<span class="live-dot"></span> Operador: ${OPERADOR_ATUAL}`;
 
 const URL_LISTA = 'https://primary-production-a103.up.railway.app/webhook/d2494948-3dd8-40ed-a262-b4cef2d5c814';
+const URL_RESPONDER = 'https://primary-production-a103.up.railway.app/webhook/810fe7e7-5b89-4c39-9b1c-1a6c4d9528cf';
+const URL_BASE = 'https://primary-production-a103.up.railway.app/webhook/e9cfc952-60f6-4e9d-84ff-c4e5641428bf';
+const URL_BUSCA_UNICA = 'https://primary-production-a103.up.railway.app/webhook/fb5e433b-fedc-4f6f-b5b8-7297098da150';
+
+
+// 🔥 NOVO: geocoding
+async function geocodificar(endereco) {
+    try {
+        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(endereco)}.json?access_token=${mapboxgl.accessToken}`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (!data.features || !data.features.length) return null;
+
+        return data.features[0].center;
+    } catch (e) {
+        console.error("Erro geocoding:", e);
+        return null;
+    }
+}
+
 
 async function carregarDados() {
     const res = await fetch(URL_LISTA);
-    const lista = await res.json();
+    const dados = await res.json();
+    renderizarLista(dados);
+}
 
+function renderizarLista(dados) {
     const container = document.getElementById('lista-container');
+    const lista = Array.isArray(dados) ? dados : [dados];
     container.innerHTML = '';
 
-    for (let i = 0; i < lista.length; i++) {
-        const item = lista[i];
-        const mapId = `map-${i}`;
+    lista.forEach((item, index) => {
+        const idUnico = item._id;
+        const mapId = `map-${index}`;
+        const eRespondida = item.status && item.status.includes('respondida');
 
         const card = document.createElement('div');
-        card.className = 'card';
+        card.className = `card ${eRespondida ? 'resolvido' : ''}`;
 
         card.innerHTML = `
-            <div><b>Corrida:</b> ${item.corridaId}</div>
-            <div><b>Origem:</b> ${item.origem}</div>
-            <div><b>Destino:</b> ${item.destino}</div>
+            <div class="card-header">
+                <span>CORRIDA #${item.corridaId?.split('-')[1] || '---'}</span>
+                <span>${item.contestacao?.dataEnvio ? new Date(item.contestacao.dataEnvio).toLocaleDateString() : ''}</span>
+            </div>
+
             <div id="${mapId}" class="map-wrapper"></div>
+
+            <div class="info-grid">
+                <div class="info-section-title">PASSAGEIRO</div>
+                <div>${item.passageiro}</div>
+
+                <div class="info-section-title">VIAGEM</div>
+                <div>${item.origem} → ${item.destino}</div>
+                <div>R$ ${item.valorTotal}</div>
+            </div>
+
+            <div class="relato-container">
+                <span class="relato-txt">"${item.contestacao?.detalhes}"</span>
+            </div>
+
+            <div class="reply-box" id="box-${idUnico}">
+                <textarea id="input-${idUnico}"></textarea>
+                <button class="btn-enviar" onclick="enviar('${idUnico}', '${item.corridaId}')">ENVIAR</button>
+            </div>
         `;
 
         container.appendChild(card);
 
-        // espera renderizar o DOM
+        // 🔥 MAPA FUNCIONANDO COM ENDEREÇO
         setTimeout(async () => {
             try {
                 const origem = await geocodificar(item.origem + ", Porto Alegre");
                 const destino = await geocodificar(item.destino + ", Porto Alegre");
 
-                if (!origem || !destino) {
-                    console.warn("Erro ao geocodificar:", item);
-                    return;
-                }
+                if (!origem || !destino) return;
 
                 const map = new mapboxgl.Map({
                     container: mapId,
@@ -91,11 +105,29 @@ async function carregarDados() {
                 console.error("Erro mapa:", err);
             }
         }, 500);
-    }
+    });
+}
+
+
+// 🔥 mantém teu envio normal
+async function enviar(mongoId, corridaId) {
+    const txt = document.getElementById(`input-${mongoId}`).value;
+    if(!txt) return alert("Digite algo");
+
+    await fetch(URL_RESPONDER, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            id_banco: mongoId,
+            corridaId,
+            respostaSuporte: txt,
+            status: "respondida"
+        })
+    });
+
+    alert("Enviado!");
+    carregarDados();
 }
 
 carregarDados();
 </script>
-
-</body>
-</html>
