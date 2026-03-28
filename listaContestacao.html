@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Atendimento | Me Leva</title>
+    <script src='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.css' rel='stylesheet' />
     <style>
         :root { --primary: #2ea6ff; --success: #10b981; --text: #333; --bg: #f5f7fa; --danger: #ef4444; --warning: #f59e0b; --gray: #888; }
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; background: var(--bg); color: var(--text); }
@@ -21,9 +23,12 @@
 
         /* Container & Cards */
         .container { padding: 20px; max-width: 550px; margin: 0 auto; }
-        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; border-left: 5px solid var(--danger); position: relative; }
+        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; border-left: 5px solid var(--danger); position: relative; overflow: hidden; }
         .card.resolvido { border-left-color: var(--success); }
         .card-header { display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-bottom: 12px; border-bottom: 1px solid #f9f9f9; padding-bottom: 8px; }
+
+        /* MAPBOX STYLING */
+        .map-wrapper { width: 100%; height: 180px; margin-bottom: 15px; border-radius: 10px; background: #eee; border: 1px solid #eee; overflow: hidden; position: relative; }
 
         /* BLOQUEIOS */
         .justificativa-box { background: #fffbeb; border: 1px solid #fef3c7; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
@@ -90,6 +95,7 @@
 </div>
 
 <script>
+    mapboxgl.accessToken = 'pk.eyJ1IjoicmFmYWVsZGFuZGEiLCJhIjoiY21tM3V6aHQ3MDR1dTJxcHdiNnhpaHd0ayJ9.w-fjeHmzlyVes75Rg4pJuQ';
     const OPERADOR_ATUAL = localStorage.getItem('operador_nome') || "Admin";
     document.getElementById('nome-exibicao').innerHTML = `<span class="live-dot"></span> Operador: ${OPERADOR_ATUAL}`;
 
@@ -110,7 +116,6 @@
         const idBusca = document.getElementById('inputBusca').value.trim();
         if (!idBusca) { carregarDados(); return; }
         try {
-            console.log("🔎 Buscando ID específico:", idBusca);
             const response = await fetch(URL_BUSCA_UNICA, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -131,11 +136,11 @@
             return;
         }
 
-        lista.forEach(item => {
+        lista.forEach((item, index) => {
             const idUnico = item._id?.$oid || item._id;
             const eRespondida = item.status && item.status.includes('respondida');
+            const mapId = `map-${index}`;
             
-            // Justificativas (Bloqueios)
             let htmlBloqueios = '';
             if (item.justificativaPassageiro || item.justificativaMotorista) {
                 htmlBloqueios = `<div class="justificativa-box">
@@ -144,7 +149,6 @@
                 </div>`;
             }
 
-            // Histórico de Respostas
             let htmlHistorico = '';
             if (item.respostaSuporte || (item.respostaPassageiro && item.respostaPassageiro.trim() !== "")) {
                 htmlHistorico = `<div class="historico-container">
@@ -160,6 +164,9 @@
                     <span>CORRIDA #${item.corridaId?.split('-')[1] || '---'}</span>
                     <span>${item.contestacao?.dataEnvio ? new Date(item.contestacao.dataEnvio).toLocaleDateString() : ''}</span>
                 </div>
+
+                ${item.rota?.coords ? `<div id="${mapId}" class="map-wrapper"></div>` : ''}
+
                 ${htmlBloqueios}
                 <div class="info-grid">
                     <div class="info-section-title">DADOS DO PASSAGEIRO</div>
@@ -182,6 +189,26 @@
                 ${eRespondida ? '<div style="background:#f0fdf4; color:#166534; padding:10px; border-radius:10px; text-align:center; font-size:12px; font-weight:bold; margin-top:15px;">✓ CHAMADO FINALIZADO</div>' : ''}
             `;
             container.appendChild(card);
+
+            // Inicia o mapa se houver coordenadas
+            if (item.rota?.coords) {
+                setTimeout(() => {
+                    try {
+                        const map = new mapboxgl.Map({
+                            container: mapId,
+                            style: 'mapbox://styles/mapbox/light-v11',
+                            center: item.rota.coords.origem,
+                            zoom: 12,
+                            interactive: true
+                        });
+                        new mapboxgl.Marker({color: '#2ea6ff'}).setLngLat(item.rota.coords.origem).addTo(map);
+                        new mapboxgl.Marker({color: '#ef4444'}).setLngLat(item.rota.coords.destino).addTo(map);
+                        
+                        const bounds = new mapboxgl.LngLatBounds().extend(item.rota.coords.origem).extend(item.rota.coords.destino);
+                        map.fitBounds(bounds, {padding: 40});
+                    } catch (err) { console.error("Erro Mapbox:", err); }
+                }, 300);
+            }
         });
     }
 
@@ -217,15 +244,11 @@
         });
     }
 
-    // --- MONITORAMENTO ---
     function iniciarMonitoramento() {
-        console.log("🚀 Monitoramento iniciado: Buscando a cada 60s...");
         setInterval(async () => {
             const campoAtivo = document.activeElement;
             const estaDigitando = campoAtivo.tagName === 'TEXTAREA' && campoAtivo.value.length > 0;
-            if (estaDigitando) { console.log("⏳ Refresh ignorado: Digitação em curso."); return; }
-            
-            console.log("🔍 [AUTO-REFRESH] Sincronizando banco...");
+            if (estaDigitando) return;
             const idBusca = document.getElementById('inputBusca').value.trim();
             if (idBusca) { await buscarPorWebhook(); } else { await carregarDados(); }
         }, 60000);
