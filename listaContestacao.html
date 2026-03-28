@@ -9,106 +9,41 @@
     <style>
         :root { --primary: #2ea6ff; --success: #10b981; --text: #333; --bg: #f5f7fa; --danger: #ef4444; --warning: #f59e0b; --gray: #888; }
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; background: var(--bg); color: var(--text); }
-        
-        /* Header & Search */
         .header { background: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 100; }
         .header-info h1 { font-size: 16px; margin: 0; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
         .operador-tag { font-size: 10px; color: #aaa; text-transform: uppercase; font-weight: bold; display: flex; align-items: center; gap: 5px; }
         .live-dot { width: 6px; height: 6px; background: var(--success); border-radius: 50%; display: inline-block; animation: blink 1.5s infinite; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-        .btn-logout { background: none; border: 1px solid #ddd; padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; color: #888; }
         .search-container { background: white; padding: 12px 20px; border-bottom: 1px solid #eee; position: sticky; top: 52px; z-index: 99; display: flex; gap: 8px; justify-content: center; }
         .search-box { width: 100%; max-width: 400px; padding: 10px 15px; border: 1px solid #eee; border-radius: 10px; font-size: 13px; outline: none; background: #fafafa; }
         .btn-busca { background: var(--primary); color: white; border: none; padding: 0 15px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 11px; text-transform: uppercase; }
-
-        /* Container & Cards */
         .container { padding: 20px; max-width: 550px; margin: 0 auto; }
-        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; border-left: 5px solid var(--danger); position: relative; animation: fadeIn 0.4s ease; }
-        .card.resolvido { border-left-color: var(--success); opacity: 0.9; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .card-header { display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-bottom: 12px; border-bottom: 1px solid #f9f9f9; padding-bottom: 8px; }
-        .motivo-tag { background: #fee2e2; color: var(--danger); padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-bottom: 15px; display: inline-block; }
-        .status-resolvido-tag { background: #d1fae5; color: var(--success); padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-bottom: 15px; display: inline-block; float: right; }
-
-        /* MAPA NO CARD - Adicionado mantendo o estilo */
+        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; border-left: 5px solid var(--danger); position: relative; }
+        .card.resolvido { border-left-color: var(--success); }
         .map-card { width: 100%; height: 160px; margin-bottom: 15px; border-radius: 10px; background: #eee; border: 1px solid #eee; }
-
-        /* Ações de Bloqueio */
+        .motivo-tag { background: #fee2e2; color: var(--danger); padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-bottom: 15px; display: inline-block; }
         .admin-actions { display: flex; gap: 8px; margin-bottom: 15px; }
-        .btn-block { flex: 1; padding: 8px; border: 1px solid #eee; border-radius: 8px; font-size: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.2s; background: white; }
-        .btn-block-pass { color: var(--warning); border-color: var(--warning); }
-        .btn-block-pass:hover { background: var(--warning); color: white; }
-        .btn-block-driver { color: var(--danger); border-color: var(--danger); }
-        .btn-block-driver:hover { background: var(--danger); color: white; }
-
-        /* Info Grid */
+        .btn-block { flex: 1; padding: 8px; border: 1px solid #eee; border-radius: 8px; font-size: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; background: white; }
         .info-grid { background: #f9fafb; border-radius: 8px; padding: 12px; margin-bottom: 15px; border: 1px solid #f0f0f0; }
-        .info-section-title { font-size: 9px; color: #bbb; font-weight: 800; text-transform: uppercase; margin: 10px 0 5px 0; border-bottom: 1px solid #eee; padding-bottom: 2px; }
-        .info-section-title:first-child { margin-top: 0; }
-        .info-item { margin: 4px 0; font-size: 12px; display: flex; align-items: flex-start; }
-        .label { font-weight: bold; color: #999; font-size: 10px; text-transform: uppercase; margin-right: 6px; display: inline-block; width: 85px; flex-shrink: 0; }
-        .valor-total { color: var(--success); font-weight: bold; }
-
-        /* Relato & Resposta */
+        .info-item { margin: 4px 0; font-size: 12px; display: flex; }
+        .label { font-weight: bold; color: #999; font-size: 10px; width: 85px; flex-shrink: 0; text-transform: uppercase; }
         .relato-container { background: #fff; border-left: 3px solid #ddd; padding: 10px 15px; margin: 15px 0; }
-        .relato-label { font-size: 10px; color: var(--danger); font-weight: bold; display: block; margin-bottom: 4px; }
-        .relato-txt { font-style: italic; color: #444; font-size: 14px; line-height: 1.5; }
+        .relato-txt { font-style: italic; color: #444; font-size: 14px; }
         .reply-box { margin-top: 15px; border-top: 1px dashed #eee; padding-top: 15px; }
-        
-        .btn-base { background: #f0f9ff; color: var(--primary); border: 1px solid #bae6fd; padding: 6px 10px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; text-transform: uppercase; transition: 0.2s; }
-        .btn-base:hover { background: var(--primary); color: white; }
-
-        textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-family: inherit; font-size: 13px; box-sizing: border-box; resize: none; height: 75px; outline: none; }
-        .btn-enviar { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 14px; }
-        .msg-ja-respondida { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 12px; border-radius: 10px; text-align: center; font-size: 13px; font-weight: bold; }
-        #loading-overlay { text-align: center; padding: 50px; color: #888; font-size: 13px; }
-        .link-whatsapp { color: var(--primary); text-decoration: none; font-weight: bold; }
-
-        /* Modais */
+        textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 13px; height: 75px; outline: none; }
+        .btn-enviar { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
-        .modal-card { background: white; width: 90%; max-width: 380px; padding: 25px; border-radius: 15px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); text-align: center; animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        
-        #modalBase .modal-card { max-width: 450px; max-height: 80vh; overflow-y: auto; text-align: left; }
-        .kb-item { border: 1px solid #eee; padding: 12px; border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; }
-        .kb-item:hover { border-color: var(--primary); background: #f0f9ff; }
-        .kb-title { font-weight: bold; font-size: 13px; color: var(--primary); margin-bottom: 4px; display: block; }
-        .kb-preview { font-size: 11px; color: #777; line-height: 1.4; display: block; }
-
-        @keyframes modalIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .modal-card h3 { margin: 0 0 10px 0; font-size: 18px; }
-        .modal-card p { font-size: 13px; color: #666; margin-bottom: 15px; }
-        .modal-card textarea { height: 100px; margin-bottom: 15px; border: 1px solid #eee; background: #fcfcfc; }
-        .btn-confirm { background: var(--danger); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; font-size: 14px; }
-        .btn-cancel { background: none; color: #aaa; border: none; padding: 10px; cursor: pointer; width: 100%; margin-top: 5px; font-size: 12px; text-transform: uppercase; font-weight: bold; }
+        .modal-card { background: white; width: 90%; max-width: 380px; padding: 25px; border-radius: 15px; }
     </style>
 </head>
 <body>
 
-<div class="modal-overlay" id="modalBlock">
-    <div class="modal-card">
-        <h3 id="modalTitle">Bloquear Usuário</h3>
-        <p id="modalSubtitle">Por favor, descreva o motivo do bloqueio.</p>
-        <textarea id="justificativaTexto" placeholder="Escreva aqui a justificativa técnica..."></textarea>
-        <button class="btn-confirm" id="confirmBlockBtn" onclick="processarBloqueio()">CONFIRMAR BLOQUEIO</button>
-        <button class="btn-cancel" onclick="fecharModal()">CANCELAR</button>
-    </div>
-</div>
-
-<div class="modal-overlay" id="modalBase" onclick="if(event.target == this) fecharModalBase()">
-    <div class="modal-card">
-        <h3>📖 Base de Conhecimento</h3>
-        <p>Selecione uma resposta padrão para copiar:</p>
-        <div id="kb-lista-container">Carregando artigos...</div>
-        <button class="btn-cancel" onclick="fecharModalBase()">FECHAR</button>
-    </div>
-</div>
-
 <div class="header">
     <div class="header-info">
         <h1>Atendimento</h1>
-        <span class="operador-tag" id="nome-exibicao"><span class="live-dot"></span> Monitorando...</span>
+        <span class="operador-tag" id="nome-exibicao"></span>
     </div>
-    <button class="btn-logout" onclick="logout()">SAIR</button>
+    <button onclick="localStorage.clear(); window.location.href='loginSuporte.html';" style="background:none; border:1px solid #ddd; padding:5px 12px; border-radius:6px; font-size:12px; cursor:pointer; color:#888;">SAIR</button>
 </div>
 
 <div class="search-container">
@@ -117,238 +52,127 @@
 </div>
 
 <div class="container" id="lista-container">
-    <div id="loading-overlay">Carregando contestações em tempo real...</div>
+    <div style="text-align:center; padding:50px; color:#888;">Monitorando chamados...</div>
+</div>
+
+<div class="modal-overlay" id="modalBlock">
+    <div class="modal-card">
+        <h3 id="modalTitle">Bloquear</h3>
+        <textarea id="justificativaTexto" placeholder="Justificativa..."></textarea>
+        <button class="btn-enviar" id="confirmBlockBtn" onclick="processarBloqueio()">CONFIRMAR</button>
+        <button onclick="document.getElementById('modalBlock').style.display='none'" style="width:100%; background:none; border:none; color:#aaa; cursor:pointer; margin-top:10px;">CANCELAR</button>
+    </div>
 </div>
 
 <script>
     mapboxgl.accessToken = 'pk.eyJ1IjoicmFmYWVsZGFuZGEiLCJhIjoiY21tM3V6aHQ3MDR1dTJxcHdiNnhpaHd0ayJ9.w-fjeHmzlyVes75Rg4pJuQ';
-    
-    if (localStorage.getItem('painel_logado') !== 'true') { window.location.href = 'loginSuporte.html'; }
-    function logout() { localStorage.clear(); window.location.href = 'loginSuporte.html'; }
-
-    const OPERADOR_ATUAL = localStorage.getItem('operador_nome') || "Desconhecido";
+    const OPERADOR_ATUAL = localStorage.getItem('operador_nome') || "Admin";
     document.getElementById('nome-exibicao').innerHTML = `<span class="live-dot"></span> Operador: ${OPERADOR_ATUAL}`;
 
     const URL_LISTA = 'https://primary-production-a103.up.railway.app/webhook/d2494948-3dd8-40ed-a262-b4cef2d5c814';
     const URL_BUSCA_UNICA = 'https://primary-production-a103.up.railway.app/webhook/fb5e433b-fedc-4f6f-b5b8-7297098da150';
     const URL_RESPONDER = 'https://primary-production-a103.up.railway.app/webhook/810fe7e7-5b89-4c39-9b1c-1a6c4d9528cf';
-    const URL_BLOQUEIO = 'https://primary-production-a103.up.railway.app/webhook/121a0985-06d7-4889-8126-1cc78dd558c7';
-    const URL_BASE_CONHECIMENTO = 'https://primary-production-a103.up.railway.app/webhook/e9cfc952-60f6-4e9d-84ff-c4e5641428bf';
-
-    let estaBuscando = false;
-    let bloqueioAtivo = { tipo: '', idRef: '', corridaId: '' };
-    let inputAlvoBase = ''; 
 
     async function carregarDados() {
-        if(estaBuscando) return;
         try {
-            const response = await fetch(URL_LISTA);
-            const dados = await response.json();
+            const res = await fetch(URL_LISTA);
+            const dados = await res.json();
             renderizarLista(dados);
-        } catch (error) { console.error("Erro auto-refresh:", error); }
+        } catch (e) { console.error(e); }
     }
 
     async function buscarPorWebhook() {
-        const idBusca = document.getElementById('inputBusca').value.trim();
-        if (!idBusca) { estaBuscando = false; carregarDados(); return; }
-        estaBuscando = true;
-        document.getElementById('lista-container').innerHTML = '<div id="loading-overlay">Buscando...</div>';
-        try {
-            const response = await fetch(URL_BUSCA_UNICA, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ corridaId: idBusca })
-            });
-            const resultado = await response.json();
-            renderizarLista(resultado);
-        } catch (e) { document.getElementById('lista-container').innerHTML = 'Erro na busca.'; }
+        const id = document.getElementById('inputBusca').value.trim();
+        if(!id) { carregarDados(); return; }
+        const res = await fetch(URL_BUSCA_UNICA, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({corridaId: id}) });
+        const dados = await res.json();
+        renderizarLista(dados);
     }
 
-    function renderizarLista(dadosBrutos) {
+    function renderizarLista(dados) {
         const container = document.getElementById('lista-container');
-        const lista = Array.isArray(dadosBrutos) ? dadosBrutos : [dadosBrutos];
-
-        if (!lista || lista.length === 0 || !lista[0].corridaId) {
-            container.innerHTML = '<div id="loading-overlay">Tudo em dia! Nenhuma nova contestação.</div>';
-            return;
-        }
-
+        const lista = Array.isArray(dados) ? dados : [dados];
         container.innerHTML = '';
 
         lista.forEach((item, index) => {
-            const card = document.createElement('div');
-            const eRespondida = item.status === "respondida";
-            const mapId = `map-${index}`;
-            card.className = `card ${eRespondida ? 'resolvido' : ''}`;
-            
-            const dataEnvio = item.contestacao?.dataEnvio ? new Date(item.contestacao.dataEnvio).toLocaleDateString('pt-BR') : '--/--/----';
+            if(!item.corridaId) return;
             const idUnico = item._id?.$oid || item._id;
-            const foneLimpo = item.telefonePassageiro ? item.telefonePassageiro.replace(/\D/g, '') : '';
-            const linkWhats = foneLimpo ? `https://wa.me/55${foneLimpo}` : '#';
+            const mapId = `map-${index}`;
+            const respondida = item.status === "respondida";
 
-            let areaResposta = `
-                <div class="reply-box" id="box-${idUnico}">
-                    <button class="btn-base" onclick="abrirModalBase('input-${idUnico}')">📖 Consultar Base</button>
-                    <textarea id="input-${idUnico}" placeholder="Digite a solução para o passageiro..."></textarea>
-                    <button class="btn-enviar" onclick="enviarResposta('${idUnico}', '${item.corridaId}')">ENVIAR RESPOSTA</button>
-                </div>
-            `;
-
-            if (eRespondida) {
-                areaResposta = `<div class="reply-box"><div class="msg-ja-respondida">✓ Resolvida por: ${item.operador || 'Suporte'}</div></div>`;
-            }
-
+            const card = document.createElement('div');
+            card.className = `card ${respondida ? 'resolvido' : ''}`;
             card.innerHTML = `
                 <div class="card-header">
-                    <span>CORRIDA #${item.corridaId?.split('-')[1] || '---'}</span>
-                    <span>${dataEnvio}</span>
+                    <span>CORRIDA #${item.corridaId.split('-')[1] || '---'}</span>
+                    <span>${item.contestacao?.dataEnvio ? new Date(item.contestacao.dataEnvio).toLocaleDateString() : ''}</span>
                 </div>
-                
                 <span class="motivo-tag">${item.contestacao?.motivo || 'OUTROS'}</span>
-                ${eRespondida ? '<span class="status-resolvido-tag">RESOLVIDA</span>' : ''}
                 
                 <div id="${mapId}" class="map-card"></div>
 
                 <div class="admin-actions">
-                    <button class="btn-block btn-block-pass" onclick="abrirModalBloqueio('PASSAGEIRO', '${idUnico}', '${item.corridaId}')">Bloquear Passageiro</button>
-                    <button class="btn-block btn-block-driver" onclick="abrirModalBloqueio('MOTORISTA', '${idUnico}', '${item.corridaId}')">Bloquear Motorista</button>
+                    <button class="btn-block" style="color:var(--warning)" onclick="alert('Bloqueio Passageiro')">Bloquear Passageiro</button>
+                    <button class="btn-block" style="color:var(--danger)" onclick="alert('Bloqueio Motorista')">Bloquear Motorista</button>
                 </div>
 
                 <div class="info-grid">
-                    <div class="info-section-title">Dados do Passageiro</div>
-                    <div class="info-item"><span class="label">Nome</span> ${item.passageiro || 'Não informado'}</div>
-                    <div class="info-item">
-                        <span class="label">WhatsApp</span> 
-                        <a href="${linkWhats}" target="_blank" class="link-whatsapp">${item.telefonePassageiro || '---'}</a>
-                    </div>
-                    <div class="info-section-title">Detalhes da Viagem</div>
-                    <div class="info-item"><span class="label">Motorista</span> ${item.motorista || '---'}</div>
+                    <div class="info-item"><span class="label">Passageiro</span> ${item.passageiro || '---'}</div>
+                    <div class="info-item"><span class="label">WhatsApp</span> <a href="https://wa.me/55${item.telefonePassageiro?.replace(/\D/g,'')}" target="_blank" style="color:var(--primary); font-weight:bold;">${item.telefonePassageiro || '---'}</a></div>
                     <div class="info-item"><span class="label">Origem</span> ${item.origem || '---'}</div>
                     <div class="info-item"><span class="label">Destino</span> ${item.destino || '---'}</div>
-                    <div class="info-item"><span class="label">Valor</span> <span class="valor-total">R$ ${(item.valorTotal || 0).toFixed(2).replace('.', ',')}</span></div>
+                    <div class="info-item"><span class="label">Valor</span> <span style="color:var(--success); font-weight:bold;">R$ ${(item.valorTotal || 0).toFixed(2)}</span></div>
                 </div>
 
                 <div class="relato-container">
-                    <span class="relato-label">MENSAGEM DO CLIENTE</span>
+                    <span style="font-size:10px; color:var(--danger); font-weight:bold;">MENSAGEM</span><br>
                     <span class="relato-txt">"${item.contestacao?.detalhes || '...'}"</span>
                 </div>
 
-                ${areaResposta}
+                <div class="reply-box" id="box-${idUnico}">
+                    ${respondida ? `<div style="background:#f0fdf4; color:#166534; padding:10px; border-radius:10px; text-align:center; font-weight:bold;">✓ Resolvido por: ${item.operador}</div>` : `
+                        <textarea id="input-${idUnico}" placeholder="Resposta para o passageiro..."></textarea>
+                        <button class="btn-enviar" onclick="enviarResposta('${idUnico}', '${item.corridaId}')">ENVIAR RESPOSTA</button>
+                    `}
+                </div>
             `;
             container.appendChild(card);
 
-            // Renderiza o mapa mantendo o timeout para estabilidade
-            if (item.rota && item.rota.coords) {
+            if (item.rota?.coords) {
                 setTimeout(() => {
-                    const map = new mapboxgl.Map({
-                        container: mapId,
-                        style: 'mapbox://styles/mapbox/light-v11',
-                        center: item.rota.coords.origem,
-                        zoom: 12, interactive: false
-                    });
-                    new mapboxgl.Marker({ color: '#2ea6ff', scale: 0.7 }).setLngLat(item.rota.coords.origem).addTo(map);
-                    new mapboxgl.Marker({ color: '#ffaa00', scale: 0.7 }).setLngLat(item.rota.coords.destino).addTo(map);
-                    const bounds = new mapboxgl.LngLatBounds().extend(item.rota.coords.origem).extend(item.rota.coords.destino);
-                    map.fitBounds(bounds, { padding: 30 });
-                }, 400);
+                    const map = new mapboxgl.Map({ container: mapId, style: 'mapbox://styles/mapbox/light-v11', center: item.rota.coords.origem, zoom: 12, interactive: false });
+                    new mapboxgl.Marker({color: '#2ea6ff'}).setLngLat(item.rota.coords.origem).addTo(map);
+                    new mapboxgl.Marker({color: '#ffaa00'}).setLngLat(item.rota.coords.destino).addTo(map);
+                    map.fitBounds(new mapboxgl.LngLatBounds().extend(item.rota.coords.origem).extend(item.rota.coords.destino), {padding: 30});
+                }, 500);
             }
         });
     }
 
-    // Modal Bloqueio Functions (CONSERVADAS)
-    function abrirModalBloqueio(tipo, idRef, corridaId) {
-        bloqueioAtivo = { tipo, idRef, corridaId };
-        document.getElementById('modalTitle').innerText = `Bloquear ${tipo}`;
-        document.getElementById('modalTitle').style.color = tipo === 'MOTORISTA' ? 'var(--danger)' : 'var(--warning)';
-        document.getElementById('modalBlock').style.display = 'flex';
-        document.getElementById('justificativaTexto').focus();
-    }
+    async function enviarResposta(mongoId, corridaId) {
+        const texto = document.getElementById(`input-${mongoId}`).value;
+        if(!texto) return alert("Digite a resposta!");
+        
+        const res = await fetch(URL_RESPONDER, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                id_banco: mongoId,
+                corridaId: corridaId,
+                respostaSuporte: texto,
+                status: "respondida",
+                operador: OPERADOR_ATUAL,
+                dataResposta: new Date().toISOString()
+            })
+        });
 
-    function fecharModal() {
-        document.getElementById('modalBlock').style.display = 'none';
-        document.getElementById('justificativaTexto').value = '';
-    }
-
-    // Modal Base de Conhecimento Functions (CONSERVADAS)
-    async function abrirModalBase(idInput) {
-        inputAlvoBase = idInput;
-        const modal = document.getElementById('modalBase');
-        const container = document.getElementById('kb-lista-container');
-        modal.style.display = 'flex';
-        container.innerHTML = 'Buscando artigos na nuvem...';
-
-        try {
-            const res = await fetch(URL_BASE_CONHECIMENTO);
-            const dados = await res.json();
-            const lista = dados.documentos || dados;
-            
-            container.innerHTML = '';
-            lista.forEach(artigo => {
-                const div = document.createElement('div');
-                div.className = 'kb-item';
-                div.onclick = () => aplicarTextoBase(artigo.msn);
-                div.innerHTML = `
-                    <span class="kb-title">${artigo.titulo}</span>
-                    <span class="kb-preview">${artigo.msn.substring(0, 80)}...</span>
-                `;
-                container.appendChild(div);
-            });
-        } catch (e) { container.innerHTML = 'Erro ao carregar base.'; }
-    }
-
-    function fecharModalBase() { document.getElementById('modalBase').style.display = 'none'; }
-    function aplicarTextoBase(texto) {
-        if(inputAlvoBase) {
-            document.getElementById(inputAlvoBase).value = texto;
-            fecharModalBase();
-            document.getElementById(inputAlvoBase).focus();
+        if(res.ok) {
+            document.getElementById(`box-${mongoId}`).innerHTML = '<div style="background:#f0fdf4; color:#166534; padding:10px; border-radius:10px; text-align:center; font-weight:bold;">✓ Enviado com sucesso!</div>';
+            setTimeout(carregarDados, 2000);
         }
     }
 
-    async function processarBloqueio() {
-        const justificativa = document.getElementById('justificativaTexto').value.trim();
-        if (!justificativa) return alert("Por favor, insira uma justificativa.");
-        const btn = document.getElementById('confirmBlockBtn');
-        btn.disabled = true; btn.innerText = "ENVIANDO...";
-
-        try {
-            const res = await fetch(URL_BLOQUEIO, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    acao: "BLOQUEIO", alvo: bloqueioAtivo.tipo, id_banco: bloqueioAtivo.idRef,
-                    corridaId: bloqueioAtivo.corridaId, justificativa: justificativa,
-                    operador: OPERADOR_ATUAL, dataEvento: new Date().toISOString()
-                })
-            });
-            if (res.ok) { alert(`${bloqueioAtivo.tipo} bloqueado!`); fecharModal(); carregarDados(); }
-        } catch (e) { alert("Erro ao bloquear."); }
-        finally { btn.disabled = false; btn.innerText = "CONFIRMAR BLOQUEIO"; }
-    }
-
-    async function enviarResposta(mongoId, corridaId) {
-        const texto = document.getElementById(`input-${mongoId}`).value;
-        const btn = document.querySelector(`#box-${mongoId} .btn-enviar`);
-        if (!texto) return alert("Escreva uma resposta.");
-
-        try {
-            btn.disabled = true; btn.innerText = "ENVIANDO...";
-            const res = await fetch(URL_RESPONDER, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    "id_banco": mongoId, "corridaId": corridaId, "respostaSuporte": texto,
-                    "status": "respondida", "operador": OPERADOR_ATUAL, "dataResposta": new Date().toISOString()
-                })
-            });
-            if (res.ok) {
-                document.getElementById(`box-${mongoId}`).innerHTML = '<div class="msg-ja-respondida">✓ Resposta enviada com sucesso!</div>';
-                setTimeout(carregarDados, 2000);
-            }
-        } catch (e) { alert("Erro ao enviar."); btn.disabled = false; btn.innerText = "ENVIAR RESPOSTA"; }
-    }
-
-    window.onload = () => { carregarDados(); setInterval(carregarDados, 60000); };
+    window.onload = carregarDados;
 </script>
 </body>
 </html>
