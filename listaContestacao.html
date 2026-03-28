@@ -28,10 +28,6 @@
         .motivo-tag { background: #fee2e2; color: var(--danger); padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-bottom: 15px; display: inline-block; }
         .status-resolvido-tag { background: #d1fae5; color: var(--success); padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-bottom: 15px; display: inline-block; float: right; }
 
-        /* Justificativas */
-        .justificativa-box { background: #fffbeb; border: 1px solid #fef3c7; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 11px; }
-        .justificativa-label { color: var(--warning); font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 2px; }
-
         /* Ações de Bloqueio */
         .admin-actions { display: flex; gap: 8px; margin-bottom: 15px; }
         .btn-block { flex: 1; padding: 8px; border: 1px solid #eee; border-radius: 8px; font-size: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.2s; background: white; }
@@ -53,23 +49,38 @@
         .relato-label { font-size: 10px; color: var(--danger); font-weight: bold; display: block; margin-bottom: 4px; }
         .relato-txt { font-style: italic; color: #444; font-size: 14px; line-height: 1.5; }
         .reply-box { margin-top: 15px; border-top: 1px dashed #eee; padding-top: 15px; }
-
-        /* Histórico de Resposta */
-        .resposta-suporte-container { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: 10px; margin-top: 10px; }
-        .resposta-label { font-size: 10px; color: var(--success); font-weight: bold; display: block; margin-bottom: 6px; text-transform: uppercase; }
-        .resposta-txt { font-size: 13px; color: #166534; white-space: pre-wrap; line-height: 1.4; }
-
-        /* Botões Base */
+        
+        /* Botão Base de Conhecimento */
         .btn-base { background: #f0f9ff; color: var(--primary); border: 1px solid #bae6fd; padding: 6px 10px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; text-transform: uppercase; transition: 0.2s; }
+        .btn-base:hover { background: var(--primary); color: white; }
+
         textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-family: inherit; font-size: 13px; box-sizing: border-box; resize: none; height: 75px; outline: none; }
         .btn-enviar { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 14px; }
         .msg-ja-respondida { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 12px; border-radius: 10px; text-align: center; font-size: 13px; font-weight: bold; }
+        #loading-overlay { text-align: center; padding: 50px; color: #888; font-size: 13px; }
         .link-whatsapp { color: var(--primary); text-decoration: none; font-weight: bold; }
 
         /* Modais */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
-        .modal-card { background: white; width: 90%; max-width: 380px; padding: 25px; border-radius: 15px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); text-align: center; }
-        .kb-item { border: 1px solid #eee; padding: 10px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; text-align: left; }
+        .modal-card { background: white; width: 90%; max-width: 380px; padding: 25px; border-radius: 15px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); text-align: center; animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        
+        /* Modal Base de Conhecimento (ESPECÍFICO) */
+        #modalBase .modal-card { max-width: 450px; max-height: 80vh; overflow-y: auto; text-align: left; }
+        .kb-item { border: 1px solid #eee; padding: 12px; border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; }
+        .kb-item:hover { border-color: var(--primary); background: #f0f9ff; }
+        .kb-title { font-weight: bold; font-size: 13px; color: var(--primary); margin-bottom: 4px; display: block; }
+        .kb-preview { font-size: 11px; color: #777; line-height: 1.4; display: block; }
+
+        @keyframes modalIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .modal-card h3 { margin: 0 0 10px 0; font-size: 18px; }
+        .modal-card p { font-size: 13px; color: #666; margin-bottom: 15px; }
+        .btn-confirm { background: var(--danger); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; font-size: 14px; }
+        .btn-cancel { background: none; color: #aaa; border: none; padding: 10px; cursor: pointer; width: 100%; margin-top: 5px; font-size: 12px; text-transform: uppercase; font-weight: bold; }
+
+        /* Novo estilo para exibir resposta do suporte */
+        .historico-resposta-box { background: #f9fafb; border: 1px solid #eee; padding: 12px; border-radius: 10px; margin-top: 10px; }
+        .historico-label { font-size: 9px; color: var(--success); font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 5px; }
+        .historico-txt { font-size: 13px; color: #555; white-space: pre-wrap; line-height: 1.4; }
     </style>
 </head>
 <body>
@@ -77,18 +88,19 @@
 <div class="modal-overlay" id="modalBlock">
     <div class="modal-card">
         <h3 id="modalTitle">Bloquear Usuário</h3>
-        <p>Descreva o motivo do bloqueio.</p>
-        <textarea id="justificativaTexto" placeholder="Justificativa técnica..."></textarea>
-        <button class="btn-enviar" id="confirmBlockBtn" onclick="processarBloqueio()">CONFIRMAR BLOQUEIO</button>
-        <button onclick="fecharModal()" style="background:none; border:none; color:#aaa; cursor:pointer; margin-top:10px;">CANCELAR</button>
+        <p id="modalSubtitle">Por favor, descreva o motivo do bloqueio.</p>
+        <textarea id="justificativaTexto" placeholder="Escreva aqui a justificativa técnica..."></textarea>
+        <button class="btn-confirm" id="confirmBlockBtn" onclick="processarBloqueio()">CONFIRMAR BLOQUEIO</button>
+        <button class="btn-cancel" onclick="fecharModal()">CANCELAR</button>
     </div>
 </div>
 
 <div class="modal-overlay" id="modalBase" onclick="if(event.target == this) fecharModalBase()">
-    <div class="modal-card" style="max-width: 450px; text-align: left;">
+    <div class="modal-card">
         <h3>📖 Base de Conhecimento</h3>
-        <div id="kb-lista-container">Carregando...</div>
-        <button onclick="fecharModalBase()" style="width:100%; padding:10px; margin-top:10px; border:none; border-radius:8px;">FECHAR</button>
+        <p>Selecione uma resposta padrão para copiar:</p>
+        <div id="kb-lista-container">Carregando artigos...</div>
+        <button class="btn-cancel" onclick="fecharModalBase()">FECHAR</button>
     </div>
 </div>
 
@@ -106,7 +118,7 @@
 </div>
 
 <div class="container" id="lista-container">
-    <div style="text-align:center; padding:50px; color:#888;">Carregando contestações...</div>
+    <div id="loading-overlay">Carregando contestações em tempo real...</div>
 </div>
 
 <script>
@@ -132,14 +144,14 @@
             const response = await fetch(URL_LISTA);
             const dados = await response.json();
             renderizarLista(dados);
-        } catch (error) { console.error("Erro refresh:", error); }
+        } catch (error) { console.error("Erro auto-refresh:", error); }
     }
 
     async function buscarPorWebhook() {
         const idBusca = document.getElementById('inputBusca').value.trim();
         if (!idBusca) { estaBuscando = false; carregarDados(); return; }
         estaBuscando = true;
-        document.getElementById('lista-container').innerHTML = '<div style="text-align:center; padding:50px; color:#888;">Buscando...</div>';
+        document.getElementById('lista-container').innerHTML = '<div id="loading-overlay">Buscando...</div>';
         try {
             const response = await fetch(URL_BUSCA_UNICA, {
                 method: 'POST',
@@ -156,7 +168,7 @@
         const lista = Array.isArray(dadosBrutos) ? dadosBrutos : [dadosBrutos];
 
         if (!lista || lista.length === 0 || !lista[0].corridaId) {
-            container.innerHTML = '<div style="text-align:center; padding:50px; color:#888;">Tudo em dia! Nenhuma nova contestação.</div>';
+            container.innerHTML = '<div id="loading-overlay">Tudo em dia! Nenhuma nova contestação.</div>';
             return;
         }
 
@@ -172,38 +184,26 @@
             const foneLimpo = item.telefonePassageiro ? item.telefonePassageiro.replace(/\D/g, '') : '';
             const linkWhats = foneLimpo ? `https://wa.me/55${foneLimpo}` : '#';
 
-            // Justificativas
-            let secaoJustificativas = '';
-            if (item.justificativaPassageiro || item.justificativaMotorista) {
-                secaoJustificativas = `
-                    <div class="justificativa-box">
-                        ${item.justificativaPassageiro ? `<div><span class="justificativa-label">Bloqueio Passageiro:</span> ${item.justificativaPassageiro}</div>` : ''}
-                        ${item.justificativaMotorista ? `<div style="margin-top:5px"><span class="justificativa-label" style="color:var(--danger)">Bloqueio Motorista:</span> ${item.justificativaMotorista}</div>` : ''}
-                    </div>
-                `;
-            }
-
-            // Resposta enviada pelo suporte (NOVO)
-            let secaoRespostaHistorica = '';
-            if (eRespondida && item.respostaSuporte) {
-                secaoRespostaHistorica = `
-                    <div class="resposta-suporte-container">
-                        <span class="resposta-label">Resposta Enviada:</span>
-                        <div class="resposta-txt">${item.respostaSuporte}</div>
-                    </div>
-                `;
-            }
-
-            let areaAcao = `
+            let areaResposta = `
                 <div class="reply-box" id="box-${idUnico}">
                     <button class="btn-base" onclick="abrirModalBase('input-${idUnico}')">📖 Consultar Base</button>
-                    <textarea id="input-${idUnico}" placeholder="Digite a solução..."></textarea>
+                    <textarea id="input-${idUnico}" placeholder="Digite a solução para o passageiro..."></textarea>
                     <button class="btn-enviar" onclick="enviarResposta('${idUnico}', '${item.corridaId}')">ENVIAR RESPOSTA</button>
                 </div>
             `;
 
             if (eRespondida) {
-                areaAcao = `<div class="reply-box"><div class="msg-ja-respondida">✓ Resolvida por: ${item.operador || 'Suporte'}</div></div>`;
+                // EXIBE A RESPOSTA QUE ESTÁ NO JSON
+                areaResposta = `
+                    <div class="reply-box">
+                        <div class="msg-ja-respondida">✓ Resolvida por: ${item.operador || 'Suporte'}</div>
+                        ${item.respostaSuporte ? `
+                        <div class="historico-resposta-box">
+                            <span class="historico-label">Mensagem enviada:</span>
+                            <div class="historico-txt">${item.respostaSuporte}</div>
+                        </div>` : ''}
+                    </div>
+                `;
             }
 
             card.innerHTML = `
@@ -211,6 +211,7 @@
                     <span>CORRIDA #${item.corridaId?.split('-')[1] || '---'}</span>
                     <span>${dataEnvio}</span>
                 </div>
+                
                 <span class="motivo-tag">${item.contestacao?.motivo || 'OUTROS'}</span>
                 ${eRespondida ? '<span class="status-resolvido-tag">RESOLVIDA</span>' : ''}
                 
@@ -219,12 +220,13 @@
                     <button class="btn-block btn-block-driver" onclick="abrirModalBloqueio('MOTORISTA', '${idUnico}', '${item.corridaId}')">Bloquear Motorista</button>
                 </div>
 
-                ${secaoJustificativas}
-
                 <div class="info-grid">
                     <div class="info-section-title">Dados do Passageiro</div>
                     <div class="info-item"><span class="label">Nome</span> ${item.passageiro || 'Não informado'}</div>
-                    <div class="info-item"><span class="label">WhatsApp</span> <a href="${linkWhats}" target="_blank" class="link-whatsapp">${item.telefonePassageiro || '---'}</a></div>
+                    <div class="info-item">
+                        <span class="label">WhatsApp</span> 
+                        <a href="${linkWhats}" target="_blank" class="link-whatsapp">${item.telefonePassageiro || '---'}</a>
+                    </div>
                     <div class="info-section-title">Detalhes da Viagem</div>
                     <div class="info-item"><span class="label">Motorista</span> ${item.motorista || '---'}</div>
                     <div class="info-item"><span class="label">Origem</span> ${item.origem || '---'}</div>
@@ -237,8 +239,7 @@
                     <span class="relato-txt">"${item.contestacao?.detalhes || '...'}"</span>
                 </div>
 
-                ${secaoRespostaHistorica}
-                ${areaAcao}
+                ${areaResposta}
             `;
             container.appendChild(card);
         });
@@ -250,7 +251,9 @@
         if (!texto) return alert("Escreva uma resposta.");
 
         try {
-            btn.disabled = true; btn.innerText = "ENVIANDO...";
+            btn.disabled = true; 
+            btn.innerText = "ENVIANDO...";
+            
             const res = await fetch(URL_RESPONDER, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -259,48 +262,68 @@
                     "status": "respondida", "operador": OPERADOR_ATUAL, "dataResposta": new Date().toISOString()
                 })
             });
+            
             if (res.ok) {
-                // VOLTA A FIDELIDADE ORIGINAL: Altera o conteúdo da box imediatamente
+                // FIDELIDADE ORIGINAL: Substitui a box inteira pela mensagem de sucesso
                 document.getElementById(`box-${mongoId}`).innerHTML = '<div class="msg-ja-respondida">✓ Resposta enviada com sucesso!</div>';
                 setTimeout(carregarDados, 2000);
+            } else {
+                alert("Erro ao enviar.");
+                btn.disabled = false; btn.innerText = "ENVIAR RESPOSTA";
             }
-        } catch (e) { alert("Erro ao enviar."); btn.disabled = false; btn.innerText = "ENVIAR RESPOSTA"; }
+        } catch (e) { alert("Erro de conexão."); btn.disabled = false; btn.innerText = "ENVIAR RESPOSTA"; }
     }
 
+    async function abrirModalBase(idInput) {
+        inputAlvoBase = idInput;
+        const modal = document.getElementById('modalBase');
+        const container = document.getElementById('kb-lista-container');
+        modal.style.display = 'flex';
+        container.innerHTML = 'Buscando artigos na nuvem...';
+
+        try {
+            const res = await fetch(URL_BASE_CONHECIMENTO);
+            const dados = await res.json();
+            const lista = dados.documentos || dados;
+            
+            container.innerHTML = '';
+            lista.forEach(artigo => {
+                const div = document.createElement('div');
+                div.className = 'kb-item'; // FIDELIDADE À SUA CLASSE ORIGINAL
+                div.onclick = () => {
+                    document.getElementById(inputAlvoBase).value = artigo.msn;
+                    fecharModalBase();
+                    document.getElementById(inputAlvoBase).focus();
+                };
+                div.innerHTML = `
+                    <span class="kb-title">${artigo.titulo}</span>
+                    <span class="kb-preview">${artigo.msn.substring(0, 80)}...</span>
+                `;
+                container.appendChild(div);
+            });
+        } catch (e) { container.innerHTML = 'Erro ao carregar base.'; }
+    }
+
+    function fecharModalBase() { document.getElementById('modalBase').style.display = 'none'; }
     function abrirModalBloqueio(tipo, idRef, corridaId) {
         bloqueioAtivo = { tipo, idRef, corridaId };
         document.getElementById('modalTitle').innerText = `Bloquear ${tipo}`;
         document.getElementById('modalBlock').style.display = 'flex';
     }
     function fecharModal() { document.getElementById('modalBlock').style.display = 'none'; }
-    async function abrirModalBase(idInput) {
-        inputAlvoBase = idInput;
-        document.getElementById('modalBase').style.display = 'flex';
-        const res = await fetch(URL_BASE_CONHECIMENTO);
-        const dados = await res.json();
-        const container = document.getElementById('kb-lista-container');
-        container.innerHTML = '';
-        (dados.documentos || dados).forEach(artigo => {
-            const div = document.createElement('div');
-            div.className = 'kb-item';
-            div.onclick = () => { document.getElementById(inputAlvoBase).value = artigo.msn; fecharModalBase(); };
-            div.innerHTML = `<b>${artigo.titulo}</b><br><small>${artigo.msn.substring(0,60)}...</small>`;
-            container.appendChild(div);
-        });
-    }
-    function fecharModalBase() { document.getElementById('modalBase').style.display = 'none'; }
+
     async function processarBloqueio() {
         const justificativa = document.getElementById('justificativaTexto').value.trim();
-        if (!justificativa) return alert("Justificativa obrigatória.");
+        if (!justificativa) return alert("Motivo obrigatório.");
         const btn = document.getElementById('confirmBlockBtn');
-        btn.disabled = true; btn.innerText = "BLOQUEANDO...";
+        btn.disabled = true; btn.innerText = "ENVIANDO...";
         try {
             const res = await fetch(URL_BLOQUEIO, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ acao: "BLOQUEIO", alvo: bloqueioAtivo.tipo, id_banco: bloqueioAtivo.idRef, corridaId: bloqueioAtivo.corridaId, justificativa, operador: OPERADOR_ATUAL, dataEvento: new Date().toISOString() })
             });
-            if (res.ok) { alert("Bloqueado!"); fecharModal(); carregarDados(); }
+            if (res.ok) { alert("Bloqueio realizado!"); fecharModal(); carregarDados(); }
         } catch (e) { alert("Erro."); } finally { btn.disabled = false; btn.innerText = "CONFIRMAR BLOQUEIO"; }
     }
 
