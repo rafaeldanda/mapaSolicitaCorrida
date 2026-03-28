@@ -1,23 +1,105 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
-<meta charset="utf-8" />
-<script src="https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.js"></script>
-<link href="https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.css" rel="stylesheet" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Atendimento | Me Leva</title>
+
+    <script src='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.css' rel='stylesheet' />
+
+    <style>
+        body { margin:0; font-family: sans-serif; background:#f5f7fa; }
+        .container { max-width:600px; margin:auto; padding:20px; }
+        .card { background:#fff; padding:15px; border-radius:10px; margin-bottom:15px; }
+        .map-wrapper { width:100%; height:180px; border-radius:10px; overflow:hidden; background:#eee; }
+    </style>
 </head>
 <body>
 
-<div id="map" style="width:100%; height:300px;"></div>
+<div class="container" id="lista-container">
+    Carregando...
+</div>
 
 <script>
 mapboxgl.accessToken = 'pk.eyJ1IjoicmFmYWVsZGFuZGEiLCJhIjoiY21tM3V6aHQ3MDR1dTJxcHdiNnhpaHd0ayJ9.w-fjeHmzlyVes75Rg4pJuQ';
 
-new mapboxgl.Map({
-    container: 'map',
-    style: 'mapbox://styles/mapbox/streets-v12',
-    center: [-51.23, -30.03],
-    zoom: 12
-});
+const URL_LISTA = 'https://primary-production-a103.up.railway.app/webhook/d2494948-3dd8-40ed-a262-b4cef2d5c814';
+
+function normalizarCoord(coord) {
+    if (!Array.isArray(coord) || coord.length < 2) return null;
+
+    const [a, b] = coord;
+
+    // Detecta automaticamente se está invertido
+    if (Math.abs(a) <= 90 && Math.abs(b) <= 180) {
+        return [b, a]; // estava lat,lng → vira lng,lat
+    }
+
+    return coord; // já está correto
+}
+
+async function carregarDados() {
+    const res = await fetch(URL_LISTA);
+    const dados = await res.json();
+    renderizarLista(dados);
+}
+
+function renderizarLista(lista) {
+    const container = document.getElementById('lista-container');
+    container.innerHTML = '';
+
+    lista.forEach((item, index) => {
+        const mapId = `map-${index}`;
+
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        card.innerHTML = `
+            <div>ID: ${item.corridaId}</div>
+            ${item.rota?.coords ? `<div id="${mapId}" class="map-wrapper"></div>` : ''}
+        `;
+
+        container.appendChild(card);
+
+        if (item.rota?.coords) {
+            requestAnimationFrame(() => {
+                try {
+                    console.log("ROTA:", item.rota.coords);
+
+                    const origem = normalizarCoord(item.rota.coords.origem);
+                    const destino = normalizarCoord(item.rota.coords.destino);
+
+                    if (!origem || !destino) {
+                        console.warn("Coordenadas inválidas");
+                        return;
+                    }
+
+                    const map = new mapboxgl.Map({
+                        container: mapId,
+                        style: 'mapbox://styles/mapbox/streets-v12',
+                        center: origem,
+                        zoom: 12
+                    });
+
+                    new mapboxgl.Marker({color:'#2ea6ff'}).setLngLat(origem).addTo(map);
+                    new mapboxgl.Marker({color:'#ef4444'}).setLngLat(destino).addTo(map);
+
+                    const bounds = new mapboxgl.LngLatBounds()
+                        .extend(origem)
+                        .extend(destino);
+
+                    map.fitBounds(bounds, { padding: 40 });
+
+                } catch (err) {
+                    console.error("Erro Mapbox:", err);
+                }
+            });
+        }
+    });
+}
+
+carregarDados();
 </script>
 
 </body>
