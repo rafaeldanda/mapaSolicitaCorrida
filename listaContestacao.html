@@ -1,122 +1,27 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Atendimento | Me Leva</title>
-    <script src='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.js'></script>
-    <link href='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.css' rel='stylesheet' />
-    <style>
-        :root { --primary: #2ea6ff; --success: #10b981; --text: #333; --bg: #f5f7fa; --danger: #ef4444; --warning: #f59e0b; }
-        body { font-family: -apple-system, sans-serif; margin: 0; background: var(--bg); color: var(--text); }
-        .header { background: white; padding: 15px 20px; display: flex; justify-content: space-between; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 100; }
-        .container { padding: 20px; max-width: 550px; margin: 0 auto; }
-        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; border-left: 5px solid var(--danger); position: relative; }
-        .card.resolvido { border-left-color: var(--success); }
-        .map-wrapper { width: 100%; height: 180px; margin: 15px 0; border-radius: 10px; background: #eee; border: 1px solid #ddd; }
-        .info-grid { background: #f9fafb; border-radius: 10px; padding: 15px; border: 1px solid #f0f0f0; margin-bottom: 15px; }
-        .label { font-weight: bold; color: #999; font-size: 11px; text-transform: uppercase; width: 95px; display: inline-block; }
-        .relato-container { background: #fff4f4; border-left: 3px solid var(--danger); padding: 12px; margin: 15px 0; border-radius: 4px; }
-        .historico-res { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: 10px; font-size: 13px; color: #166534; margin-top: 10px; white-space: pre-wrap; }
-        textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; height: 100px; resize: none; outline: none; box-sizing: border-box; }
-        .btn-enviar { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-    </style>
+<meta charset="utf-8" />
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.js"></script>
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.css" rel="stylesheet" />
 </head>
+
 <body>
 
-<div class="header">
-    <div style="font-size: 16px; color: var(--primary); font-weight: bold;">ME LEVA | SUPORTE</div>
-    <div id="op-nome" style="font-size: 12px; color: #888;"></div>
-</div>
-
-<div class="container" id="lista-container"></div>
+<div id="map" style="width:100%; height:400px;"></div>
 
 <script>
-    mapboxgl.accessToken = 'pk.eyJ1IjoicmFmYWVsZGFuZGEiLCJhIjoiY21tM3V6aHQ3MDR1dTJxcHdiNnhpaHd0ayJ9.w-fjeHmzlyVes75Rg4pJuQ';
-    const OPERADOR = localStorage.getItem('operador_nome') || "rafa";
-    document.getElementById('op-nome').innerText = `Operador: ${OPERADOR}`;
+mapboxgl.accessToken = 'pk.eyJ1IjoicmFmYWVsZGFuZGEiLCJhIjoiY21tM3V6aHQ3MDR1dTJxcHdiNnhpaHd0ayJ9.w-fjeHmzlyVes75Rg4pJuQ';
 
-    const URL_LISTA = 'https://primary-production-a103.up.railway.app/webhook/d2494948-3dd8-40ed-a262-b4cef2d5c814';
-    const URL_RESPONDER = 'https://primary-production-a103.up.railway.app/webhook/810fe7e7-5b89-4c39-9b1c-1a6c4d9528cf';
+const map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/streets-v12',
+    center: [-51.23, -30.03],
+    zoom: 12
+});
 
-    async function geocodificar(end) {
-        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(end + ", Porto Alegre")}.json?access_token=${mapboxgl.accessToken}`);
-        const data = await res.json();
-        return data.features?.length > 0 ? data.features[0].center : null;
-    }
-
-    async function carregar() {
-        const res = await fetch(URL_LISTA);
-        const dados = await res.json();
-        const lista = Array.isArray(dados) ? dados : [dados];
-        const cont = document.getElementById('lista-container');
-        cont.innerHTML = '';
-
-        for (let i = 0; i < lista.length; i++) {
-            const item = lista[i];
-            const id = item._id?.$oid || item._id;
-            const resolvido = item.status && item.status.includes('respondida');
-            const mapId = `map-${i}`;
-
-            const card = document.createElement('div');
-            card.className = `card ${resolvido ? 'resolvido' : ''}`;
-            card.innerHTML = `
-                <div style="display:flex; justify-content:space-between; font-size:11px; color:#aaa; margin-bottom:10px;">
-                    <b>#${item.corridaId.split('-')[1]}</b>
-                    <span>${item.contestacao?.dataEnvio ? new Date(item.contestacao.dataEnvio).toLocaleDateString() : ''}</span>
-                </div>
-                
-                <div id="${mapId}" class="map-wrapper"></div>
-
-                <div class="info-grid">
-                    <div style="font-size:10px; font-weight:800; color:#ccc; margin-bottom:8px; text-transform:uppercase;">Dados da Viagem</div>
-                    <div><span class="label">Passageiro:</span> ${item.passageiro}</div>
-                    <div><span class="label">Motorista:</span> ${item.motorista}</div>
-                    <div><span class="label">Origem:</span> ${item.origem}</div>
-                    <div><span class="label">Destino:</span> ${item.destino}</div>
-                    <div><span class="label">Valor:</span> <b>R$ ${item.valorTotal.toFixed(2).replace('.',',')}</b></div>
-                </div>
-
-                <div class="relato-container">
-                    <div style="font-size:10px; font-weight:bold; color:var(--danger); margin-bottom:5px;">CONTESTAÇÃO: ${item.contestacao?.motivo}</div>
-                    <div style="font-style:italic;">"${item.contestacao?.detalhes}"</div>
-                </div>
-
-                ${resolvido ? `
-                    <div class="historico-res"><b>Resposta do Suporte (${item.operador}):</b>\n${item.respostaSuporte}</div>
-                ` : `
-                    <div id="box-${id}">
-                        <textarea id="input-${id}" placeholder="Escreva a solução para o cliente..."></textarea>
-                        <button class="btn-enviar" onclick="enviar('${id}', '${item.corridaId}')">ENVIAR RESPOSTA</button>
-                    </div>
-                `}
-            `;
-            cont.appendChild(card);
-
-            // Tenta carregar o mapa
-            const p1 = await geocodificar(item.origem);
-            const p2 = await geocodificar(item.destino);
-            if(p1 && p2) {
-                const map = new mapboxgl.Map({ container: mapId, style: 'mapbox://styles/mapbox/streets-v12', center: p1, zoom: 12 });
-                new mapboxgl.Marker({color: '#2ea6ff'}).setLngLat(p1).addTo(map);
-                new mapboxgl.Marker({color: '#ef4444'}).setLngLat(p2).addTo(map);
-                map.fitBounds(new mapboxgl.LngLatBounds().extend(p1).extend(p2), {padding: 30});
-            }
-        }
-    }
-
-    async function enviar(id, corridaId) {
-        const txt = document.getElementById(`input-${id}`).value;
-        if(!txt) return alert("Digite algo!");
-        const res = await fetch(URL_RESPONDER, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({id_banco: id, corridaId, respostaSuporte: txt, status: "respondida", operador: OPERADOR, dataResposta: new Date().toISOString()})
-        });
-        if(res.ok) { carregar(); }
-    }
-
-    carregar();
+new mapboxgl.Marker().setLngLat([-51.23, -30.03]).addTo(map);
 </script>
+
 </body>
 </html>
