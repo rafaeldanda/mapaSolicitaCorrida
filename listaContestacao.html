@@ -8,53 +8,50 @@
         :root { --primary: #2ea6ff; --success: #10b981; --text: #333; --bg: #f5f7fa; --danger: #ef4444; --warning: #f59e0b; --gray: #888; }
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; background: var(--bg); color: var(--text); }
         
-        /* Header */
+        /* Header & Search */
         .header { background: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 100; }
         .header-info h1 { font-size: 16px; margin: 0; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
         .operador-tag { font-size: 10px; color: #aaa; text-transform: uppercase; font-weight: bold; display: flex; align-items: center; gap: 5px; }
         .live-dot { width: 6px; height: 6px; background: var(--success); border-radius: 50%; display: inline-block; animation: blink 1.5s infinite; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-        
-        /* Busca */
+
         .search-container { background: white; padding: 12px 20px; border-bottom: 1px solid #eee; position: sticky; top: 52px; z-index: 99; display: flex; gap: 8px; justify-content: center; }
         .search-box { width: 100%; max-width: 400px; padding: 10px 15px; border: 1px solid #eee; border-radius: 10px; font-size: 13px; outline: none; background: #fafafa; }
         .btn-busca { background: var(--primary); color: white; border: none; padding: 0 15px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 11px; text-transform: uppercase; }
 
-        /* Cards */
+        /* Container & Cards */
         .container { padding: 20px; max-width: 550px; margin: 0 auto; }
         .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; border-left: 5px solid var(--danger); position: relative; }
-        .card.resolvido { border-left-color: var(--success); opacity: 0.9; }
-        
+        .card.resolvido { border-left-color: var(--success); }
         .card-header { display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-bottom: 12px; border-bottom: 1px solid #f9f9f9; padding-bottom: 8px; }
-        .motivo-tag { background: #fee2e2; color: var(--danger); padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-bottom: 15px; display: inline-block; }
-        .status-resolvido-tag { background: #d1fae5; color: var(--success); padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-bottom: 15px; display: inline-block; float: right; }
 
-        /* Bloqueios Exibição */
-        .justificativa-box { background: #fffbeb; border: 1px solid #fef3c7; padding: 12px; border-radius: 10px; margin-bottom: 15px; }
-        .justificativa-label { font-size: 10px; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 2px; }
-        .justificativa-txt { font-size: 12px; color: #92400e; line-height: 1.4; }
-
-        /* Resposta do Suporte Exibição */
-        .box-resposta-enviada { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: 10px; margin-top: 15px; }
-        .label-suporte { font-size: 10px; color: #166534; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 4px; }
-        .txt-suporte { font-size: 13px; color: #14532d; white-space: pre-wrap; line-height: 1.4; }
+        /* BLOQUEIOS (Conforme Imagem) */
+        .justificativa-box { background: #fffbeb; border: 1px solid #fef3c7; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
+        .justificativa-label { font-size: 11px; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 4px; }
+        .justificativa-txt { font-size: 13px; color: #92400e; line-height: 1.4; }
 
         /* Info Grid */
-        .info-grid { background: #f9fafb; border-radius: 8px; padding: 12px; margin-bottom: 15px; border: 1px solid #f0f0f0; }
-        .info-section-title { font-size: 9px; color: #bbb; font-weight: 800; text-transform: uppercase; margin: 10px 0 5px 0; border-bottom: 1px solid #eee; padding-bottom: 2px; }
-        .info-item { margin: 4px 0; font-size: 12px; display: flex; align-items: flex-start; }
-        .label { font-weight: bold; color: #999; font-size: 10px; text-transform: uppercase; margin-right: 6px; width: 85px; flex-shrink: 0; }
+        .info-grid { background: #f9fafb; border-radius: 10px; padding: 15px; margin-bottom: 15px; border: 1px solid #f0f0f0; }
+        .info-section-title { font-size: 10px; color: #bbb; font-weight: 800; text-transform: uppercase; margin: 10px 0 8px 0; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+        .info-item { margin: 6px 0; font-size: 13px; display: flex; align-items: flex-start; }
+        .label { font-weight: bold; color: #999; font-size: 11px; text-transform: uppercase; margin-right: 10px; width: 95px; flex-shrink: 0; }
         
-        .relato-container { background: #fff; border-left: 3px solid #ddd; padding: 10px 15px; margin: 15px 0; }
-        .relato-label { font-size: 10px; color: var(--danger); font-weight: bold; display: block; margin-bottom: 4px; }
-        .relato-txt { font-style: italic; color: #444; font-size: 14px; line-height: 1.5; }
+        /* Relato Cliente */
+        .relato-container { background: #fff; border-left: 3px solid var(--danger); padding: 10px 15px; margin: 15px 0; }
+        .relato-label { font-size: 11px; color: var(--danger); font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 6px; }
+        .relato-txt { font-style: italic; color: #444; font-size: 15px; line-height: 1.5; }
+
+        /* BOX DE RESPOSTAS (SUPORTE E PASSAGEIRO) */
+        .box-resposta-enviada { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: 10px; margin-top: 10px; }
+        .box-resposta-passageiro { background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 10px; margin-top: 10px; }
+        .label-historico { font-size: 10px; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 4px; }
+        .txt-historico { font-size: 13px; color: #444; white-space: pre-wrap; line-height: 1.4; }
 
         /* Interação */
-        .reply-box { margin-top: 15px; border-top: 1px dashed #eee; padding-top: 15px; }
-        textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-family: inherit; font-size: 13px; box-sizing: border-box; resize: none; height: 75px; outline: none; }
+        .reply-box { margin-top: 20px; border-top: 1px dashed #eee; padding-top: 15px; }
+        textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-family: inherit; font-size: 14px; box-sizing: border-box; resize: none; height: 85px; outline: none; }
         .btn-enviar { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 14px; }
-        .btn-base { background: #f0f9ff; color: var(--primary); border: 1px solid #bae6fd; padding: 6px 10px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer; margin-bottom: 8px; text-transform: uppercase; }
-        .msg-sucesso-float { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 12px; border-radius: 10px; text-align: center; font-size: 13px; font-weight: bold; margin-top: 10px; }
+        .btn-base { background: #f0f9ff; color: var(--primary); border: 1px solid #bae6fd; padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; margin-bottom: 10px; text-transform: uppercase; display: flex; align-items: center; gap: 5px; }
 
         /* Modais */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
@@ -81,14 +78,14 @@
 </div>
 
 <div class="container" id="lista-container">
-    <div style="text-align:center; padding:50px; color:#888;">Carregando contestações...</div>
+    <div style="text-align:center; padding:50px; color:#888;">Carregando dados...</div>
 </div>
 
 <div class="modal-overlay" id="modalBase" onclick="if(event.target == this) this.style.display='none'">
     <div class="modal-card">
         <h3>📖 Base de Conhecimento</h3>
         <div id="kb-lista-container"></div>
-        <button onclick="document.getElementById('modalBase').style.display='none'" style="width:100%; padding:10px; margin-top:10px; border:none; border-radius:8px;">FECHAR</button>
+        <button onclick="document.getElementById('modalBase').style.display='none'" style="width:100%; padding:10px; margin-top:10px; border:none; border-radius:8px; cursor:pointer;">FECHAR</button>
     </div>
 </div>
 
@@ -105,7 +102,7 @@
             const res = await fetch(URL_LISTA);
             const dados = await res.json();
             renderizarLista(dados);
-        } catch (e) { console.error("Erro no fetch", e); }
+        } catch (e) { console.error(e); }
     }
 
     function renderizarLista(dados) {
@@ -115,26 +112,37 @@
 
         lista.forEach(item => {
             const idUnico = item._id?.$oid || item._id;
-            const eRespondida = item.status === 'respondida';
+            // Fidelidade ao status dinâmico do banco (ex: ggrespondida)
+            const eRespondida = item.status && item.status.includes('respondida');
             
-            // 1. BLOQUEIOS (SE EXISTIREM NO BANCO)
+            // 1. SEÇÃO DE BLOQUEIOS (Conforme Captura.PNG)
             let htmlBloqueios = '';
             if (item.justificativaPassageiro || item.justificativaMotorista) {
                 htmlBloqueios = `
                     <div class="justificativa-box">
-                        ${item.justificativaPassageiro ? `<div><span class="justificativa-label" style="color:var(--warning)">Bloqueio Passageiro:</span><span class="justificativa-txt">${item.justificativaPassageiro}</span></div>` : ''}
-                        ${item.justificativaMotorista ? `<div style="margin-top:8px"><span class="justificativa-label" style="color:var(--danger)">Bloqueio Motorista:</span><span class="justificativa-txt">${item.justificativaMotorista}</span></div>` : ''}
+                        ${item.justificativaPassageiro ? `<div><span class="justificativa-label" style="color:var(--warning)">BLOQUEIO PASSAGEIRO:</span><span class="justificativa-txt">${item.justificativaPassageiro}</span></div>` : ''}
+                        ${item.justificativaMotorista ? `<div style="margin-top:8px"><span class="justificativa-label" style="color:var(--danger)">BLOQUEIO MOTORISTA:</span><span class="justificativa-txt">${item.justificativaMotorista}</span></div>` : ''}
                     </div>
                 `;
             }
 
-            // 2. RESPOSTA DO SUPORTE (SE JÁ FOI RESPONDIDA)
-            let htmlRespostaSuporte = '';
-            if (eRespondida && item.respostaSuporte) {
-                htmlRespostaSuporte = `
-                    <div class="box-resposta-enviada">
-                        <span class="label-suporte">Resposta Enviada por ${item.operador || 'Suporte'}:</span>
-                        <div class="txt-suporte">${item.respostaSuporte}</div>
+            // 2. SEÇÃO DE RESPOSTAS (SUPORTE E PASSAGEIRO)
+            let htmlHistorico = '';
+            if (item.respostaSuporte || (item.respostaPassageiro && item.respostaPassageiro.trim() !== "")) {
+                htmlHistorico = `
+                    <div class="historico-container">
+                        ${item.respostaSuporte ? `
+                            <div class="box-resposta-enviada">
+                                <span class="label-historico" style="color:#166534">RESPOSTA DO SUPORTE:</span>
+                                <div class="txt-historico">${item.respostaSuporte}</div>
+                            </div>
+                        ` : ''}
+                        ${item.respostaPassageiro ? `
+                            <div class="box-resposta-passageiro">
+                                <span class="label-historico" style="color:#1e40af">RESPOSTA DO PASSAGEIRO:</span>
+                                <div class="txt-historico">${item.respostaPassageiro}</div>
+                            </div>
+                        ` : ''}
                     </div>
                 `;
             }
@@ -146,18 +154,16 @@
                     <span>CORRIDA #${item.corridaId?.split('-')[1] || '---'}</span>
                     <span>${item.contestacao?.dataEnvio ? new Date(item.contestacao.dataEnvio).toLocaleDateString() : ''}</span>
                 </div>
-                <span class="motivo-tag">${item.contestacao?.motivo || 'OUTROS'}</span>
-                ${eRespondida ? '<span class="status-resolvido-tag">RESOLVIDA</span>' : ''}
                 
                 ${htmlBloqueios}
 
                 <div class="info-grid">
-                    <div class="info-section-title">Dados do Passageiro</div>
-                    <div class="info-item"><span class="label">Nome</span> ${item.passageiro || '---'}</div>
-                    <div class="info-item"><span class="label">WhatsApp</span> <a href="https://wa.me/55${item.telefonePassageiro?.replace(/\D/g,'')}" target="_blank" style="color:var(--primary); font-weight:bold; text-decoration:none;">${item.telefonePassageiro || '---'}</a></div>
-                    <div class="info-section-title">Detalhes da Viagem</div>
-                    <div class="info-item"><span class="label">Motorista</span> ${item.motorista || '---'}</div>
-                    <div class="info-item"><span class="label">Valor</span> <span style="color:var(--success); font-weight:bold;">R$ ${(item.valorTotal || 0).toFixed(2).replace('.',',')}</span></div>
+                    <div class="info-section-title">DADOS DO PASSAGEIRO</div>
+                    <div class="info-item"><span class="label">NOME</span> ${item.passageiro || '---'}</div>
+                    <div class="info-item"><span class="label">WHATSAPP</span> <a href="https://wa.me/55${item.telefonePassageiro?.replace(/\D/g,'')}" target="_blank" style="color:var(--primary); font-weight:bold; text-decoration:none;">${item.telefonePassageiro || '---'}</a></div>
+                    <div class="info-section-title">DETALHES DA VIAGEM</div>
+                    <div class="info-item"><span class="label">MOTORISTA</span> ${item.motorista || '---'}</div>
+                    <div class="info-item"><span class="label">VALOR</span> <span style="color:var(--success); font-weight:bold;">R$ ${(item.valorTotal || 0).toFixed(2).replace('.',',')}</span></div>
                 </div>
 
                 <div class="relato-container">
@@ -165,13 +171,14 @@
                     <span class="relato-txt">"${item.contestacao?.detalhes || '...'}"</span>
                 </div>
 
-                ${htmlRespostaSuporte}
+                ${htmlHistorico}
 
                 <div class="reply-box" id="box-${idUnico}" style="${eRespondida ? 'display:none' : 'display:block'}">
-                    <button class="btn-base" onclick="abrirBase('${idUnico}')">📖 Consultar Base</button>
+                    <button class="btn-base" onclick="abrirBase('${idUnico}')">📖 CONSULTAR BASE</button>
                     <textarea id="input-${idUnico}" placeholder="Digite a solução..."></textarea>
                     <button class="btn-enviar" onclick="enviar('${idUnico}', '${item.corridaId}')">ENVIAR RESPOSTA</button>
                 </div>
+                ${eRespondida ? '<div style="background:#f0fdf4; color:#166534; padding:10px; border-radius:10px; text-align:center; font-size:12px; font-weight:bold; margin-top:15px;">✓ CHAMADO FINALIZADO PELO SUPORTE</div>' : ''}
             `;
             container.appendChild(card);
         });
@@ -179,38 +186,21 @@
 
     async function enviar(mongoId, corridaId) {
         const txt = document.getElementById(`input-${mongoId}`).value;
-        if(!txt) return alert("Escreva algo.");
+        if(!txt) return alert("Por favor, digite uma solução.");
         const btn = document.querySelector(`#box-${mongoId} .btn-enviar`);
-        
-        btn.innerText = "ENVIANDO..."; 
-        btn.disabled = true;
+        btn.innerText = "ENVIANDO..."; btn.disabled = true;
 
         try {
             const res = await fetch(URL_RESPONDER, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    id_banco: mongoId, 
-                    corridaId: corridaId, 
-                    respostaSuporte: txt, 
-                    status: "respondida", 
-                    operador: OPERADOR_ATUAL, 
-                    dataResposta: new Date().toISOString()
-                })
+                body: JSON.stringify({id_banco: mongoId, corridaId, respostaSuporte: txt, status: "respondida", operador: OPERADOR_ATUAL, dataResposta: new Date().toISOString()})
             });
-
             if(res.ok) {
-                // Fidelidade: Remove o form e mostra o banner verde de sucesso
-                const box = document.getElementById(`box-${mongoId}`);
-                box.innerHTML = '<div class="msg-sucesso-float">✓ Resposta enviada com sucesso!</div>';
-                // Atualiza a lista após 2 segundos para mostrar o card no novo estado
+                document.getElementById(`box-${mongoId}`).innerHTML = '<div style="background:#f0fdf4; color:#166534; padding:12px; border-radius:10px; text-align:center; font-weight:bold;">✓ Enviado com sucesso!</div>';
                 setTimeout(carregarDados, 2000);
             }
-        } catch (e) {
-            alert("Erro ao conectar.");
-            btn.innerText = "ENVIAR RESPOSTA";
-            btn.disabled = false;
-        }
+        } catch (e) { alert("Erro de rede."); btn.innerText = "ENVIAR RESPOSTA"; btn.disabled = false; }
     }
 
     async function abrirBase(idInput) {
@@ -222,10 +212,7 @@
         (docs.documentos || docs).forEach(d => {
             const div = document.createElement('div');
             div.className = 'kb-item';
-            div.onclick = () => { 
-                document.getElementById(`input-${idInput}`).value = d.msn; 
-                document.getElementById('modalBase').style.display='none'; 
-            };
+            div.onclick = () => { document.getElementById(`input-${idInput}`).value = d.msn; document.getElementById('modalBase').style.display='none'; };
             div.innerHTML = `<span class="kb-title">${d.titulo}</span><span class="kb-preview">${d.msn.substring(0,80)}...</span>`;
             cont.appendChild(div);
         });
