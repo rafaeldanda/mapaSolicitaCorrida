@@ -28,6 +28,10 @@
         .motivo-tag { background: #fee2e2; color: var(--danger); padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-bottom: 15px; display: inline-block; }
         .status-resolvido-tag { background: #d1fae5; color: var(--success); padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-bottom: 15px; display: inline-block; float: right; }
 
+        /* Justificativas de Bloqueio */
+        .justificativa-box { background: #fffbeb; border: 1px solid #fef3c7; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 11px; }
+        .justificativa-label { color: var(--warning); font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 2px; }
+
         /* Ações de Bloqueio */
         .admin-actions { display: flex; gap: 8px; margin-bottom: 15px; }
         .btn-block { flex: 1; padding: 8px; border: 1px solid #eee; border-radius: 8px; font-size: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.2s; background: white; }
@@ -50,33 +54,23 @@
         .relato-txt { font-style: italic; color: #444; font-size: 14px; line-height: 1.5; }
         .reply-box { margin-top: 15px; border-top: 1px dashed #eee; padding-top: 15px; }
         
-        /* Botão Base de Conhecimento */
-        .btn-base { background: #f0f9ff; color: var(--primary); border: 1px solid #bae6fd; padding: 6px 10px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; text-transform: uppercase; transition: 0.2s; }
-        .btn-base:hover { background: var(--primary); color: white; }
+        .historico-resposta { background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; margin-top: 10px; font-size: 12px; white-space: pre-wrap; color: #475569; line-height: 1.4; }
+        .historico-label { font-weight: bold; color: var(--primary); display: block; margin-bottom: 5px; font-size: 10px; text-transform: uppercase; }
 
+        /* Botões e Inputs */
+        .btn-base { background: #f0f9ff; color: var(--primary); border: 1px solid #bae6fd; padding: 6px 10px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; text-transform: uppercase; transition: 0.2s; }
         textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-family: inherit; font-size: 13px; box-sizing: border-box; resize: none; height: 75px; outline: none; }
         .btn-enviar { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 14px; }
         .msg-ja-respondida { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 12px; border-radius: 10px; text-align: center; font-size: 13px; font-weight: bold; }
-        #loading-overlay { text-align: center; padding: 50px; color: #888; font-size: 13px; }
         .link-whatsapp { color: var(--primary); text-decoration: none; font-weight: bold; }
 
         /* Modais */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
         .modal-card { background: white; width: 90%; max-width: 380px; padding: 25px; border-radius: 15px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); text-align: center; animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        
-        /* Modal Base de Conhecimento (Específico) */
         #modalBase .modal-card { max-width: 450px; max-height: 80vh; overflow-y: auto; text-align: left; }
         .kb-item { border: 1px solid #eee; padding: 12px; border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; }
         .kb-item:hover { border-color: var(--primary); background: #f0f9ff; }
-        .kb-title { font-weight: bold; font-size: 13px; color: var(--primary); margin-bottom: 4px; display: block; }
-        .kb-preview { font-size: 11px; color: #777; line-height: 1.4; display: block; }
-
         @keyframes modalIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .modal-card h3 { margin: 0 0 10px 0; font-size: 18px; }
-        .modal-card p { font-size: 13px; color: #666; margin-bottom: 15px; }
-        .modal-card textarea { height: 100px; margin-bottom: 15px; border: 1px solid #eee; background: #fcfcfc; }
-        .btn-confirm { background: var(--danger); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; font-size: 14px; }
-        .btn-cancel { background: none; color: #aaa; border: none; padding: 10px; cursor: pointer; width: 100%; margin-top: 5px; font-size: 12px; text-transform: uppercase; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -86,17 +80,17 @@
         <h3 id="modalTitle">Bloquear Usuário</h3>
         <p id="modalSubtitle">Por favor, descreva o motivo do bloqueio.</p>
         <textarea id="justificativaTexto" placeholder="Escreva aqui a justificativa técnica..."></textarea>
-        <button class="btn-confirm" id="confirmBlockBtn" onclick="processarBloqueio()">CONFIRMAR BLOQUEIO</button>
-        <button class="btn-cancel" onclick="fecharModal()">CANCELAR</button>
+        <button class="btn-confirm" id="confirmBlockBtn" onclick="processarBloqueio()" style="background:var(--danger); color:white; border:none; padding:12px; border-radius:10px; width:100%; font-weight:bold; cursor:pointer;">CONFIRMAR BLOQUEIO</button>
+        <button class="btn-cancel" onclick="fecharModal()" style="background:none; border:none; color:#aaa; margin-top:10px; cursor:pointer;">CANCELAR</button>
     </div>
 </div>
 
 <div class="modal-overlay" id="modalBase" onclick="if(event.target == this) fecharModalBase()">
     <div class="modal-card">
         <h3>📖 Base de Conhecimento</h3>
-        <p>Selecione uma resposta padrão para copiar:</p>
+        <p>Selecione uma resposta padrão:</p>
         <div id="kb-lista-container">Carregando artigos...</div>
-        <button class="btn-cancel" onclick="fecharModalBase()">FECHAR</button>
+        <button class="btn-cancel" onclick="fecharModalBase()" style="width:100%; padding:10px; margin-top:10px; background:#eee; border:none; border-radius:8px; cursor:pointer;">FECHAR</button>
     </div>
 </div>
 
@@ -114,18 +108,16 @@
 </div>
 
 <div class="container" id="lista-container">
-    <div id="loading-overlay">Carregando contestações em tempo real...</div>
+    <div id="loading-overlay" style="text-align:center; padding:50px; color:#888;">Carregando contestações...</div>
 </div>
 
 <script>
-    // Configurações de Acesso
     if (localStorage.getItem('painel_logado') !== 'true') { window.location.href = 'loginSuporte.html'; }
     function logout() { localStorage.clear(); window.location.href = 'loginSuporte.html'; }
 
     const OPERADOR_ATUAL = localStorage.getItem('operador_nome') || "Desconhecido";
     document.getElementById('nome-exibicao').innerHTML = `<span class="live-dot"></span> Operador: ${OPERADOR_ATUAL}`;
 
-    // Webhooks
     const URL_LISTA = 'https://primary-production-a103.up.railway.app/webhook/d2494948-3dd8-40ed-a262-b4cef2d5c814';
     const URL_BUSCA_UNICA = 'https://primary-production-a103.up.railway.app/webhook/fb5e433b-fedc-4f6f-b5b8-7297098da150';
     const URL_RESPONDER = 'https://primary-production-a103.up.railway.app/webhook/810fe7e7-5b89-4c39-9b1c-1a6c4d9528cf';
@@ -134,7 +126,7 @@
 
     let estaBuscando = false;
     let bloqueioAtivo = { tipo: '', idRef: '', corridaId: '' };
-    let inputAlvoBase = ''; // Guarda qual textarea deve receber o texto da base
+    let inputAlvoBase = '';
 
     async function carregarDados() {
         if(estaBuscando) return;
@@ -142,14 +134,14 @@
             const response = await fetch(URL_LISTA);
             const dados = await response.json();
             renderizarLista(dados);
-        } catch (error) { console.error("Erro auto-refresh:", error); }
+        } catch (error) { console.error("Erro refresh:", error); }
     }
 
     async function buscarPorWebhook() {
         const idBusca = document.getElementById('inputBusca').value.trim();
         if (!idBusca) { estaBuscando = false; carregarDados(); return; }
         estaBuscando = true;
-        document.getElementById('lista-container').innerHTML = '<div id="loading-overlay">Buscando...</div>';
+        document.getElementById('lista-container').innerHTML = '<div style="text-align:center; padding:50px; color:#888;">Buscando...</div>';
         try {
             const response = await fetch(URL_BUSCA_UNICA, {
                 method: 'POST',
@@ -166,7 +158,7 @@
         const lista = Array.isArray(dadosBrutos) ? dadosBrutos : [dadosBrutos];
 
         if (!lista || lista.length === 0 || !lista[0].corridaId) {
-            container.innerHTML = '<div id="loading-overlay">Tudo em dia! Nenhuma nova contestação.</div>';
+            container.innerHTML = '<div style="text-align:center; padding:50px; color:#888;">Tudo em dia! Nenhuma nova contestação.</div>';
             return;
         }
 
@@ -182,16 +174,37 @@
             const foneLimpo = item.telefonePassageiro ? item.telefonePassageiro.replace(/\D/g, '') : '';
             const linkWhats = foneLimpo ? `https://wa.me/55${foneLimpo}` : '#';
 
-            let areaResposta = `
-                <div class="reply-box" id="box-${idUnico}">
-                    <button class="btn-base" onclick="abrirModalBase('input-${idUnico}')">📖 Consultar Base</button>
-                    <textarea id="input-${idUnico}" placeholder="Digite a solução para o passageiro..."></textarea>
-                    <button class="btn-enviar" onclick="enviarResposta('${idUnico}', '${item.corridaId}')">ENVIAR RESPOSTA</button>
-                </div>
-            `;
+            // Justificativas (se existirem)
+            let secaoJustificativas = '';
+            if (item.justificativaPassageiro || item.justificativaMotorista) {
+                secaoJustificativas = `
+                    <div class="justificativa-box">
+                        ${item.justificativaPassageiro ? `<div><span class="justificativa-label">Motivo Bloqueio Passageiro:</span> ${item.justificativaPassageiro}</div>` : ''}
+                        ${item.justificativaMotorista ? `<div style="margin-top:5px"><span class="justificativa-label" style="color:var(--danger)">Motivo Bloqueio Motorista:</span> ${item.justificativaMotorista}</div>` : ''}
+                    </div>
+                `;
+            }
 
+            // Área de Resposta ou Histórico
+            let areaResposta = '';
             if (eRespondida) {
-                areaResposta = `<div class="reply-box"><div class="msg-ja-respondida">✓ Resolvida por: ${item.operador || 'Suporte'}</div></div>`;
+                areaResposta = `
+                    <div class="reply-box">
+                        <div class="msg-ja-respondida">✓ Respondida por: ${item.operador || 'Suporte'}</div>
+                        <div class="historico-resposta">
+                            <span class="historico-label">Histórico da Resposta:</span>
+                            ${item.respostaSuporte || 'Nenhum conteúdo de resposta encontrado.'}
+                        </div>
+                    </div>
+                `;
+            } else {
+                areaResposta = `
+                    <div class="reply-box" id="box-${idUnico}">
+                        <button class="btn-base" onclick="abrirModalBase('input-${idUnico}')">📖 Consultar Base</button>
+                        <textarea id="input-${idUnico}" placeholder="Digite a solução para o passageiro..."></textarea>
+                        <button class="btn-enviar" onclick="enviarResposta('${idUnico}', '${item.corridaId}')">ENVIAR RESPOSTA</button>
+                    </div>
+                `;
             }
 
             card.innerHTML = `
@@ -207,6 +220,8 @@
                     <button class="btn-block btn-block-pass" onclick="abrirModalBloqueio('PASSAGEIRO', '${idUnico}', '${item.corridaId}')">Bloquear Passageiro</button>
                     <button class="btn-block btn-block-driver" onclick="abrirModalBloqueio('MOTORISTA', '${idUnico}', '${item.corridaId}')">Bloquear Motorista</button>
                 </div>
+
+                ${secaoJustificativas}
 
                 <div class="info-grid">
                     <div class="info-section-title">Dados do Passageiro</div>
@@ -233,7 +248,6 @@
         });
     }
 
-    // Modal Bloqueio Functions
     function abrirModalBloqueio(tipo, idRef, corridaId) {
         bloqueioAtivo = { tipo, idRef, corridaId };
         document.getElementById('modalTitle').innerText = `Bloquear ${tipo}`;
@@ -242,57 +256,35 @@
         document.getElementById('justificativaTexto').focus();
     }
 
-    function fecharModal() {
-        document.getElementById('modalBlock').style.display = 'none';
-        document.getElementById('justificativaTexto').value = '';
-    }
+    function fecharModal() { document.getElementById('modalBlock').style.display = 'none'; document.getElementById('justificativaTexto').value = ''; }
 
-    // Modal Base de Conhecimento Functions
     async function abrirModalBase(idInput) {
         inputAlvoBase = idInput;
-        const modal = document.getElementById('modalBase');
+        document.getElementById('modalBase').style.display = 'flex';
         const container = document.getElementById('kb-lista-container');
-        modal.style.display = 'flex';
-        container.innerHTML = 'Buscando artigos na nuvem...';
-
+        container.innerHTML = 'Buscando artigos...';
         try {
             const res = await fetch(URL_BASE_CONHECIMENTO);
             const dados = await res.json();
             const lista = dados.documentos || dados;
-            
             container.innerHTML = '';
             lista.forEach(artigo => {
                 const div = document.createElement('div');
                 div.className = 'kb-item';
-                div.onclick = () => aplicarTextoBase(artigo.msn);
-                div.innerHTML = `
-                    <span class="kb-title">${artigo.titulo}</span>
-                    <span class="kb-preview">${artigo.msn.substring(0, 80)}...</span>
-                `;
+                div.onclick = () => { document.getElementById(inputAlvoBase).value = artigo.msn; fecharModalBase(); };
+                div.innerHTML = `<b style="color:var(--primary); font-size:13px;">${artigo.titulo}</b><br><small style="color:#777;">${artigo.msn.substring(0,60)}...</small>`;
                 container.appendChild(div);
             });
         } catch (e) { container.innerHTML = 'Erro ao carregar base.'; }
     }
 
-    function fecharModalBase() {
-        document.getElementById('modalBase').style.display = 'none';
-    }
-
-    function aplicarTextoBase(texto) {
-        if(inputAlvoBase) {
-            document.getElementById(inputAlvoBase).value = texto;
-            fecharModalBase();
-            document.getElementById(inputAlvoBase).focus();
-        }
-    }
+    function fecharModalBase() { document.getElementById('modalBase').style.display = 'none'; }
 
     async function processarBloqueio() {
         const justificativa = document.getElementById('justificativaTexto').value.trim();
-        if (!justificativa) return alert("Por favor, insira uma justificativa.");
-
+        if (!justificativa) return alert("Insira uma justificativa.");
         const btn = document.getElementById('confirmBlockBtn');
         btn.disabled = true; btn.innerText = "ENVIANDO...";
-
         try {
             const res = await fetch(URL_BLOQUEIO, {
                 method: 'POST',
@@ -303,19 +295,15 @@
                     operador: OPERADOR_ATUAL, dataEvento: new Date().toISOString()
                 })
             });
-            if (res.ok) {
-                alert(`${bloqueioAtivo.tipo} bloqueado com sucesso!`);
-                fecharModal(); carregarDados();
-            }
-        } catch (e) { alert("Erro ao processar bloqueio."); }
+            if (res.ok) { alert("Bloqueio realizado!"); fecharModal(); carregarDados(); }
+        } catch (e) { alert("Erro ao processar."); }
         finally { btn.disabled = false; btn.innerText = "CONFIRMAR BLOQUEIO"; }
     }
 
     async function enviarResposta(mongoId, corridaId) {
         const texto = document.getElementById(`input-${mongoId}`).value;
-        const btn = document.querySelector(`#box-${mongoId} .btn-enviar`);
         if (!texto) return alert("Escreva uma resposta.");
-
+        const btn = document.querySelector(`#box-${mongoId} .btn-enviar`);
         try {
             btn.disabled = true; btn.innerText = "ENVIANDO...";
             const res = await fetch(URL_RESPONDER, {
@@ -326,17 +314,11 @@
                     "status": "respondida", "operador": OPERADOR_ATUAL, "dataResposta": new Date().toISOString()
                 })
             });
-            if (res.ok) {
-                document.getElementById(`box-${mongoId}`).innerHTML = '<div class="msg-ja-respondida">✓ Resposta enviada com sucesso!</div>';
-                setTimeout(carregarDados, 2000);
-            }
+            if (res.ok) { carregarDados(); }
         } catch (e) { alert("Erro ao enviar."); btn.disabled = false; btn.innerText = "ENVIAR RESPOSTA"; }
     }
 
-    window.onload = () => {
-        carregarDados();
-        setInterval(carregarDados, 60000); 
-    };
+    window.onload = () => { carregarDados(); setInterval(carregarDados, 60000); };
 </script>
 </body>
 </html>
