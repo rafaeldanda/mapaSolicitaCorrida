@@ -1,18 +1,41 @@
-<!-- MANTÉM TODO TEU HTML IGUAL ATÉ O <script> -->
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Painel de Atendimento | Me Leva</title>
+
+<script src='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.js'></script>
+<link href='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.css' rel='stylesheet' />
+
+<style>
+:root { --primary:#2ea6ff; --success:#10b981; --text:#333; --bg:#f5f7fa; --danger:#ef4444; --warning:#f59e0b; }
+body { margin:0; font-family:sans-serif; background:var(--bg); }
+.container { max-width:550px; margin:auto; padding:20px; }
+.card { background:#fff; border-radius:12px; padding:15px; margin-bottom:20px; }
+.map-wrapper { width:100%; height:180px; border-radius:10px; overflow:hidden; background:#eee; }
+</style>
+</head>
+
+<body>
+
+<div class="container" id="lista-container">
+Carregando...
+</div>
 
 <script>
+
+// 🔥 nunca mais tela branca
+window.onerror = function(msg, url, line) {
+    console.error("ERRO GLOBAL:", msg, "linha:", line);
+};
+
 mapboxgl.accessToken = 'pk.eyJ1IjoicmFmYWVsZGFuZGEiLCJhIjoiY21tM3V6aHQ3MDR1dTJxcHdiNnhpaHd0ayJ9.w-fjeHmzlyVes75Rg4pJuQ';
 
-const OPERADOR_ATUAL = localStorage.getItem('operador_nome') || "Admin";
-document.getElementById('nome-exibicao').innerHTML = `<span class="live-dot"></span> Operador: ${OPERADOR_ATUAL}`;
-
 const URL_LISTA = 'https://primary-production-a103.up.railway.app/webhook/d2494948-3dd8-40ed-a262-b4cef2d5c814';
-const URL_RESPONDER = 'https://primary-production-a103.up.railway.app/webhook/810fe7e7-5b89-4c39-9b1c-1a6c4d9528cf';
-const URL_BASE = 'https://primary-production-a103.up.railway.app/webhook/e9cfc952-60f6-4e9d-84ff-c4e5641428bf';
-const URL_BUSCA_UNICA = 'https://primary-production-a103.up.railway.app/webhook/fb5e433b-fedc-4f6f-b5b8-7297098da150';
 
-
-// 🔥 NOVO: geocoding
+// 🔥 converte endereço em coordenada
 async function geocodificar(endereco) {
     try {
         const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(endereco)}.json?access_token=${mapboxgl.accessToken}`;
@@ -22,62 +45,46 @@ async function geocodificar(endereco) {
         if (!data.features || !data.features.length) return null;
 
         return data.features[0].center;
-    } catch (e) {
-        console.error("Erro geocoding:", e);
+    } catch {
         return null;
     }
 }
 
-
 async function carregarDados() {
-    const res = await fetch(URL_LISTA);
-    const dados = await res.json();
-    renderizarLista(dados);
+    try {
+        const res = await fetch(URL_LISTA);
+        const dados = await res.json();
+
+        if (!dados) throw new Error("Sem dados");
+
+        renderizarLista(Array.isArray(dados) ? dados : [dados]);
+
+    } catch (e) {
+        console.error(e);
+        document.getElementById('lista-container').innerHTML =
+        '<div style="padding:40px;text-align:center;color:red;">Erro ao carregar</div>';
+    }
 }
 
-function renderizarLista(dados) {
+function renderizarLista(lista) {
     const container = document.getElementById('lista-container');
-    const lista = Array.isArray(dados) ? dados : [dados];
     container.innerHTML = '';
 
     lista.forEach((item, index) => {
-        const idUnico = item._id;
         const mapId = `map-${index}`;
-        const eRespondida = item.status && item.status.includes('respondida');
 
         const card = document.createElement('div');
-        card.className = `card ${eRespondida ? 'resolvido' : ''}`;
+        card.className = 'card';
 
         card.innerHTML = `
-            <div class="card-header">
-                <span>CORRIDA #${item.corridaId?.split('-')[1] || '---'}</span>
-                <span>${item.contestacao?.dataEnvio ? new Date(item.contestacao.dataEnvio).toLocaleDateString() : ''}</span>
-            </div>
-
+            <div><b>Corrida:</b> ${item.corridaId}</div>
+            <div>${item.origem} → ${item.destino}</div>
             <div id="${mapId}" class="map-wrapper"></div>
-
-            <div class="info-grid">
-                <div class="info-section-title">PASSAGEIRO</div>
-                <div>${item.passageiro}</div>
-
-                <div class="info-section-title">VIAGEM</div>
-                <div>${item.origem} → ${item.destino}</div>
-                <div>R$ ${item.valorTotal}</div>
-            </div>
-
-            <div class="relato-container">
-                <span class="relato-txt">"${item.contestacao?.detalhes}"</span>
-            </div>
-
-            <div class="reply-box" id="box-${idUnico}">
-                <textarea id="input-${idUnico}"></textarea>
-                <button class="btn-enviar" onclick="enviar('${idUnico}', '${item.corridaId}')">ENVIAR</button>
-            </div>
         `;
 
         container.appendChild(card);
 
-        // 🔥 MAPA FUNCIONANDO COM ENDEREÇO
+        // mapa seguro (não quebra nada)
         setTimeout(async () => {
             try {
                 const origem = await geocodificar(item.origem + ", Porto Alegre");
@@ -101,33 +108,16 @@ function renderizarLista(dados) {
 
                 map.fitBounds(bounds, { padding: 40 });
 
-            } catch (err) {
-                console.error("Erro mapa:", err);
+            } catch (e) {
+                console.error("Erro mapa:", e);
             }
         }, 500);
     });
 }
 
-
-// 🔥 mantém teu envio normal
-async function enviar(mongoId, corridaId) {
-    const txt = document.getElementById(`input-${mongoId}`).value;
-    if(!txt) return alert("Digite algo");
-
-    await fetch(URL_RESPONDER, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            id_banco: mongoId,
-            corridaId,
-            respostaSuporte: txt,
-            status: "respondida"
-        })
-    });
-
-    alert("Enviado!");
-    carregarDados();
-}
-
 carregarDados();
+
 </script>
+
+</body>
+</html>
