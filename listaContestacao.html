@@ -8,16 +8,19 @@
         :root { --primary: #2ea6ff; --success: #10b981; --text: #333; --bg: #f5f7fa; --danger: #ef4444; --warning: #f59e0b; --gray: #888; }
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; background: var(--bg); color: var(--text); }
         
+        /* Header */
         .header { background: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 100; }
         .header-info h1 { font-size: 16px; margin: 0; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
         .operador-tag { font-size: 10px; color: #aaa; text-transform: uppercase; font-weight: bold; display: flex; align-items: center; gap: 5px; }
         .live-dot { width: 6px; height: 6px; background: var(--success); border-radius: 50%; display: inline-block; animation: blink 1.5s infinite; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
         
+        /* Busca */
         .search-container { background: white; padding: 12px 20px; border-bottom: 1px solid #eee; position: sticky; top: 52px; z-index: 99; display: flex; gap: 8px; justify-content: center; }
         .search-box { width: 100%; max-width: 400px; padding: 10px 15px; border: 1px solid #eee; border-radius: 10px; font-size: 13px; outline: none; background: #fafafa; }
         .btn-busca { background: var(--primary); color: white; border: none; padding: 0 15px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 11px; text-transform: uppercase; }
 
+        /* Cards */
         .container { padding: 20px; max-width: 550px; margin: 0 auto; }
         .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; border-left: 5px solid var(--danger); position: relative; }
         .card.resolvido { border-left-color: var(--success); opacity: 0.9; }
@@ -26,16 +29,17 @@
         .motivo-tag { background: #fee2e2; color: var(--danger); padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-bottom: 15px; display: inline-block; }
         .status-resolvido-tag { background: #d1fae5; color: var(--success); padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-bottom: 15px; display: inline-block; float: right; }
 
-        /* BLOQUEIOS - FIDELIDADE AO LAYOUT */
-        .block-info-container { background: #fffbeb; border: 1px solid #fef3c7; padding: 12px; border-radius: 10px; margin-bottom: 15px; }
-        .block-label { font-size: 10px; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 2px; }
-        .block-txt { font-size: 12px; color: #92400e; line-height: 1.4; }
+        /* Bloqueios Exibição */
+        .justificativa-box { background: #fffbeb; border: 1px solid #fef3c7; padding: 12px; border-radius: 10px; margin-bottom: 15px; }
+        .justificativa-label { font-size: 10px; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 2px; }
+        .justificativa-txt { font-size: 12px; color: #92400e; line-height: 1.4; }
 
-        .admin-actions { display: flex; gap: 8px; margin-bottom: 15px; }
-        .btn-block { flex: 1; padding: 8px; border: 1px solid #eee; border-radius: 8px; font-size: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; background: white; }
-        .btn-block-pass { color: var(--warning); border-color: var(--warning); }
-        .btn-block-driver { color: var(--danger); border-color: var(--danger); }
+        /* Resposta do Suporte Exibição */
+        .box-resposta-enviada { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: 10px; margin-top: 15px; }
+        .label-suporte { font-size: 10px; color: #166534; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 4px; }
+        .txt-suporte { font-size: 13px; color: #14532d; white-space: pre-wrap; line-height: 1.4; }
 
+        /* Info Grid */
         .info-grid { background: #f9fafb; border-radius: 8px; padding: 12px; margin-bottom: 15px; border: 1px solid #f0f0f0; }
         .info-section-title { font-size: 9px; color: #bbb; font-weight: 800; text-transform: uppercase; margin: 10px 0 5px 0; border-bottom: 1px solid #eee; padding-bottom: 2px; }
         .info-item { margin: 4px 0; font-size: 12px; display: flex; align-items: flex-start; }
@@ -45,20 +49,17 @@
         .relato-label { font-size: 10px; color: var(--danger); font-weight: bold; display: block; margin-bottom: 4px; }
         .relato-txt { font-style: italic; color: #444; font-size: 14px; line-height: 1.5; }
 
-        /* RESPOSTA DO SUPORTE - NOVO BOX */
-        .suporte-container { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: 10px; margin-top: 15px; }
-        .suporte-label { font-size: 10px; color: #166534; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 4px; }
-        .suporte-txt { font-size: 13px; color: #14532d; white-space: pre-wrap; line-height: 1.4; }
-
+        /* Interação */
         .reply-box { margin-top: 15px; border-top: 1px dashed #eee; padding-top: 15px; }
         textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-family: inherit; font-size: 13px; box-sizing: border-box; resize: none; height: 75px; outline: none; }
         .btn-enviar { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 14px; }
         .btn-base { background: #f0f9ff; color: var(--primary); border: 1px solid #bae6fd; padding: 6px 10px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer; margin-bottom: 8px; text-transform: uppercase; }
+        .msg-sucesso-float { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 12px; border-radius: 10px; text-align: center; font-size: 13px; font-weight: bold; margin-top: 10px; }
 
-        /* MODAIS */
+        /* Modais */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
-        .modal-card { background: white; width: 90%; max-width: 450px; padding: 25px; border-radius: 15px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); }
-        .kb-item { border: 1px solid #eee; padding: 12px; border-radius: 10px; margin-bottom: 10px; cursor: pointer; }
+        .modal-card { background: white; width: 90%; max-width: 450px; padding: 25px; border-radius: 15px; }
+        .kb-item { border: 1px solid #eee; padding: 12px; border-radius: 10px; margin-bottom: 10px; cursor: pointer; text-align: left; }
         .kb-item:hover { border-color: var(--primary); background: #f0f9ff; }
         .kb-title { font-weight: bold; font-size: 13px; color: var(--primary); display: block; }
         .kb-preview { font-size: 11px; color: #777; }
@@ -80,14 +81,14 @@
 </div>
 
 <div class="container" id="lista-container">
-    <div style="text-align:center; padding:50px; color:#888;">Carregando dados...</div>
+    <div style="text-align:center; padding:50px; color:#888;">Carregando contestações...</div>
 </div>
 
 <div class="modal-overlay" id="modalBase" onclick="if(event.target == this) this.style.display='none'">
     <div class="modal-card">
         <h3>📖 Base de Conhecimento</h3>
         <div id="kb-lista-container"></div>
-        <button onclick="document.getElementById('modalBase').style.display='none'" style="width:100%; padding:10px; margin-top:10px; border:none; border-radius:8px; cursor:pointer;">FECHAR</button>
+        <button onclick="document.getElementById('modalBase').style.display='none'" style="width:100%; padding:10px; margin-top:10px; border:none; border-radius:8px;">FECHAR</button>
     </div>
 </div>
 
@@ -104,7 +105,7 @@
             const res = await fetch(URL_LISTA);
             const dados = await res.json();
             renderizarLista(dados);
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("Erro no fetch", e); }
     }
 
     function renderizarLista(dados) {
@@ -114,45 +115,40 @@
 
         lista.forEach(item => {
             const idUnico = item._id?.$oid || item._id;
-            const status = item.status === 'respondida';
+            const eRespondida = item.status === 'respondida';
             
-            // LÓGICA DE BLOQUEIOS (JUSTIFICATIVAS DO BANCO)
+            // 1. BLOQUEIOS (SE EXISTIREM NO BANCO)
             let htmlBloqueios = '';
             if (item.justificativaPassageiro || item.justificativaMotorista) {
                 htmlBloqueios = `
-                    <div class="block-info-container">
-                        ${item.justificativaPassageiro ? `<div><span class="block-label" style="color:var(--warning)">Bloqueio Passageiro:</span><span class="block-txt">${item.justificativaPassageiro}</span></div>` : ''}
-                        ${item.justificativaMotorista ? `<div style="margin-top:8px"><span class="block-label" style="color:var(--danger)">Bloqueio Motorista:</span><span class="block-txt">${item.justificativaMotorista}</span></div>` : ''}
+                    <div class="justificativa-box">
+                        ${item.justificativaPassageiro ? `<div><span class="justificativa-label" style="color:var(--warning)">Bloqueio Passageiro:</span><span class="justificativa-txt">${item.justificativaPassageiro}</span></div>` : ''}
+                        ${item.justificativaMotorista ? `<div style="margin-top:8px"><span class="justificativa-label" style="color:var(--danger)">Bloqueio Motorista:</span><span class="justificativa-txt">${item.justificativaMotorista}</span></div>` : ''}
                     </div>
                 `;
             }
 
-            // LÓGICA DE RESPOSTA DO SUPORTE (EXIBIÇÃO)
+            // 2. RESPOSTA DO SUPORTE (SE JÁ FOI RESPONDIDA)
             let htmlRespostaSuporte = '';
-            if (status && item.respostaSuporte) {
+            if (eRespondida && item.respostaSuporte) {
                 htmlRespostaSuporte = `
-                    <div class="suporte-container">
-                        <span class="suporte-label">Resposta do Suporte (${item.operador || 'Sistema'}):</span>
-                        <div class="suporte-txt">${item.respostaSuporte}</div>
+                    <div class="box-resposta-enviada">
+                        <span class="label-suporte">Resposta Enviada por ${item.operador || 'Suporte'}:</span>
+                        <div class="txt-suporte">${item.respostaSuporte}</div>
                     </div>
                 `;
             }
 
             const card = document.createElement('div');
-            card.className = `card ${status ? 'resolvido' : ''}`;
+            card.className = `card ${eRespondida ? 'resolvido' : ''}`;
             card.innerHTML = `
                 <div class="card-header">
                     <span>CORRIDA #${item.corridaId?.split('-')[1] || '---'}</span>
                     <span>${item.contestacao?.dataEnvio ? new Date(item.contestacao.dataEnvio).toLocaleDateString() : ''}</span>
                 </div>
                 <span class="motivo-tag">${item.contestacao?.motivo || 'OUTROS'}</span>
-                ${status ? '<span class="status-resolvido-tag">RESOLVIDA</span>' : ''}
+                ${eRespondida ? '<span class="status-resolvido-tag">RESOLVIDA</span>' : ''}
                 
-                <div class="admin-actions">
-                    <button class="btn-block btn-block-pass">Bloquear Passageiro</button>
-                    <button class="btn-block btn-block-driver">Bloquear Motorista</button>
-                </div>
-
                 ${htmlBloqueios}
 
                 <div class="info-grid">
@@ -166,17 +162,16 @@
 
                 <div class="relato-container">
                     <span class="relato-label">MENSAGEM DO CLIENTE</span>
-                    <span class="relato-txt">"${item.contestacao?.detalhes || 'Sem detalhes.'}"</span>
+                    <span class="relato-txt">"${item.contestacao?.detalhes || '...'}"</span>
                 </div>
 
                 ${htmlRespostaSuporte}
 
-                ${!status ? `
-                <div class="reply-box" id="box-${idUnico}">
+                <div class="reply-box" id="box-${idUnico}" style="${eRespondida ? 'display:none' : 'display:block'}">
                     <button class="btn-base" onclick="abrirBase('${idUnico}')">📖 Consultar Base</button>
-                    <textarea id="input-${idUnico}" placeholder="Sua resposta..."></textarea>
+                    <textarea id="input-${idUnico}" placeholder="Digite a solução..."></textarea>
                     <button class="btn-enviar" onclick="enviar('${idUnico}', '${item.corridaId}')">ENVIAR RESPOSTA</button>
-                </div>` : ''}
+                </div>
             `;
             container.appendChild(card);
         });
@@ -184,19 +179,37 @@
 
     async function enviar(mongoId, corridaId) {
         const txt = document.getElementById(`input-${mongoId}`).value;
-        if(!txt) return alert("Digite algo.");
+        if(!txt) return alert("Escreva algo.");
         const btn = document.querySelector(`#box-${mongoId} .btn-enviar`);
-        btn.innerText = "ENVIANDO..."; btn.disabled = true;
+        
+        btn.innerText = "ENVIANDO..."; 
+        btn.disabled = true;
 
-        const res = await fetch(URL_RESPONDER, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({id_banco: mongoId, corridaId, respostaSuporte: txt, status: "respondida", operador: OPERADOR_ATUAL, dataResposta: new Date()})
-        });
+        try {
+            const res = await fetch(URL_RESPONDER, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    id_banco: mongoId, 
+                    corridaId: corridaId, 
+                    respostaSuporte: txt, 
+                    status: "respondida", 
+                    operador: OPERADOR_ATUAL, 
+                    dataResposta: new Date().toISOString()
+                })
+            });
 
-        if(res.ok) {
-            document.getElementById(`box-${mongoId}`).innerHTML = '<div class="msg-ja-respondida" style="margin-top:10px">✓ Resposta enviada com sucesso!</div>';
-            setTimeout(carregarDados, 2000);
+            if(res.ok) {
+                // Fidelidade: Remove o form e mostra o banner verde de sucesso
+                const box = document.getElementById(`box-${mongoId}`);
+                box.innerHTML = '<div class="msg-sucesso-float">✓ Resposta enviada com sucesso!</div>';
+                // Atualiza a lista após 2 segundos para mostrar o card no novo estado
+                setTimeout(carregarDados, 2000);
+            }
+        } catch (e) {
+            alert("Erro ao conectar.");
+            btn.innerText = "ENVIAR RESPOSTA";
+            btn.disabled = false;
         }
     }
 
@@ -209,8 +222,11 @@
         (docs.documentos || docs).forEach(d => {
             const div = document.createElement('div');
             div.className = 'kb-item';
-            div.onclick = () => { document.getElementById(`input-${idInput}`).value = d.msn; document.getElementById('modalBase').style.display='none'; };
-            div.innerHTML = `<span class="kb-title">${d.titulo}</span><span class="kb-preview">${d.msn.substring(0,60)}...</span>`;
+            div.onclick = () => { 
+                document.getElementById(`input-${idInput}`).value = d.msn; 
+                document.getElementById('modalBase').style.display='none'; 
+            };
+            div.innerHTML = `<span class="kb-title">${d.titulo}</span><span class="kb-preview">${d.msn.substring(0,80)}...</span>`;
             cont.appendChild(div);
         });
     }
