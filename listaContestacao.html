@@ -7,67 +7,63 @@
     <script src='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.js'></script>
     <link href='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.css' rel='stylesheet' />
     <style>
-        :root { --primary: #2ea6ff; --success: #10b981; --text: #333; --bg: #f5f7fa; --danger: #ef4444; --warning: #f59e0b; --gray: #888; }
+        :root { --primary: #2ea6ff; --success: #10b981; --text: #333; --bg: #f5f7fa; --danger: #ef4444; --warning: #f59e0b; --label: #888; }
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; background: var(--bg); color: var(--text); }
         
+        /* Header */
         .header { background: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 100; }
-        .header-info h1 { font-size: 16px; margin: 0; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
-        .operador-tag { font-size: 10px; color: #aaa; text-transform: uppercase; font-weight: bold; display: flex; align-items: center; gap: 5px; }
-        .live-dot { width: 6px; height: 6px; background: var(--success); border-radius: 50%; display: inline-block; animation: blink 1.5s infinite; }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        .header h1 { font-size: 16px; margin: 0; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
+        .live-dot { width: 6px; height: 6px; background: var(--success); border-radius: 50%; display: inline-block; animation: blink 1.5s infinite; margin-right: 5px; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
+        /* Search */
         .search-container { background: white; padding: 12px 20px; border-bottom: 1px solid #eee; position: sticky; top: 52px; z-index: 99; display: flex; gap: 8px; justify-content: center; }
         .search-box { width: 100%; max-width: 400px; padding: 10px 15px; border: 1px solid #eee; border-radius: 10px; font-size: 13px; outline: none; background: #fafafa; }
-        .btn-busca { background: var(--primary); color: white; border: none; padding: 0 15px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 11px; text-transform: uppercase; }
+        .btn-busca { background: var(--primary); color: white; border: none; padding: 0 15px; border-radius: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 11px; }
 
+        /* Cards */
         .container { padding: 20px; max-width: 550px; margin: 0 auto; }
         .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; border-left: 5px solid var(--danger); position: relative; overflow: hidden; }
         .card.resolvido { border-left-color: var(--success); }
         .card-header { display: flex; justify-content: space-between; font-size: 11px; color: #888; margin-bottom: 12px; border-bottom: 1px solid #f9f9f9; padding-bottom: 8px; }
 
-        /* NOVO: Estilo do Mapa dentro do Card */
-        .map-container { width: 100%; height: 160px; margin-bottom: 15px; border-radius: 8px; background: #eee; border: 1px solid #eee; }
+        /* Mapa no Card */
+        .map-container { width: 100%; height: 180px; margin-bottom: 15px; border-radius: 8px; background: #eee; }
 
         .info-grid { background: #f9fafb; border-radius: 10px; padding: 15px; margin-bottom: 15px; border: 1px solid #f0f0f0; }
-        .info-section-title { font-size: 10px; color: #bbb; font-weight: 800; text-transform: uppercase; margin: 10px 0 8px 0; border-bottom: 1px solid #eee; padding-bottom: 4px; }
         .info-item { margin: 6px 0; font-size: 13px; display: flex; align-items: flex-start; }
-        .label { font-weight: bold; color: #999; font-size: 11px; text-transform: uppercase; margin-right: 10px; width: 95px; flex-shrink: 0; }
+        .label { font-weight: bold; color: #999; font-size: 11px; text-transform: uppercase; width: 95px; flex-shrink: 0; }
         
         .relato-container { background: #fff; border-left: 3px solid var(--danger); padding: 10px 15px; margin: 15px 0; }
-        .relato-label { font-size: 11px; color: var(--danger); font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 6px; }
-        .relato-txt { font-style: italic; color: #444; font-size: 15px; line-height: 1.5; }
+        .relato-label { font-size: 11px; color: var(--danger); font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 4px; }
+        .relato-txt { font-style: italic; color: #444; font-size: 14px; line-height: 1.5; }
 
-        .reply-box { margin-top: 20px; border-top: 1px dashed #eee; padding-top: 15px; }
-        textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-family: inherit; font-size: 14px; box-sizing: border-box; resize: none; height: 85px; outline: none; }
-        .btn-enviar { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 14px; }
+        textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-family: inherit; font-size: 14px; box-sizing: border-box; resize: none; height: 80px; margin-top: 10px; }
+        .btn-enviar { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <div class="header-info">
-        <h1>Atendimento</h1>
-        <span class="operador-tag" id="nome-exibicao"><span class="live-dot"></span> Monitorando...</span>
-    </div>
-    <button onclick="localStorage.clear(); window.location.href='loginSuporte.html';" style="background:none; border:1px solid #ddd; padding:5px 12px; border-radius:6px; font-size:12px; cursor:pointer; color:#888;">SAIR</button>
+    <div><h1>Atendimento</h1></div>
+    <div style="font-size: 11px; color: #aaa; font-weight: bold;"><span class="live-dot"></span> MONITORANDO</div>
 </div>
 
 <div class="search-container">
-    <input type="text" id="inputBusca" class="search-box" placeholder="🔎 ID da Corrida...">
-    <button class="btn-busca" onclick="buscarPorWebhook()">Buscar</button>
+    <input type="text" id="inputBusca" class="search-box" placeholder="🔎 Digite o ID da Corrida...">
+    <button class="btn-busca" onclick="buscarPorId()">Buscar</button>
 </div>
 
 <div class="container" id="lista-container">
-    <div style="text-align:center; padding:50px; color:#888;">Carregando registros...</div>
+    <div style="text-align:center; padding:50px; color:#888;">Sincronizando banco de dados...</div>
 </div>
 
 <script>
     mapboxgl.accessToken = 'pk.eyJ1IjoicmFmYWVsZGFuZGEiLCJhIjoiY21tM3V6aHQ3MDR1dTJxcHdiNnhpaHd0ayJ9.w-fjeHmzlyVes75Rg4pJuQ';
-    const OPERADOR_ATUAL = localStorage.getItem('operador_nome') || "Admin";
-    document.getElementById('nome-exibicao').innerHTML = `<span class="live-dot"></span> Operador: ${OPERADOR_ATUAL}`;
-
+    
     const URL_LISTA = 'https://primary-production-a103.up.railway.app/webhook/d2494948-3dd8-40ed-a262-b4cef2d5c814';
     const URL_BUSCA_UNICA = 'https://primary-production-a103.up.railway.app/webhook/fb5e433b-fedc-4f6f-b5b8-7297098da150';
+    const URL_RESPONDER = 'https://primary-production-a103.up.railway.app/webhook/810fe7e7-5b89-4c39-9b1c-1a6c4d9528cf';
 
     async function carregarDados() {
         try {
@@ -77,16 +73,17 @@
         } catch (e) { console.error("Erro ao carregar lista:", e); }
     }
 
-    async function buscarPorWebhook() {
-        const idBusca = document.getElementById('inputBusca').value.trim();
-        if (!idBusca) { carregarDados(); return; }
+    async function buscarPorId() {
+        const id = document.getElementById('inputBusca').value.trim();
+        if (!id) return carregarDados();
+        
         try {
-            const response = await fetch(URL_BUSCA_UNICA, {
+            const res = await fetch(URL_BUSCA_UNICA, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ corridaId: idBusca })
+                body: JSON.stringify({ corridaId: id })
             });
-            const resultado = await response.json();
+            const resultado = await res.json();
             renderizarLista(resultado);
         } catch (e) { console.error("Erro na busca:", e); }
     }
@@ -96,66 +93,88 @@
         const lista = Array.isArray(dados) ? dados : [dados];
         container.innerHTML = '';
 
-        if (!lista || lista.length === 0 || (!lista[0]._id && !lista[0].corridaId)) {
-            container.innerHTML = '<div style="text-align:center; padding:50px; color:#888;">Nenhum chamado encontrado.</div>';
+        if (!lista || lista.length === 0 || (!lista[0].corridaId)) {
+            container.innerHTML = '<div style="text-align:center; padding:50px; color:#888;">Nenhum chamado pendente.</div>';
             return;
         }
 
         lista.forEach((item, index) => {
             const idUnico = item._id?.$oid || item._id;
             const mapId = `map-${index}`;
-            const eRespondida = item.status && item.status.includes('respondida');
+            const statusResolvido = item.status === "respondida";
 
             const card = document.createElement('div');
-            card.className = `card ${eRespondida ? 'resolvido' : ''}`;
+            card.className = `card ${statusResolvido ? 'resolvido' : ''}`;
             card.innerHTML = `
                 <div class="card-header">
-                    <span>CORRIDA #${item.corridaId?.split('-')[1] || '---'}</span>
+                    <span>CORRIDA #${item.corridaId?.split('-')[1] || 'ID'}</span>
                     <span>${item.contestacao?.dataEnvio ? new Date(item.contestacao.dataEnvio).toLocaleDateString() : ''}</span>
                 </div>
 
                 <div id="${mapId}" class="map-container"></div>
 
                 <div class="info-grid">
-                    <div class="info-section-title">DETALHES DA VIAGEM</div>
+                    <div class="info-item"><span class="label">PASSAGEIRO</span> ${item.passageiro || '---'}</div>
                     <div class="info-item"><span class="label">ORIGEM</span> ${item.origem || '---'}</div>
                     <div class="info-item"><span class="label">DESTINO</span> ${item.destino || '---'}</div>
-                    <div class="info-item"><span class="label">PASSAGEIRO</span> ${item.passageiro || '---'}</div>
-                    <div class="info-item"><span class="label">VALOR</span> <span style="color:var(--success); font-weight:bold;">R$ ${(item.valorTotal || 0).toFixed(2).replace('.',',')}</span></div>
+                    <div class="info-item"><span class="label">VALOR TOTAL</span> <span style="color:var(--success); font-weight:bold;">R$ ${(item.valorTotal || 0).toFixed(2).replace('.',',')}</span></div>
                 </div>
 
                 <div class="relato-container">
-                    <span class="relato-label">MENSAGEM DO CLIENTE</span>
-                    <span class="relato-txt">"${item.contestacao?.detalhes || '...'}"</span>
+                    <span class="relato-label">MOTIVO: ${item.contestacao?.motivo || 'Reclamação'}</span>
+                    <span class="relato-txt">"${item.contestacao?.detalhes || 'Sem detalhes informados.'}"</span>
                 </div>
 
-                <div class="reply-box" id="box-${idUnico}" style="${eRespondida ? 'display:none' : 'display:block'}">
-                    <textarea id="input-${idUnico}" placeholder="Digite a solução..."></textarea>
-                    <button class="btn-enviar" onclick="enviar('${idUnico}', '${item.corridaId}')">ENVIAR RESPOSTA</button>
-                </div>
+                ${!statusResolvido ? `
+                <div id="reply-${idUnico}">
+                    <textarea id="text-${idUnico}" placeholder="Escreva a solução para o passageiro..."></textarea>
+                    <button class="btn-enviar" onclick="enviarResposta('${idUnico}', '${item.corridaId}')">ENVIAR SOLUÇÃO</button>
+                </div>` : '<div style="text-align:center; font-weight:bold; color:var(--success); font-size:12px; margin-top:10px;">✓ CHAMADO RESPONDIDO</div>'}
             `;
             container.appendChild(card);
 
-            // RENDERIZAÇÃO DO MAPA DENTRO DO CARD
+            // Renderiza o mapa se houver coordenadas
             if (item.rota && item.rota.coords) {
                 setTimeout(() => {
                     const map = new mapboxgl.Map({
                         container: mapId,
                         style: 'mapbox://styles/mapbox/light-v11',
-                        center: [item.rota.coords.origem[0], item.rota.coords.origem[1]],
+                        center: item.rota.coords.origem,
                         zoom: 12,
                         interactive: false
                     });
-                    new mapboxgl.Marker({ color: '#2ea6ff', scale: 0.6 }).setLngLat(item.rota.coords.origem).addTo(map);
-                    new mapboxgl.Marker({ color: '#ffaa00', scale: 0.6 }).setLngLat(item.rota.coords.destino).addTo(map);
+                    new mapboxgl.Marker({ color: '#2ea6ff' }).setLngLat(item.rota.coords.origem).addTo(map);
+                    new mapboxgl.Marker({ color: '#ffaa00' }).setLngLat(item.rota.coords.destino).addTo(map);
                     const bounds = new mapboxgl.LngLatBounds().extend(item.rota.coords.origem).extend(item.rota.coords.destino);
                     map.fitBounds(bounds, { padding: 30 });
-                }, 200);
+                }, 300);
             }
         });
     }
 
-    // Inicialização
+    async function enviarResposta(mongoId, corridaId) {
+        const txt = document.getElementById(`text-${mongoId}`).value;
+        if (!txt) return alert("Por favor, digite uma resposta.");
+
+        try {
+            const res = await fetch(URL_RESPONDER, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id_banco: mongoId,
+                    corridaId: corridaId,
+                    respostaSuporte: txt,
+                    status: "respondida",
+                    dataResposta: new Date().toISOString()
+                })
+            });
+            if (res.ok) {
+                alert("Resposta enviada com sucesso!");
+                carregarDados();
+            }
+        } catch (e) { alert("Erro ao enviar resposta."); }
+    }
+
     document.addEventListener('DOMContentLoaded', carregarDados);
 </script>
 </body>
