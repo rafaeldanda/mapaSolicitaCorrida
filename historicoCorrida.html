@@ -7,7 +7,7 @@
     <script src='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.js'></script>
     <link href='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.css' rel='stylesheet' />
     <style>
-        :root { --primary: #2ea6ff; --success: #10b981; --text: #333; --bg: #f5f7fa; --danger: #ef4444; }
+        :root { --primary: #2ea6ff; --success: #10b981; --text: #333; --bg: #f5f7fa; --danger: #ef4444; --label: #64748b; }
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; }
         .header { background: white; padding: 15px; text-align: center; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 100; }
         .header h1 { font-size: 16px; margin: 0; color: var(--primary); }
@@ -29,6 +29,8 @@
         .driver-photo { width: 40px; height: 40px; background: #eee; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; }
         .driver-info h3 { margin: 0; font-size: 14px; }
         .driver-info p { margin: 1px 0; font-size: 11px; color: #666; }
+        
+        /* Estilos de Contestação e Resposta */
         .contest-title { font-size: 13px; font-weight: bold; margin-bottom: 12px; color: var(--danger); display: block; }
         .form-group { margin-bottom: 12px; }
         .form-group label { font-size: 10px; color: #888; display: block; margin-bottom: 4px; }
@@ -36,6 +38,12 @@
         textarea { resize: none; height: 70px; }
         .btn-submit { width: 100%; background: var(--danger); color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; }
         .success-msg { color: #00a86b; font-weight: bold; font-size: 18px; text-align: center; margin: 10px 0; width: 100%; }
+        
+        /* Card de Resposta do Suporte */
+        .support-response { border-left: 4px solid var(--primary); padding-left: 15px; }
+        .label-caps { font-size: 10px; font-weight: 800; color: var(--label); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; display: block; }
+        .response-text { font-size: 13px; line-height: 1.5; color: var(--text); margin-bottom: 12px; }
+
         #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:1000; display:flex; align-items:center; justify-content:center; font-size: 14px; }
     </style>
 </head>
@@ -112,6 +120,7 @@
 
     async function buscarDados() {
         try {
+            // 1. Busca dados da corrida
             const response = await fetch(`https://primary-production-a103.up.railway.app/webhook/6516ef89-ec52-4713-8229-5874ecef74a6?id=${corridaId}`);
             const data = await response.json();
             dadosCorridaGlobal = Array.isArray(data) ? data[0] : data;
@@ -121,13 +130,28 @@
                 document.getElementById('loading-overlay').style.display = 'none';
                 document.getElementById('card-contestacao').style.display = 'block';
 
-                const statusNormalizado = (dadosCorridaGlobal.status || "").toLowerCase().trim();
-                if (statusNormalizado === "contestada") {
-                    exibirMensagemSucesso();
-                }
+                // 2. Busca se já existe uma resposta do suporte
+                await buscarRespostaSuporte();
             }
         } catch (error) {
             document.getElementById('loading-overlay').innerText = "Erro ao carregar.";
+        }
+    }
+
+    async function buscarRespostaSuporte() {
+        try {
+            const res = await fetch(`https://primary-production-a103.up.railway.app/webhook/77d70316-b667-46b2-b550-b639fa3bd0cc?id=${corridaId}`);
+            if (res.ok) {
+                const suporte = await res.json();
+                // Verifica se o suporte retornou algo válido (ajuste conforme o retorno do seu n8n)
+                if (suporte && suporte.resposta) {
+                    exibirRespostaSuporte(suporte.resposta, suporte.dataResposta);
+                } else if (dadosCorridaGlobal.status.toLowerCase().trim() === "contestada") {
+                    exibirMensagemSucesso();
+                }
+            }
+        } catch (e) {
+            console.log("Sem resposta de suporte ainda.");
         }
     }
 
@@ -159,10 +183,22 @@
 
     function exibirMensagemSucesso() {
         const container = document.getElementById('conteudo-dinamico');
-        container.style.display = "flex";
-        container.style.alignItems = "center";
-        container.style.minHeight = "80px";
-        container.innerHTML = `<p class="success-msg">Reclamação enviada com sucesso!</p>`;
+        container.innerHTML = `<p class="success-msg">Reclamação enviada com sucesso!</p>
+                               <p style="text-align:center; font-size:12px; color:#888;">Aguarde o retorno do suporte.</p>`;
+    }
+
+    function exibirRespostaSuporte(texto, data) {
+        const container = document.getElementById('conteudo-dinamico');
+        container.innerHTML = `
+            <div class="support-response">
+                <span class="label-caps">Resposta do Suporte</span>
+                <div class="response-text">${texto}</div>
+                <div class="detail-item">
+                    <label>DATA DA RESPOSTA</label>
+                    <span style="font-size:11px;">${data || 'Recém respondido'}</span>
+                </div>
+            </div>
+        `;
     }
 
     async function enviarContestacao() {
@@ -171,7 +207,6 @@
             btn.disabled = true;
             btn.innerText = "Enviando...";
 
-            // PAYLOAD COM DADOS DO PASSAGEIRO PARA MANTER FIDELIDADE
             const payload = {
                 "corridaId": dadosCorridaGlobal.corridaId,
                 "origem": dadosCorridaGlobal.origem,
