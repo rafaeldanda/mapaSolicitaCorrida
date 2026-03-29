@@ -76,7 +76,33 @@
         @keyframes modalIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .btn-confirm { background: var(--danger); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; font-size: 14px; }
         .btn-cancel { background: none; color: #aaa; border: none; padding: 10px; cursor: pointer; width: 100%; margin-top: 5px; font-size: 12px; text-transform: uppercase; font-weight: bold; }
-    </style>
+	
+/* Seções de Justificativa de Bloqueio */
+.block-info-container { 
+    padding: 10px 15px; 
+    margin: 8px 0; 
+    border-radius: 0 8px 8px 0;
+    font-size: 13px;
+}
+.block-pass { 
+    background: #fffbeb; 
+    border-left: 3px solid var(--warning); 
+}
+.block-driver { 
+    background: #fef2f2; 
+    border-left: 3px solid var(--danger); 
+}
+.block-label { 
+    font-size: 10px; 
+    font-weight: bold; 
+    display: block; 
+    margin-bottom: 3px; 
+    text-transform: uppercase;
+}
+.label-pass { color: #b45309; }
+.label-driver { color: var(--danger); }    
+
+</style>
 </head>
 <body>
 
@@ -174,9 +200,9 @@
         lista.forEach(item => {
             const card = document.createElement('div');
             
-            // Lógica robusta para checar status (lida com "respondida" ou o erro "respoffndida")
+            // Lógica de status flexível
             const statusAtual = item.status ? String(item.status).toLowerCase() : "";
-            const eRespondida = statusAtual.includes("respond") || statusAtual.includes("respoff");
+            const eRespondida = statusAtual.includes("respond") || statusAtual.includes("respo");
             
             card.className = `card ${eRespondida ? 'resolvido' : ''}`;
             
@@ -185,8 +211,29 @@
             const foneLimpo = item.telefonePassageiro ? item.telefonePassageiro.replace(/\D/g, '') : '';
             const linkWhats = foneLimpo ? `https://wa.me/55${foneLimpo}` : '#';
 
-            // --- BLOCO DA RESPOSTA DO OPERADOR ---
-            // Verificamos se há o texto da resposta, independente do status
+            // 1. Bloco de Bloqueio Passageiro
+            let htmlBlockPass = "";
+            if (item.justificativaPassageiro) {
+                htmlBlockPass = `
+                    <div class="block-info-container block-pass">
+                        <span class="block-label label-pass">⚠️ PASSAGEIRO BLOQUEADO</span>
+                        <span style="color: #92400e;">${item.justificativaPassageiro}</span>
+                    </div>
+                `;
+            }
+
+            // 2. Bloco de Bloqueio Motorista
+            let htmlBlockDriver = "";
+            if (item.justificativaMotorista) {
+                htmlBlockDriver = `
+                    <div class="block-info-container block-driver">
+                        <span class="block-label label-driver">🚫 MOTORISTA BLOQUEADO</span>
+                        <span style="color: #b91c1c;">${item.justificativaMotorista}</span>
+                    </div>
+                `;
+            }
+
+            // 3. Bloco de Resposta do Suporte
             let htmlRespostaSuporte = "";
             if (item.respostaSuporte) {
                 htmlRespostaSuporte = `
@@ -197,21 +244,17 @@
                 `;
             }
 
-            // Define se mostra a caixa de texto ou a mensagem de finalizado
-            let areaAcao = "";
-            if (eRespondida) {
-                areaAcao = `<div class="reply-box"><div class="msg-ja-respondida">✓ Atendimento Finalizado</div></div>`;
-            } else {
-                areaAcao = `
+            let areaAcao = eRespondida 
+                ? `<div class="reply-box"><div class="msg-ja-respondida">✓ Atendimento Finalizado</div></div>`
+                : `
                     <div class="reply-box" id="box-${idUnico}">
                         <button class="btn-base" onclick="abrirModalBase('input-${idUnico}')">📖 Consultar Base</button>
-                        <textarea id="input-${idUnico}" placeholder="Digite a solução para o passageiro..."></textarea>
+                        <textarea id="input-${idUnico}" placeholder="Digite a solução..."></textarea>
                         <button class="btn-enviar" onclick="enviarResposta('${idUnico}', '${item.corridaId}')">ENVIAR RESPOSTA</button>
                     </div>
                 `;
-            }
 
-            card.innerHTML = `
+           card.innerHTML = `
                 <div class="card-header">
                     <span>CORRIDA #${item.corridaId?.split('-')[1] || '---'}</span>
                     <span>${dataEnvio}</span>
@@ -224,6 +267,9 @@
                     <button class="btn-block btn-block-pass" onclick="abrirModalBloqueio('PASSAGEIRO', '${idUnico}', '${item.corridaId}')">Bloquear Passageiro</button>
                     <button class="btn-block btn-block-driver" onclick="abrirModalBloqueio('MOTORISTA', '${idUnico}', '${item.corridaId}')">Bloquear Motorista</button>
                 </div>
+
+                ${htmlBlockPass}
+                ${htmlBlockDriver}
 
                 <div class="info-grid">
                     <div class="info-section-title">Dados do Passageiro</div>
@@ -251,7 +297,6 @@
             container.appendChild(card);
         });
     }
-
     // Modal Bloqueio
     function abrirModalBloqueio(tipo, idRef, corridaId) {
         bloqueioAtivo = { tipo, idRef, corridaId };
