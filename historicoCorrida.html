@@ -140,25 +140,42 @@
 
     async function buscarRespostaSuporte() {
         try {
+            // Buscando os dados completos da contestação (onde está a resposta)
             const res = await fetch(`https://primary-production-a103.up.railway.app/webhook/fb5e433b-fedc-4f6f-b5b8-7297098da150?id=${corridaId}`);
             if (res.ok) {
-                const suporte = await res.json();
-                // Verifica se o suporte retornou algo válido (ajuste conforme o retorno do seu n8n)
-                if (suporte && suporte.resposta) {
-                    exibirRespostaSuporte(suporte.resposta, suporte.dataResposta);
-                } else if (dadosCorridaGlobal.status.toLowerCase().trim() === "contestada") {
+                const dados = await res.json();
+                // O n8n costuma retornar um array ou objeto único, tratamos aqui:
+                const item = Array.isArray(dados) ? dados[0] : dados;
+
+                // Regra: Se houver resposta do suporte, exibe o card azul
+                if (item && item.respostaSuporte) {
+                    const dataFormatada = item.dataResposta ? new Date(item.dataResposta).toLocaleString('pt-BR') : '';
+                    exibirRespostaSuporte(item.respostaSuporte, dataFormatada);
+                } 
+                // Se não tiver resposta mas o status for "contestada", mostra a msg de aguardo
+                else if (dadosCorridaGlobal.status.toLowerCase().includes("contest") || 
+                         (item.status && item.status.toLowerCase().includes("contest"))) {
                     exibirMensagemSucesso();
                 }
             }
         } catch (e) {
-            console.log("Sem resposta de suporte ainda.");
+            console.log("Ainda não há contestação ou resposta vinculada.");
         }
     }
 
     function renderizarInterface(dados) {
         const idCurto = dados.corridaId.split('-')[1] || 'Detalhes';
         document.getElementById('titulo-id').innerText = `Corrida #${idCurto}`;
+        
+        // Normaliza o status para comparação (remove espaços e coloca em minúsculo)
+        const statusAtual = dados.status ? dados.status.toLowerCase().trim() : "";
         document.getElementById('status-tag').innerText = dados.status;
+
+        // REGRA DE NEGÓCIO: Se já estiver contestada, bloqueia o formulário imediatamente
+        if (statusAtual === "contestada" || statusAtual.includes("respond")) {
+            exibirMensagemSucesso();
+        }
+
         document.getElementById('origem-txt').innerText = dados.origem;
         document.getElementById('destino-txt').innerText = dados.destino;
         document.getElementById('distancia').innerText = `${dados.distanciaPassageiro} km`;
@@ -167,6 +184,7 @@
         document.getElementById('veiculo-info').innerText = `${dados.motorista.carro.modelo} • ${dados.motorista.carro.placa}`;
         document.getElementById('motorista-pix').innerText = `PIX: ${dados.motorista.pix}`;
 
+        // ... (resto do código do mapa permanece igual)
         const pOrigem = [dados.rota.coords.origem[0], dados.rota.coords.origem[1]];
         const pDestino = [dados.rota.coords.destino[0], dados.rota.coords.destino[1]];
         const map = new mapboxgl.Map({
@@ -183,21 +201,30 @@
 
     function exibirMensagemSucesso() {
         const container = document.getElementById('conteudo-dinamico');
-        container.innerHTML = `<p class="success-msg">Reclamação enviada com sucesso!</p>
-                               <p style="text-align:center; font-size:12px; color:#888;">Aguarde o retorno do suporte.</p>`;
+        container.innerHTML = `
+            <div style="text-align: center; padding: 10px 0;">
+                <p class="success-msg" style="color: var(--primary); font-size: 16px;">Contestação em Análise</p>
+                <p style="font-size: 12px; color: #888; margin-top: 5px;">
+                    Já recebemos sua solicitação. <br> O suporte está analisando o caso e responderá em breve.
+                </p>
+            </div>
+        `;
     }
 
     function exibirRespostaSuporte(texto, data) {
         const container = document.getElementById('conteudo-dinamico');
         container.innerHTML = `
             <div class="support-response">
-                <span class="label-caps">Resposta do Suporte</span>
-                <div class="response-text">${texto}</div>
-                <div class="detail-item">
-                    <label>DATA DA RESPOSTA</label>
-                    <span style="font-size:11px;">${data || 'Recém respondido'}</span>
+                <span class="label-caps" style="color: var(--primary);">📩 Resposta do Suporte</span>
+                <div class="response-text" style="font-weight: 500; margin-top: 5px;">${texto}</div>
+                <div class="detail-item" style="margin-top: 10px; border-top: 1px dashed #eee; padding-top: 8px;">
+                    <label>DATA DA SOLUÇÃO</label>
+                    <span style="font-size:11px; font-weight: normal; color: #888;">${data || 'Recém respondido'}</span>
                 </div>
             </div>
+            <p style="text-align:center; font-size:11px; color:var(--success); font-weight:bold; margin-top:15px;">
+                ✓ Solicitação Finalizada
+            </p>
         `;
     }
 
