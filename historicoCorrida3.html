@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Histórico de Corrida</title>
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.css" rel="stylesheet"/>
+    <style>
+        :root { --primary: #2ea6ff; --success: #10b981; --text: #333; --bg: #f5f7fa; --danger: #ef4444; --label: #64748b; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; }
+        .header { background: white; padding: 15px; text-align: center; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 100; }
+        .header h2 { font-size: 16px; margin: 0; color: var(--primary); }
+        #map { width: 100%; height: 220px; background: #ddd; }
+        .container { padding: 15px; max-width: 500px; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 8px; }
+        .route-info { position: relative; padding-left: 25px; }
+        .route-info::before { content: ''; position: absolute; left: 8px; top: 8px; bottom: 8px; width: 1px; background: #ddd; }
+        .dot { position: absolute; left: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--primary); border: 2px solid white; }
+        .dot.dest { background: #ffaa00; bottom: 8px; top: auto; }
+        .label { font-size: 10px; color: #888; display: block; text-transform: uppercase; margin-bottom: 2px; }
+        .value { font-size: 13px; font-weight: 500; margin: 0 0 12px 0; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border-top: 1px solid #eee; margin-top: 10px; padding-top: 10px; }
+        .driver-card { display: flex; align-items: center; gap: 12px; }
+        .driver-img { width: 40px; height: 40px; background: #eee; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        .driver-info h3 { margin: 0; font-size: 14px; }
+        .driver-info p { margin: 1px 0; font-size: 11px; color: #666; }
+        .chat { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+        .msg { padding: 12px; border-radius: 10px; font-size: 13px; max-width: 90%; line-height: 1.4; position: relative; }
+        .msg.suporte { background: #f0f9ff; border-left: 4px solid var(--primary); align-self: flex-start; }
+        .msg.user { background: #f3f4f6; border-left: 4px solid #94a3b8; align-self: flex-end; }
+        .label-caps { font-size: 9px; font-weight: 800; color: var(--label); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px; }
+        select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; font-size: 13px; box-sizing: border-box; margin-top: 5px; }
+        button { width: 100%; margin-top: 12px; padding: 12px; border: none; border-radius: 8px; background: var(--primary); color: white; font-weight: bold; cursor: pointer; font-size: 14px; }
+        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; align-items: center; justify-content: center; z-index: 999; }
+    </style>
+</head>
+<body>
+
+<div id="loading">Carregando...</div>
+
+<div class="header">
+    <h2 id="titulo">Corrida</h2>
+</div>
+
+<div id="map"></div>
+
+<div class="container">
+    <div class="card">
+        <div id="status" class="badge">---</div>
+        <div class="route-info">
+            <div class="dot"></div>
+            <div class="label">ORIGEM</div>
+            <p id="origem" class="value">---</p>
+            <div class="dot dest"></div>
+            <div class="label">DESTINO</div>
+            <p id="destino" class="value">---</p>
+        </div>
+        <div class="grid">
+            <div><div class="label">DISTÂNCIA</div><div id="distancia" style="font-weight:bold;">---</div></div>
+            <div><div class="label">VALOR</div><div id="valor" style="color:var(--success); font-weight:bold;">---</div></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="label" style="margin-bottom: 10px;">MOTORISTA</div>
+        <div class="driver-card">
+            <div class="driver-img">👤</div>
+            <div class="driver-info">
+                <h3 id="motorista">---</h3>
+                <p id="veiculo">---</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" id="contestacao"></div>
+</div>
+
+<script>
+mapboxgl.accessToken = 'pk.eyJ1IjoicmFmYWVsZGFuZGEiLCJhIjoiY21tM3V6aHQ3MDR1dTJxcHdiNnhpaHd0ayJ9.w-fjeHmzlyVes75Rg4pJuQ';
+
+const id = new URLSearchParams(location.search).get("id");
+
+if(id) buscar();
+else document.getElementById("loading").innerText = "ID ausente na URL";
+
+// Adicione o 'async' antes da function
+async function buscar() {
+    try {
+        // 1. Busca Corrida
+        const resCorrida = await fetch(`https://primary-production-a103.up.railway.app/webhook/6516ef89-ec52-4713-8229-5874ecef74a6?id=${id}`);
+        
+        // Verifica se a resposta da corrida foi bem-sucedida antes de tentar ler o JSON
+        let corrida = {};
+        if (resCorrida.ok) {
+            const dataCorrida = await resCorrida.json();
+            corrida = Array.isArray(dataCorrida) ? dataCorrida[0] : dataCorrida;
+        } else {
+            console.warn("Corrida não encontrada ou erro no servidor");
+        }
+
+        // 2. Busca Contestação
+        const resContest = await fetch(`https://primary-production-a103.up.railway.app/webhook/fb5e433b-fedc-4f6f-b5b8-7297098da150?id=${id}`);
+        let contestacao = {}; // Inicializa como objeto vazio para não dar erro no spread
+        
+        if (resContest.ok) {
+            const dataContest = await resContest.json();
+            // Se o retorno for um array vazio ou null, mantemos o objeto vazio
+            if (dataContest) {
+                contestacao = Array.isArray(dataContest) ? (dataContest[0] || {}) : dataContest;
+            }
+        }
+
+        // Une os dados (Se contestacao for {}, a corrida permanece intacta)
+        const dadosCompletos = { ...corrida, ...contestacao };
+        
+        console.log("Dados unificados para render:", dadosCompletos);
+
+        const loadingEl = document.getElementById("loading");
+        if (loadingEl) loadingEl.style.display = "none";
+        
+        render(dadosCompletos);
+
+    } catch (e) {
+        console.error("Erro crítico na busca:", e);
+        const loadingEl = document.getElementById("loading");
+        if (loadingEl) loadingEl.innerText = "Erro ao carregar dados da corrida.";
+    }
+}
+
+function render(d) {
+    // Preenche cabeçalho e info básica
+    document.getElementById("titulo").innerText = "Corrida #" + (d.corridaId?.split('-')[1] || "");
+    document.getElementById("origem").innerText = d.origem || "---";
+    document.getElementById("destino").innerText = d.destino || "---";
+    document.getElementById("distancia").innerText = (d.distanciaPassageiro || 0) + " km";
+    document.getElementById("valor").innerText = "R$ " + Number(d.valorTotal || 0).toFixed(2).replace('.', ',');
+    
+    // Motorista
+    document.getElementById("motorista").innerText = d.motorista?.nome || d.motorista || "Não informado";
+    
+    renderStatus(d);
+    renderMapa(d);
+    renderContestacao(d); // ESTA FUNÇÃO É A QUE GERA O CHAT
+}
+
+function renderStatus(d) {
+    const el = document.getElementById("status");
+    // Se tiver respostas, o status visual deve ser RESPONDIDA
+    if(d.respostas && d.respostas.length > 0) {
+        el.innerText = "RESPONDIDA"; el.style.background = "#e1fdec"; el.style.color = "#10b981";
+    } else if(d.status === "solicitada") {
+        el.innerText = "EM ANÁLISE"; el.style.background = "#fef3c7"; el.style.color = "#d97706";
+    } else {
+        el.innerText = "CONCLUÍDA"; el.style.background = "#f1f5f9"; el.style.color = "#64748b";
+    }
+}
+
+function renderContestacao(d) {
+    const div = document.getElementById("contestacao");
+    const nomePass = d.passageiro || "Akiles Danda";
+
+    // LOG PARA DEBUG: Verifique se 'respostas' aparece aqui no console do navegador
+    console.log("Tentando renderizar chat com respostas:", d.respostas);
+
+    if (d.respostas && Array.isArray(d.respostas) && d.respostas.length > 0) {
+        let html = `
+            <div style="background:#f8fafc; padding:10px; border-radius:8px; margin-bottom:15px; border:1px solid #e2e8f0;">
+                <span class="label-caps">MOTIVO: ${d.contestacao?.motivo || "Geral"}</span>
+                <p style="font-size:12px; color:#64748b; font-style:italic;">"${d.contestacao?.detalhes || ""}"</p>
+            </div>
+            <span class="label-caps">Mensagens</span>
+            <div class="chat">`;
+
+        d.respostas.forEach(r => {
+            const isUser = (r.origem === nomePass || r.origem === "rafa" || r.operador === "passageiro");
+            html += `
+            <div class="msg ${isUser ? 'user' : 'suporte'}">
+                <span class="label-caps" style="color:${isUser ? '#64748b' : 'var(--primary)'}">${(r.origem || 'SUPORTE').toUpperCase()}</span>
+                <div>${r.mensagem.replace(/\n/g, '<br>')}</div>
+                <small style="font-size:9px; color:#aaa; display:block; margin-top:5px;">${new Date(r.dataResposta).toLocaleString('pt-BR')}</small>
+            </div>`;
+        });
+
+        html += `</div>
+            <div style="margin-top:15px; border-top:1px solid #eee; padding-top:15px;">
+                <textarea id="resp" placeholder="Escreva sua resposta..."></textarea>
+                <button id="btnEnviar" onclick="responder()">Enviar Resposta</button>
+            </div>`;
+        
+        div.innerHTML = html;
+    } 
+    else if (d.status === "solicitada") {
+        div.innerHTML = `
+            <div style="text-align:center; padding:20px;">
+                <p style="color:var(--primary); font-weight:bold;">Contestação em Análise</p>
+                <p style="font-size:12px; color:#888;">Recebemos seu chamado. Aguarde o retorno aqui.</p>
+            </div>`;
+    } 
+    else {
+        // Se não tem contestação nem respostas, mostra o botão para iniciar uma
+        div.innerHTML = `
+            <span class="label-caps">Deseja contestar esta corrida?</span>
+            <select id="motivo"><option>Valor Incorreto</option><option>Conduta</option></select>
+            <textarea id="msg" placeholder="Detalhes..."></textarea>
+            <button style="background:var(--danger)" onclick="enviar()">Abrir Chamado</button>`;
+    }
+}
+
+async function responder() {
+    const input = document.getElementById("resp");
+    const msg = input.value;
+    if (!msg) return alert("Digite uma mensagem.");
+
+    const btn = document.getElementById("btnEnviar");
+    btn.disabled = true;
+
+    try {
+        // REMOVEMOS O PRIMEIRO "body": { ... }
+        // Enviamos os dados diretamente no objeto raiz do payload
+        const payload = {
+            "corridaId": id, 
+            "respostaSuporte": msg,
+            "operador": "passageiro",
+            "dataResposta": new Date().toISOString()
+        };
+
+        const response = await fetch('https://primary-production-a103.up.railway.app/webhook/810fe7e7-5b89-4c39-9b1c-1a6c4d9528cf', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            // O stringify agora vai enviar um JSON plano: {"corridaId": "...", "respostaSuporte": "..."}
+            body: JSON.stringify(payload) 
+        });
+
+        if (response.ok) {
+            input.value = "";
+            buscar(); // Recarrega o chat
+        } else {
+            alert("Erro ao enviar.");
+            btn.disabled = false;
+        }
+    } catch (e) {
+        console.error(e);
+        btn.disabled = false;
+    }
+}
+
+function renderMapa(d) {
+    if(!d.rota?.coords) return;
+    const map = new mapboxgl.Map({ container:'map', style:'mapbox://styles/mapbox/light-v11', center: d.rota.coords.origem, zoom:14 });
+    new mapboxgl.Marker({ color: '#2ea6ff' }).setLngLat(d.rota.coords.origem).addTo(map);
+    new mapboxgl.Marker({ color: '#ffaa00' }).setLngLat(d.rota.coords.destino).addTo(map);
+}
+
+async function enviar() {
+    const msgInput = document.getElementById("msg");
+    const motivoSelect = document.getElementById("motivo");
+    
+    if (!msgInput || !msgInput.value) return alert("Por favor, descreva o problema.");
+
+    const detalhes = msgInput.value;
+    const motivo = motivoSelect.value;
+
+    try {
+        // Formato que o seu servidor geralmente espera para NOVA contestação
+        const payload = {
+            "corridaId": id, // A variável 'id' da URL
+            "status": "solicitada",
+            "contestacao": {
+                "motivo": motivo,
+                "detalhes": detalhes,
+                "dataEnvio": new Date().toISOString()
+            }
+        };
+
+        const response = await fetch('https://primary-production-a103.up.railway.app/webhook/6516ef89-ec52-4713-8229-5874ecef74a6', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            alert("Contestação enviada com sucesso!");
+            buscar(); // Recarrega a página para mostrar o status "Em Análise"
+        } else {
+            // Se cair aqui, é o AJAXError (status != 200)
+            console.error("Erro do servidor:", response.status, response.statusText);
+            alert("Erro ao enviar contestação. O servidor retornou: " + response.status);
+        }
+    } catch (e) {
+        console.error("Erro na requisição:", e);
+        alert("Erro de conexão. Verifique sua internet.");
+    }
+}
+
+</script>
+
+
+</body>
+</html>
