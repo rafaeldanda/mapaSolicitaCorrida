@@ -4,271 +4,380 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Histórico de Corrida</title>
-    <script src='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.js'></script>
-    <link href='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.css' rel='stylesheet' />
-    <style>
-        :root { --primary: #2ea6ff; --success: #10b981; --text: #333; --bg: #f5f7fa; --danger: #ef4444; --label: #64748b; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; }
-        .header { background: white; padding: 15px; text-align: center; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 100; }
-        .header h1 { font-size: 16px; margin: 0; color: var(--primary); }
-        #map { width: 100%; height: 220px; background: #ddd; }
-        .container { padding: 15px; max-width: 500px; margin: 0 auto; }
-        .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        .status-badge { display: inline-block; padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; text-transform: uppercase; background: #e1fdec; color: var(--success); margin-bottom: 8px; }
-        .route-info { position: relative; padding-left: 25px; }
-        .route-info::before { content: ''; position: absolute; left: 8px; top: 8px; bottom: 8px; width: 1px; background: #ddd; }
-        .dot { position: absolute; left: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--primary); border: 2px solid white; }
-        .dot.dest { background: #ffaa00; bottom: 8px; top: auto; }
-        .address-box { margin-bottom: 15px; }
-        .address-box label { font-size: 10px; color: #888; display: block; }
-        .address-box p { margin: 3px 0; font-size: 13px; font-weight: 500; }
-        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border-top: 1px solid #eee; margin-top: 10px; padding-top: 10px; }
-        .detail-item label { font-size: 10px; color: #888; display: block; }
-        .detail-item span { font-size: 14px; font-weight: bold; }
-        .driver-card { display: flex; align-items: center; gap: 12px; }
-        .driver-photo { width: 40px; height: 40px; background: #eee; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; }
-        .driver-info h3 { margin: 0; font-size: 14px; }
-        .driver-info p { margin: 1px 0; font-size: 11px; color: #666; }
-        
-        /* Estilos de Contestação e Resposta */
-        .contest-title { font-size: 13px; font-weight: bold; margin-bottom: 12px; color: var(--danger); display: block; }
-        .form-group { margin-bottom: 12px; }
-        .form-group label { font-size: 10px; color: #888; display: block; margin-bottom: 4px; }
-        select, textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-family: inherit; font-size: 13px; box-sizing: border-box; }
-        textarea { resize: none; height: 70px; }
-        .btn-submit { width: 100%; background: var(--danger); color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; }
-        .success-msg { color: #00a86b; font-weight: bold; font-size: 18px; text-align: center; margin: 10px 0; width: 100%; }
-        
-        /* Card de Resposta do Suporte */
-        .support-response { border-left: 4px solid var(--primary); padding-left: 15px; }
-        .label-caps { font-size: 10px; font-weight: 800; color: var(--label); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; display: block; }
-        .response-text { font-size: 13px; line-height: 1.5; color: var(--text); margin-bottom: 12px; }
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.css" rel="stylesheet"/>
+   <style>
+    :root { --primary: #2ea6ff; --success: #10b981; --text: #333; --bg: #f5f7fa; --danger: #ef4444; --label: #64748b; }
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; }
+    .header { background: white; padding: 15px; text-align: center; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 100; }
+    .header h2 { font-size: 16px; margin: 0; color: var(--primary); }
+    #map { width: 100%; height: 220px; background: #ddd; }
+    .container { padding: 15px; max-width: 500px; margin: 0 auto; }
+    .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 8px; }
+    
+    /* Rota */
+    .route-info { position: relative; padding-left: 25px; }
+    .route-info::before { content: ''; position: absolute; left: 8px; top: 8px; bottom: 8px; width: 1px; background: #ddd; }
+    .dot { position: absolute; left: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--primary); border: 2px solid white; }
+    .dot.dest { background: #ffaa00; bottom: 8px; top: auto; }
+    .label { font-size: 10px; color: #888; display: block; text-transform: uppercase; margin-bottom: 2px; }
+    .value { font-size: 13px; font-weight: 500; margin: 0 0 12px 0; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border-top: 1px solid #eee; margin-top: 10px; padding-top: 10px; }
+    
+    /* Motorista */
+    .driver-card { display: flex; align-items: center; gap: 12px; }
+    .driver-img { width: 40px; height: 40px; background: #eee; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+    .driver-info h3 { margin: 0; font-size: 14px; }
+    .driver-info p { margin: 1px 0; font-size: 11px; color: #666; }
+    
+    /* CHAT - ESTILO FINAL */
+    .chat { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+    .msg { padding: 12px; font-size: 13px; max-width: 85%; line-height: 1.4; position: relative; }
+    
+    .msg.suporte { 
+        background: #f0f9ff; 
+        border-left: 4px solid var(--primary); 
+        align-self: flex-start; 
+        border-radius: 15px 15px 15px 5px; 
+    }
+    
+    .msg.user { 
+        background: #f3f4f6; 
+        border-right: 4px solid #94a3b8; 
+        align-self: flex-end; 
+        text-align: right;
+        border-radius: 15px 15px 5px 15px; 
+    }
 
-        #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:1000; display:flex; align-items:center; justify-content:center; font-size: 14px; }
-    </style>
+    .label-caps { font-size: 9px; font-weight: 800; color: var(--label); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px; }
+    select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; font-size: 13px; box-sizing: border-box; margin-top: 5px; }
+    button { width: 100%; margin-top: 12px; padding: 12px; border: none; border-radius: 8px; background: var(--primary); color: white; font-weight: bold; cursor: pointer; font-size: 14px; }
+    #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; align-items: center; justify-content: center; z-index: 999; }
+</style>
 </head>
 <body>
 
-<div id="loading-overlay">Carregando...</div>
+<div id="loading">Carregando...</div>
 
 <div class="header">
-    <h1 id="titulo-id">Corrida</h1>
+    <h2 id="titulo">Corrida</h2>
 </div>
 
 <div id="map"></div>
 
 <div class="container">
     <div class="card">
-        <div class="status-badge" id="status-tag">---</div>
+        <div id="status" class="badge">---</div>
         <div class="route-info">
             <div class="dot"></div>
-            <div class="address-box"><label>ORIGEM</label><p id="origem-txt">---</p></div>
+            <div class="label">ORIGEM</div>
+            <p id="origem" class="value">---</p>
             <div class="dot dest"></div>
-            <div class="address-box"><label>DESTINO</label><p id="destino-txt">---</p></div>
+            <div class="label">DESTINO</div>
+            <p id="destino" class="value">---</p>
         </div>
-        <div class="details-grid">
-            <div class="detail-item"><label>DISTÂNCIA</label><span id="distancia">---</span></div>
-            <div class="detail-item"><label>VALOR PAGO</label><span id="valor" style="color: var(--success)">---</span></div>
+        <div class="grid">
+            <div><div class="label">DISTÂNCIA</div><div id="distancia" style="font-weight:bold;">---</div></div>
+            <div><div class="label">VALOR</div><div id="valor" style="color:var(--success); font-weight:bold;">---</div></div>
         </div>
     </div>
 
     <div class="card">
-        <label style="font-size: 10px; color: #888; margin-bottom: 8px; display: block;">MOTORISTA E VEÍCULO</label>
+        <div class="label" style="margin-bottom: 10px;">MOTORISTA</div>
         <div class="driver-card">
-            <div class="driver-photo">👤</div>
+            <div class="driver-img">👤</div>
             <div class="driver-info">
-                <h3 id="motorista-nome">---</h3>
-                <p id="veiculo-info">---</p>
-                <p id="motorista-pix" style="font-size: 10px; color: var(--primary);">---</p>
+                <h3 id="motorista">---</h3>
+                <p id="veiculo">---</p>
             </div>
         </div>
     </div>
 
-    <div class="card" id="card-contestacao" style="display:none;">
-        <div id="conteudo-dinamico">
-            <span class="contest-title">Contestar esta corrida</span>
-            <div class="form-group">
-                <label>MOTIVO DA RECLAMAÇÃO</label>
-                <select id="motivo-select">
-                    <option value="Valor Incorreto">Valor diferente do estimado</option>
-                    <option value="Rota Ineficiente">Rota ineficiente</option>
-                    <option value="Conduta/Segurança">Conduta/Segurança</option>
-                    <option value="Taxa Indevida">Taxa indevida</option>
-                    <option value="Outros">Outro motivo</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>DETALHES (OPCIONAL)</label>
-                <textarea id="desc-contestacao" placeholder="Descreva brevemente..."></textarea>
-            </div>
-            <button id="btn-envio" class="btn-submit" onclick="enviarContestacao()">Enviar Contestação</button>
-        </div>
-    </div>
+    <div class="card" id="contestacao"></div>
 </div>
 
 <script>
-    mapboxgl.accessToken = 'pk.eyJ1IjoicmFmYWVsZGFuZGEiLCJhIjoiY21tM3V6aHQ3MDR1dTJxcHdiNnhpaHd0ayJ9.w-fjeHmzlyVes75Rg4pJuQ';
-    const urlParams = new URLSearchParams(window.location.search);
-    const corridaId = urlParams.get('id');
-    let dadosCorridaGlobal = null;
+mapboxgl.accessToken = 'pk.eyJ1IjoicmFmYWVsZGFuZGEiLCJhIjoiY21tM3V6aHQ3MDR1dTJxcHdiNnhpaHd0ayJ9.w-fjeHmzlyVes75Rg4pJuQ';
 
-    if (!corridaId) {
-        document.getElementById('loading-overlay').innerText = "ID ausente.";
-    } else {
-        buscarDados();
-    }
+const id = new URLSearchParams(location.search).get("id");
 
-    async function buscarDados() {
-        try {
-            // 1. Busca dados da corrida
-            const response = await fetch(`https://primary-production-a103.up.railway.app/webhook/6516ef89-ec52-4713-8229-5874ecef74a6?id=${corridaId}`);
-            const data = await response.json();
-            dadosCorridaGlobal = Array.isArray(data) ? data[0] : data;
-            
-            if (dadosCorridaGlobal) {
-                renderizarInterface(dadosCorridaGlobal);
-                document.getElementById('loading-overlay').style.display = 'none';
-                document.getElementById('card-contestacao').style.display = 'block';
+if(id) buscar();
+else document.getElementById("loading").innerText = "ID ausente na URL";
 
-                // 2. Busca se já existe uma resposta do suporte
-                await buscarRespostaSuporte();
-            }
-        } catch (error) {
-            document.getElementById('loading-overlay').innerText = "Erro ao carregar.";
+
+async function buscar() {
+    try {
+        // 1. Busca Dados da Corrida (Onde está o objeto motorista/carro)
+        const resCorrida = await fetch(`https://primary-production-a103.up.railway.app/webhook/6516ef89-ec52-4713-8229-5874ecef74a6?id=${id}`);
+        let corrida = {};
+        if (resCorrida.ok) {
+            const dataCorrida = await resCorrida.json();
+            corrida = Array.isArray(dataCorrida) ? dataCorrida[0] : dataCorrida;
         }
-    }
 
-    async function buscarRespostaSuporte() {
-        try {
-            // Buscando os dados completos da contestação (onde está a resposta)
-            const res = await fetch(`https://primary-production-a103.up.railway.app/webhook/fb5e433b-fedc-4f6f-b5b8-7297098da150?id=${corridaId}`);
-            if (res.ok) {
-                const dados = await res.json();
-                // O n8n costuma retornar um array ou objeto único, tratamos aqui:
-                const item = Array.isArray(dados) ? dados[0] : dados;
-
-                // Regra: Se houver resposta do suporte, exibe o card azul
-                if (item && item.respostaSuporte) {
-                    const dataFormatada = item.dataResposta ? new Date(item.dataResposta).toLocaleString('pt-BR') : '';
-                    exibirRespostaSuporte(item.respostaSuporte, dataFormatada);
-                } 
-                // Se não tiver resposta mas o status for "contestada", mostra a msg de aguardo
-                else if (dadosCorridaGlobal.status.toLowerCase().includes("contest") || 
-                         (item.status && item.status.toLowerCase().includes("contest"))) {
-                    exibirMensagemSucesso();
-                }
-            }
-        } catch (e) {
-            console.log("Ainda não há contestação ou resposta vinculada.");
+        // 2. Busca Dados da Contestação (Chat e Status)
+        const resContest = await fetch(`https://primary-production-a103.up.railway.app/webhook/fb5e433b-fedc-4f6f-b5b8-7297098da150?id=${id}`);
+        let contestacao = {}; 
+        if (resContest.ok) {
+            const dataContest = await resContest.json();
+            contestacao = Array.isArray(dataContest) ? (dataContest[0] || {}) : dataContest;
         }
-    }
 
-    function renderizarInterface(dados) {
-        const idCurto = dados.corridaId.split('-')[1] || 'Detalhes';
-        document.getElementById('titulo-id').innerText = `Corrida #${idCurto}`;
+        // 3. UNIÃO E TRATAMENTO
+        const dadosCompletos = { ...corrida, ...contestacao };
+
+        // Recupera o objeto motorista da corrida caso a contestação tenha vindo simplificada
+        const m = dadosCompletos.motorista || corrida.motorista || {};
         
-        // Normaliza o status para comparação (remove espaços e coloca em minúsculo)
-        const statusAtual = dados.status ? dados.status.toLowerCase().trim() : "";
-        document.getElementById('status-tag').innerText = dados.status;
+        // Mapeia o Nome
+        dadosCompletos.nomeExibicao = m.nome || "Não informado";
 
-        // REGRA DE NEGÓCIO: Se já estiver contestada, bloqueia o formulário imediatamente
-        if (statusAtual === "contestada" || statusAtual.includes("respond")) {
-            exibirMensagemSucesso();
+        // Mapeia o Veículo (motorista -> carro -> modelo/placa)
+        if (m.carro) {
+            dadosCompletos.veiculoExibicao = `${m.carro.modelo} • ${m.carro.placa}`;
+        } else {
+            dadosCompletos.veiculoExibicao = "Veículo não identificado";
         }
 
-        document.getElementById('origem-txt').innerText = dados.origem;
-        document.getElementById('destino-txt').innerText = dados.destino;
-        document.getElementById('distancia').innerText = `${dados.distanciaPassageiro} km`;
-        document.getElementById('valor').innerText = `R$ ${parseFloat(dados.valorTotal).toFixed(2).replace('.', ',')}`;
-        document.getElementById('motorista-nome').innerText = dados.motorista.nome;
-        document.getElementById('veiculo-info').innerText = `${dados.motorista.carro.modelo} • ${dados.motorista.carro.placa}`;
-        document.getElementById('motorista-pix').innerText = `PIX: ${dados.motorista.pix}`;
+        const loadingEl = document.getElementById("loading");
+        if (loadingEl) loadingEl.style.display = "none";
+        
+        render(dadosCompletos);
 
-        // ... (resto do código do mapa permanece igual)
-        const pOrigem = [dados.rota.coords.origem[0], dados.rota.coords.origem[1]];
-        const pDestino = [dados.rota.coords.destino[0], dados.rota.coords.destino[1]];
-        const map = new mapboxgl.Map({
-            container: 'map', style: 'mapbox://styles/mapbox/light-v11',
-            center: pOrigem, zoom: 14
+    } catch (e) {
+        console.error("Erro crítico:", e);
+        document.getElementById("loading").innerText = "Erro ao carregar dados.";
+    }
+}
+
+
+function render(d) {
+    // Cabeçalho e Rota
+    const idExibicao = d.corridaId ? d.corridaId.split('-')[1] : "";
+    document.getElementById("titulo").innerText = "Corrida #" + idExibicao;
+    document.getElementById("origem").innerText = d.origem || "---";
+    document.getElementById("destino").innerText = d.destino || "---";
+    document.getElementById("distancia").innerText = (d.distanciaPassageiro || 0) + " km";
+    
+    // Valor
+    const valorTotal = typeof d.valorTotal === 'number' ? d.valorTotal : parseFloat(d.valorTotal || 0);
+    document.getElementById("valor").innerText = "R$ " + valorTotal.toFixed(2).replace('.', ',');
+
+    // CARD DO MOTORISTA (Dados tratados no buscar)
+    document.getElementById("motorista").innerText = d.nomeExibicao;
+    document.getElementById("veiculo").innerText = d.veiculoExibicao;
+
+    // Chamada das funções auxiliares
+    renderStatus(d);
+    renderMapa(d);
+    renderContestacao(d);
+}
+
+
+function renderStatus(d) {
+    const el = document.getElementById("status");
+    // Se tiver respostas, o status visual deve ser RESPONDIDA
+    if(d.respostas && d.respostas.length > 0) {
+        el.innerText = "RESPONDIDA"; el.style.background = "#e1fdec"; el.style.color = "#10b981";
+    } else if(d.status === "solicitada") {
+        el.innerText = "EM ANÁLISE"; el.style.background = "#fef3c7"; el.style.color = "#d97706";
+    } else {
+        el.innerText = "CONCLUÍDA"; el.style.background = "#f1f5f9"; el.style.color = "#64748b";
+    }
+}
+
+
+
+
+function renderContestacao(d) {
+    const div = document.getElementById("contestacao");
+
+    // 1. ESTADO: CHAT ATIVO (Se houver respostas ou status for respondida)
+    if (d.respostas && d.respostas.length > 0) {
+        let htmlChat = `<div class="chat">`;
+        
+        // Exibe a contestação original do passageiro no topo
+        if (d.contestacao) {
+            htmlChat += `
+                <div class="msg user">
+                    <span class="label-caps">SUA CONTESTAÇÃO (${d.contestacao.motivo})</span>
+                    ${d.contestacao.detalhes}
+                </div>`;
+        }
+
+        // Percorre o array de respostas do JSON
+        d.respostas.forEach(r => {
+            // Se a origem for "Suporte", alinha à esquerda (azul). 
+            // Caso contrário (Akiles ou qualquer outro nome), alinha à direita (cinza).
+            const isSuporte = (r.origem === "Suporte");
+            const classe = isSuporte ? "suporte" : "user";
+            
+            // O nome que aparece no topo da bolha é o que está em r.origem
+            const nomeExibicao = r.origem.toUpperCase();
+
+            htmlChat += `
+                <div class="msg ${classe}">
+                    <span class="label-caps">${nomeExibicao}</span>
+                    ${r.mensagem || r.respostaSuporte}
+                </div>`;
         });
-        map.on('load', () => {
-            new mapboxgl.Marker({ color: '#2ea6ff', scale: 0.8 }).setLngLat(pOrigem).addTo(map);
-            new mapboxgl.Marker({ color: '#ffaa00', scale: 0.8 }).setLngLat(pDestino).addTo(map);
-            const bounds = new mapboxgl.LngLatBounds().extend(pOrigem).extend(pDestino);
-            map.fitBounds(bounds, { padding: 40, maxZoom: 15 });
-        });
+
+        htmlChat += `</div>`; // fecha div chat
+
+        // Campo de tréplica para o passageiro enviar mais mensagens
+        htmlChat += `
+            <div style="margin-top:15px; border-top:1px solid #eee; padding-top:15px;">
+                <textarea id="resp" placeholder="Escreva sua resposta..." style="height: 60px;"></textarea>
+                <button id="btnEnviar" onclick="responder()">Enviar Resposta</button>
+            </div>
+        `;
+
+        div.innerHTML = htmlChat;
+        return;
     }
 
-    function exibirMensagemSucesso() {
-        const container = document.getElementById('conteudo-dinamico');
-        container.innerHTML = `
-            <div style="text-align: center; padding: 10px 0;">
-                <p class="success-msg" style="color: var(--primary); font-size: 16px;">Contestação em Análise</p>
-                <p style="font-size: 12px; color: #888; margin-top: 5px;">
-                    Já recebemos sua solicitação. <br> O suporte está analisando o caso e responderá em breve.
+    // 2. ESTADO: CONTESTAÇÃO EM ANÁLISE (Status solicitado)
+    if (d.status === "solicitada") {
+        div.innerHTML = `
+            <div style="text-align:center; padding: 40px 20px; background: white; border-radius: 12px;">
+                <h2 style="color: #3498db; font-size: 20px; margin-bottom: 15px; font-weight: bold;">
+                    Contestação em Análise
+                </h2>
+                <p style="color: #888; font-size: 14px; line-height: 1.5; margin: 0;">
+                    Já recebemos sua solicitação.<br>
+                    O suporte está analisando o caso e responderá em breve.
                 </p>
-            </div>
-        `;
+            </div>`;
+        return;
     }
 
-    function exibirRespostaSuporte(texto, data) {
-        const container = document.getElementById('conteudo-dinamico');
-        container.innerHTML = `
-            <div class="support-response">
-                <span class="label-caps" style="color: var(--primary);">📩 Resposta do Suporte</span>
-                <div class="response-text" style="font-weight: 500; margin-top: 5px;">${texto}</div>
-                <div class="detail-item" style="margin-top: 10px; border-top: 1px dashed #eee; padding-top: 8px;">
-                    <label>DATA DA SOLUÇÃO</label>
-                    <span style="font-size:11px; font-weight: normal; color: #888;">${data || 'Recém respondido'}</span>
-                </div>
-            </div>
-            <p style="text-align:center; font-size:11px; color:var(--success); font-weight:bold; margin-top:15px;">
-                ✓ Solicitação Finalizada
-            </p>
-        `;
+    // 3. ESTADO: FORMULÁRIO INICIAL
+    div.innerHTML = `
+        <span class="label-caps">Contestar esta corrida</span>
+        <select id="motivo">
+            <option>Valor Incorreto</option>
+            <option>Conduta</option>
+            <option>Objeto Esquecido</option>
+            <option>Outros</option>
+        </select>
+        <textarea id="msg" placeholder="Descreva os detalhes..."></textarea>
+        <button style="background:var(--danger)" onclick="enviar()">Enviar Contestação</button>
+    `;
+}
+
+
+
+
+
+async function responder() {
+    const input = document.getElementById("resp");
+    const msg = input.value;
+    if (!msg) return alert("Digite uma mensagem.");
+
+    const btn = document.getElementById("btnEnviar");
+    btn.disabled = true;
+
+    try {
+        // REMOVEMOS O PRIMEIRO "body": { ... }
+        // Enviamos os dados diretamente no objeto raiz do payload
+        const payload = {
+            "corridaId": id, 
+            "respostaSuporte": msg,
+            "operador": "passageiro",
+            "dataResposta": new Date().toISOString()
+        };
+
+        const response = await fetch('https://primary-production-a103.up.railway.app/webhook/810fe7e7-5b89-4c39-9b1c-1a6c4d9528cf', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            // O stringify agora vai enviar um JSON plano: {"corridaId": "...", "respostaSuporte": "..."}
+            body: JSON.stringify(payload) 
+        });
+
+        if (response.ok) {
+            input.value = "";
+            buscar(); // Recarrega o chat
+        } else {
+            alert("Erro ao enviar.");
+            btn.disabled = false;
+        }
+    } catch (e) {
+        console.error(e);
+        btn.disabled = false;
     }
+}
 
-    async function enviarContestacao() {
-        const btn = document.getElementById('btn-envio');
-        try {
-            btn.disabled = true;
-            btn.innerText = "Enviando...";
 
-            const payload = {
-                "corridaId": dadosCorridaGlobal.corridaId,
-                "origem": dadosCorridaGlobal.origem,
-                "destino": dadosCorridaGlobal.destino,
-                "valorTotal": dadosCorridaGlobal.valorTotal,
-                "motorista": dadosCorridaGlobal.motorista.nome,
-                "passageiro": {
-                    "nome": dadosCorridaGlobal.passageiro?.nome || "Não informado",
-                    "id": dadosCorridaGlobal.passageiro?.id || "N/A",
-                    "telefone": dadosCorridaGlobal.passageiro?.telefone || ""
-                },
-                "contestacao": {
-                    "motivo": document.getElementById('motivo-select').value,
-                    "detalhes": document.getElementById('desc-contestacao').value,
-                    "dataEnvio": new Date().toISOString()
-                }
-            };
 
-            const response = await fetch('https://primary-production-a103.up.railway.app/webhook/efcac4fb-e6f8-40c5-b381-42c4c9db6b81', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+function renderMapa(d) {
+    if(!d.rota?.coords) return;
+    const map = new mapboxgl.Map({ container:'map', style:'mapbox://styles/mapbox/light-v11', center: d.rota.coords.origem, zoom:14 });
+    new mapboxgl.Marker({ color: '#2ea6ff' }).setLngLat(d.rota.coords.origem).addTo(map);
+    new mapboxgl.Marker({ color: '#ffaa00' }).setLngLat(d.rota.coords.destino).addTo(map);
+}
 
-            if (response.ok) {
-                exibirMensagemSucesso();
-            } else {
-                throw new Error();
-            }
-        } catch (error) {
-            alert("Erro ao enviar contestação.");
+
+
+async function enviar() {
+    const msgInput = document.getElementById("msg");
+    const motivoSelect = document.getElementById("motivo");
+    const btn = document.querySelector("button[onclick='enviar()']");
+
+    if (!msgInput || !msgInput.value) return alert("Por favor, descreva o detalhe.");
+
+    btn.disabled = true;
+    btn.innerText = "Enviando...";
+
+    try {
+        const payload = {
+            "corridaId": id, 
+            "origem": document.getElementById("origem")?.innerText || "",
+            "destino": document.getElementById("destino")?.innerText || "",
+            "valorTotal": parseFloat(document.getElementById("valor")?.innerText.replace("R$ ", "").replace(",", ".") || 0),
+            "motorista": document.getElementById("motorista")?.innerText || "",
+            "contestacao": {
+                "motivo": motivoSelect.value,
+                "detalhes": msgInput.value,
+                "dataEnvio": new Date().toISOString()
+            },
+            "status": "solicitada", // Enviamos o status desejado
+            "passageiro": "Akiles Danda",
+            "telefonePassageiro": "(51) 99282-8595"
+        };
+
+        const response = await fetch('https://primary-production-a103.up.railway.app/webhook/efcac4fb-e6f8-40c5-b381-42c4c9db6b81', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            // 1. Troca o card visualmente NA HORA
+            renderContestacao({ status: "solicitada" });
+
+            // 2. Espera 1.5 segundos antes de buscar no servidor
+            // Isso dá tempo para o n8n/MongoDB salvar a alteração
+            setTimeout(() => {
+                buscar(); 
+            }, 1500);
+
+        } else {
+            alert("Erro no servidor.");
             btn.disabled = false;
             btn.innerText = "Enviar Contestação";
         }
+    } catch (e) {
+        alert("Erro de conexão.");
+        btn.disabled = false;
     }
+}
+
+
+
+
 </script>
+
+
 </body>
 </html>
