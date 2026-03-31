@@ -100,7 +100,68 @@
     text-transform: uppercase;
 }
 .label-pass { color: #b45309; }
-.label-driver { color: var(--danger); }    
+.label-driver { color: var(--danger); }   
+
+/* Estilo Chat - Balões de Conversa */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin: 20px 0;
+    padding: 10px;
+    background: #f8fafc;
+    border-radius: 12px;
+}
+
+/* Balão do Cliente (Esquerda) */
+.bubble-client {
+    align-self: flex-start;
+    max-width: 85%;
+    background: white;
+    padding: 12px 16px;
+    border-radius: 18px 18px 18px 2px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border: 1px solid #e2e8f0;
+    position: relative;
+}
+
+/* Balão do Suporte (Direita) */
+.bubble-support {
+    align-self: flex-end;
+    max-width: 85%;
+    background: var(--primary);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 18px 18px 2px 18px;
+    box-shadow: 0 4px 10px rgba(46, 166, 255, 0.2);
+    position: relative;
+}
+
+.chat-label {
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    display: block;
+    letter-spacing: 0.5px;
+}
+
+.label-client { color: var(--danger); }
+.label-support { color: rgba(255,255,255,0.8); }
+
+.chat-text {
+    font-size: 13px;
+    line-height: 1.5;
+    word-wrap: break-word;
+}
+
+.chat-time {
+    font-size: 9px;
+    margin-top: 5px;
+    display: block;
+    opacity: 0.7;
+    text-align: right;
+} 
 
 </style>
 </head>
@@ -142,15 +203,22 @@
     <div id="loading-overlay">Carregando contestações em tempo real...</div>
 </div>
 
+
 <script>
-    // Configurações de Acesso
-    if (localStorage.getItem('painel_logado') !== 'true') { window.location.href = 'loginSuporte.html'; }
-    function logout() { localStorage.clear(); window.location.href = 'loginSuporte.html'; }
+    // 1. Configurações de Acesso
+    if (localStorage.getItem('painel_logado') !== 'true') { 
+        window.location.href = 'loginSuporte.html'; 
+    }
+    
+    function logout() { 
+        localStorage.clear(); 
+        window.location.href = 'loginSuporte.html'; 
+    }
 
     const OPERADOR_ATUAL = localStorage.getItem('operador_nome') || "Desconhecido";
     document.getElementById('nome-exibicao').innerHTML = `<span class="live-dot"></span> Operador: ${OPERADOR_ATUAL}`;
 
-    // Webhooks
+    // 2. Webhooks
     const URL_LISTA = 'https://primary-production-a103.up.railway.app/webhook/d2494948-3dd8-40ed-a262-b4cef2d5c814';
     const URL_BUSCA_UNICA = 'https://primary-production-a103.up.railway.app/webhook/fb5e433b-fedc-4f6f-b5b8-7297098da150';
     const URL_RESPONDER = 'https://primary-production-a103.up.railway.app/webhook/810fe7e7-5b89-4c39-9b1c-1a6c4d9528cf';
@@ -167,7 +235,7 @@
             const response = await fetch(URL_LISTA);
             const dados = await response.json();
             renderizarLista(dados);
-        } catch (error) { console.error("Erro auto-refresh:", error); }
+        } catch (error) { console.error("Erro refresh:", error); }
     }
 
     async function buscarPorWebhook() {
@@ -186,122 +254,118 @@
         } catch (e) { document.getElementById('lista-container').innerHTML = 'Erro na busca.'; }
     }
 
-    function renderizarLista(dadosBrutos) {
-        const container = document.getElementById('lista-container');
-        const lista = Array.isArray(dadosBrutos) ? dadosBrutos : [dadosBrutos];
+   
+   function renderizarLista(dadosBrutos) {
+    const container = document.getElementById('lista-container');
+    const lista = Array.isArray(dadosBrutos) ? dadosBrutos : [dadosBrutos];
 
-        if (!lista || lista.length === 0 || !lista[0].corridaId) {
-            container.innerHTML = '<div id="loading-overlay">Tudo em dia! Nenhuma nova contestação.</div>';
-            return;
-        }
-
-        container.innerHTML = '';
-
-        lista.forEach(item => {
-            const card = document.createElement('div');
-            
-            // Lógica de status flexível
-            const statusAtual = item.status ? String(item.status).toLowerCase() : "";
-            const eRespondida = statusAtual.includes("respond") || statusAtual.includes("respo");
-            
-            card.className = `card ${eRespondida ? 'resolvido' : ''}`;
-            
-            const dataEnvio = item.contestacao?.dataEnvio ? new Date(item.contestacao.dataEnvio).toLocaleDateString('pt-BR') : '--/--/----';
-            const idUnico = item._id?.$oid || item._id;
-            const foneLimpo = item.telefonePassageiro ? item.telefonePassageiro.replace(/\D/g, '') : '';
-            const linkWhats = foneLimpo ? `https://wa.me/55${foneLimpo}` : '#';
-
-            // 1. Bloco de Bloqueio Passageiro
-            let htmlBlockPass = "";
-            if (item.justificativaPassageiro) {
-                htmlBlockPass = `
-                    <div class="block-info-container block-pass">
-                        <span class="block-label label-pass">⚠️ PASSAGEIRO BLOQUEADO</span>
-                        <span style="color: #92400e;">${item.justificativaPassageiro}</span>
-                    </div>
-                `;
-            }
-
-            // 2. Bloco de Bloqueio Motorista
-            let htmlBlockDriver = "";
-            if (item.justificativaMotorista) {
-                htmlBlockDriver = `
-                    <div class="block-info-container block-driver">
-                        <span class="block-label label-driver">🚫 MOTORISTA BLOQUEADO</span>
-                        <span style="color: #b91c1c;">${item.justificativaMotorista}</span>
-                    </div>
-                `;
-            }
-
-            // 3. Bloco de Resposta do Suporte
-            let htmlRespostaSuporte = "";
-            if (item.respostaSuporte) {
-                htmlRespostaSuporte = `
-                    <div class="resposta-suporte-container">
-                        <span class="resposta-label-suporte">SOLUÇÃO DO SUPORTE (${item.operador || 'Sistema'})</span>
-                        <span class="resposta-txt-suporte">${item.respostaSuporte}</span>
-                    </div>
-                `;
-            }
-
-            let areaAcao = eRespondida 
-                ? `<div class="reply-box"><div class="msg-ja-respondida">✓ Atendimento Finalizado</div></div>`
-                : `
-                    <div class="reply-box" id="box-${idUnico}">
-                        <button class="btn-base" onclick="abrirModalBase('input-${idUnico}')">📖 Consultar Base</button>
-                        <textarea id="input-${idUnico}" placeholder="Digite a solução..."></textarea>
-                        <button class="btn-enviar" onclick="enviarResposta('${idUnico}', '${item.corridaId}')">ENVIAR RESPOSTA</button>
-                    </div>
-                `;
-
-           card.innerHTML = `
-                <div class="card-header">
-                    <span>CORRIDA #${item.corridaId?.split('-')[1] || '---'}</span>
-                    <span>${dataEnvio}</span>
-                </div>
-                
-                <span class="motivo-tag">${item.contestacao?.motivo || 'OUTROS'}</span>
-                ${eRespondida ? '<span class="status-resolvido-tag">RESOLVIDA</span>' : ''}
-                
-                <div class="admin-actions">
-                    <button class="btn-block btn-block-pass" onclick="abrirModalBloqueio('PASSAGEIRO', '${idUnico}', '${item.corridaId}')">Bloquear Passageiro</button>
-                    <button class="btn-block btn-block-driver" onclick="abrirModalBloqueio('MOTORISTA', '${idUnico}', '${item.corridaId}')">Bloquear Motorista</button>
-                </div>
-
-                ${htmlBlockPass}
-                ${htmlBlockDriver}
-
-                <div class="info-grid">
-                    <div class="info-section-title">Dados do Passageiro</div>
-                    <div class="info-item"><span class="label">Nome</span> ${item.passageiro || 'Não informado'}</div>
-                    <div class="info-item">
-                        <span class="label">WhatsApp</span> 
-                        <a href="${linkWhats}" target="_blank" class="link-whatsapp">${item.telefonePassageiro || '---'}</a>
-                    </div>
-                    <div class="info-section-title">Detalhes da Viagem</div>
-                    <div class="info-item"><span class="label">Motorista</span> ${item.motorista || '---'}</div>
-                    <div class="info-item"><span class="label">Origem</span> ${item.origem || '---'}</div>
-                    <div class="info-item"><span class="label">Destino</span> ${item.destino || '---'}</div>
-                    <div class="info-item"><span class="label">Valor</span> <span class="valor-total">R$ ${(item.valorTotal || 0).toFixed(2).replace('.', ',')}</span></div>
-                </div>
-
-                <div class="relato-container">
-                    <span class="relato-label">MENSAGEM DO CLIENTE</span>
-                    <span class="relato-txt">"${item.contestacao?.detalhes || '...'}"</span>
-                </div>
-
-                ${htmlRespostaSuporte}
-
-                ${areaAcao}
-            `;
-            container.appendChild(card);
-        });
+    if (!lista || lista.length === 0 || (!lista[0].corridaId && !lista[0]._id)) {
+        container.innerHTML = '<div id="loading-overlay">Tudo em dia!</div>';
+        return;
     }
-    // Modal Bloqueio
+
+    container.innerHTML = '';
+
+    lista.forEach(item => {
+        const card = document.createElement('div');
+        const idUnico = item._id?.$oid || item._id;
+        const statusAtual = item.status ? String(item.status).toLowerCase() : "";
+        const eRespondida = statusAtual.includes("respond") || statusAtual.includes("respo");
+        
+        const dataInicial = item.contestacao?.dataEnvio ? new Date(item.contestacao.dataEnvio).toLocaleDateString('pt-BR') : '--/--/----';
+        const foneLimpo = item.telefonePassageiro ? item.telefonePassageiro.replace(/\D/g, '') : '';
+        const linkWhats = foneLimpo ? `https://wa.me/55${foneLimpo}` : '#';
+
+        card.className = `card ${eRespondida ? 'resolvido' : ''}`;
+
+        // 1. CHAT DINÂMICO
+        let chatHtml = `<div class="chat-container">`;
+        chatHtml += `
+            <div class="bubble-client">
+                <span class="chat-label label-client">📩 CONTESTAÇÃO INICIAL</span>
+                <div class="chat-text">"${item.contestacao?.detalhes || '...'}"</div>
+                <span class="chat-time">${dataInicial}</span>
+            </div>
+        `;
+
+        if (item.respostas && Array.isArray(item.respostas)) {
+            item.respostas.forEach(resp => {
+                const ehSuporte = resp.origem === "Suporte";
+                const classeBolha = ehSuporte ? "bubble-support" : "bubble-client";
+                const classeLabel = ehSuporte ? "label-support" : "label-client";
+                const dataHora = resp.dataResposta ? new Date(resp.dataResposta).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+
+                chatHtml += `
+                    <div class="${classeBolha}">
+                        <span class="chat-label ${classeLabel}">${resp.origem.toUpperCase()}</span>
+                        <div class="chat-text">${resp.mensagem}</div>
+                        <span class="chat-time">${dataHora}</span>
+                    </div>
+                `;
+            });
+        }
+        chatHtml += `</div>`;
+
+        // 2. BLOCOS DE BLOQUEIO
+        const htmlBlockPass = item.justificativaPassageiro ? `<div class="block-info-container block-pass"><span class="block-label label-pass">⚠️ PASSAGEIRO BLOQUEADO</span><span>${item.justificativaPassageiro}</span></div>` : "";
+        const htmlBlockDriver = item.justificativaMotorista ? `<div class="block-info-container block-driver"><span class="block-label label-driver">🚫 MOTORISTA BLOQUEADO</span><span>${item.justificativaMotorista}</span></div>` : "";
+
+        // 3. ÁREA DE RESPOSTA
+        const areaAcao = `
+            <div class="reply-box" id="box-${idUnico}">
+                <button class="btn-base" onclick="abrirModalBase('input-${idUnico}')">📖 CONSULTAR BASE DE RESPOSTAS</button>
+                <textarea id="input-${idUnico}" placeholder="Digite sua resposta..."></textarea>
+                <button class="btn-enviar" onclick="enviarResposta('${idUnico}', '${item.corridaId}')">ENVIAR MENSAGEM</button>
+                ${eRespondida ? '<div style="margin-top:10px; font-size:10px; color:var(--success); text-align:center; font-weight:bold;">✓ RESPONDIDA</div>' : ''}
+            </div>
+        `;
+
+        // 4. MONTAGEM DO CARD (Corrigido para bater com seu JSON)
+        card.innerHTML = `
+            <div class="card-header">
+                <span>CORRIDA #${item.corridaId?.split('-')[1] || '---'}</span>
+                <span>${dataInicial}</span>
+            </div>
+            
+            <span class="motivo-tag">${item.contestacao?.motivo || 'OUTROS'}</span>
+            ${eRespondida ? '<span class="status-resolvido-tag">RESOLVIDA</span>' : ''}
+            
+            <div class="admin-actions">
+                <button class="btn-block btn-block-pass" onclick="abrirModalBloqueio('PASSAGEIRO', '${idUnico}', '${item.corridaId}')">Bloquear Passageiro</button>
+                <button class="btn-block btn-block-driver" onclick="abrirModalBloqueio('MOTORISTA', '${idUnico}', '${item.corridaId}')">Bloquear Motorista</button>
+            </div>
+
+            ${htmlBlockPass}
+            ${htmlBlockDriver}
+
+            <div class="info-grid">
+                <div class="info-section-title">Informações de Contato</div>
+                <div class="info-item"><span class="label">Passageiro</span> ${item.passageiro || '---'}</div>
+                <div class="info-item"><span class="label">WhatsApp</span> <a href="${linkWhats}" target="_blank" class="link-whatsapp">${item.telefonePassageiro || '---'}</a></div>
+                
+                <div class="info-section-title">Dados da Viagem</div>
+                <div class="info-item"><span class="label">Motorista</span> ${item.motorista || '---'}</div>
+                <div class="info-item"><span class="label">Origem</span> ${item.origem || '---'}</div>
+                <div class="info-item"><span class="label">Destino</span> ${item.destino || '---'}</div>
+                <div class="info-item"><span class="label">Valor</span> <span class="valor-total">R$ ${(item.valorTotal || 0).toFixed(2).replace('.', ',')}</span></div>
+
+                <div class="info-section-title">Veículo do Motorista</div>
+                <div class="info-item"><span class="label">Modelo</span> ${item.carro?.modelo || '---'}</div>
+                <div class="info-item"><span class="label">Placa</span> ${item.carro?.placa || '---'}</div>
+                <div class="info-item"><span class="label">Cor</span> ${item.carro?.cor || '---'}</div>
+            </div>
+
+            ${chatHtml}
+            ${areaAcao}
+        `;
+        container.appendChild(card);
+    });
+}
+   
+    // 4. Funções de Ação (Bloqueios e Respostas)
     function abrirModalBloqueio(tipo, idRef, corridaId) {
         bloqueioAtivo = { tipo, idRef, corridaId };
         document.getElementById('modalTitle').innerText = `Bloquear ${tipo}`;
-        document.getElementById('modalTitle').style.color = tipo === 'MOTORISTA' ? 'var(--danger)' : 'var(--warning)';
         document.getElementById('modalBlock').style.display = 'flex';
         document.getElementById('justificativaTexto').focus();
     }
@@ -311,76 +375,77 @@
         document.getElementById('justificativaTexto').value = '';
     }
 
-    // Modal Base Conhecimento
     async function abrirModalBase(idInput) {
         inputAlvoBase = idInput;
         const modal = document.getElementById('modalBase');
-        const container = document.getElementById('kb-lista-container');
         modal.style.display = 'flex';
-        container.innerHTML = 'Buscando artigos...';
+        const container = document.getElementById('kb-lista-container');
+        container.innerHTML = 'Carregando...';
         try {
             const res = await fetch(URL_BASE_CONHECIMENTO);
             const dados = await res.json();
-            const lista = dados.documentos || dados;
             container.innerHTML = '';
-            lista.forEach(artigo => {
+            (dados.documentos || dados).forEach(artigo => {
                 const div = document.createElement('div');
                 div.className = 'kb-item';
                 div.onclick = () => {
                     document.getElementById(inputAlvoBase).value = artigo.msn;
                     fecharModalBase();
-                    document.getElementById(inputAlvoBase).focus();
                 };
-                div.innerHTML = `<span class="kb-title">${artigo.titulo}</span><span class="kb-preview">${artigo.msn.substring(0, 80)}...</span>`;
+                div.innerHTML = `<span class="kb-title">${artigo.titulo}</span><span class="kb-preview">${artigo.msn.substring(0,60)}...</span>`;
                 container.appendChild(div);
             });
-        } catch (e) { container.innerHTML = 'Erro ao carregar base.'; }
+        } catch (e) { container.innerHTML = 'Erro ao carregar.'; }
     }
 
     function fecharModalBase() { document.getElementById('modalBase').style.display = 'none'; }
 
     async function processarBloqueio() {
         const justificativa = document.getElementById('justificativaTexto').value.trim();
-        if (!justificativa) return alert("Insira uma justificativa.");
+        if (!justificativa) return alert("Motivo obrigatório.");
         const btn = document.getElementById('confirmBlockBtn');
-        btn.disabled = true; btn.innerText = "ENVIANDO...";
+        btn.disabled = true; btn.innerText = "BLOQUEANDO...";
         try {
-            const res = await fetch(URL_BLOQUEIO, {
+            await fetch(URL_BLOQUEIO, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     acao: "BLOQUEIO", alvo: bloqueioAtivo.tipo, id_banco: bloqueioAtivo.idRef,
-                    corridaId: bloqueioAtivo.corridaId, justificativa: justificativa,
-                    operador: OPERADOR_ATUAL, dataEvento: new Date().toISOString()
+                    corridaId: bloqueioAtivo.corridaId, justificativa, operador: OPERADOR_ATUAL
                 })
             });
-            if (res.ok) { alert(`${bloqueioAtivo.tipo} bloqueado!`); fecharModal(); carregarDados(); }
-        } catch (e) { alert("Erro ao processar."); }
+            alert("Bloqueio realizado!");
+            fecharModal();
+            carregarDados();
+        } catch (e) { alert("Erro ao bloquear."); }
         finally { btn.disabled = false; btn.innerText = "CONFIRMAR BLOQUEIO"; }
     }
 
     async function enviarResposta(mongoId, corridaId) {
-        const texto = document.getElementById(`input-${mongoId}`).value;
+        const texto = document.getElementById(`input-${mongoId}`).value.trim();
+        if (!texto) return alert("Digite algo para enviar.");
         const btn = document.querySelector(`#box-${mongoId} .btn-enviar`);
-        if (!texto) return alert("Escreva uma resposta.");
+        
         try {
             btn.disabled = true; btn.innerText = "ENVIANDO...";
             const res = await fetch(URL_RESPONDER, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    "id_banco": mongoId, "corridaId": corridaId, "respostaSuporte": texto,
-                    "status": "respondida", "operador": OPERADOR_ATUAL, "dataResposta": new Date().toISOString()
+                    id_banco: mongoId, corridaId: corridaId, respostaSuporte: texto,
+                    status: "respondida", operador: OPERADOR_ATUAL, dataResposta: new Date().toISOString()
                 })
             });
             if (res.ok) {
-                document.getElementById(`box-${mongoId}`).innerHTML = '<div class="msg-ja-respondida">✓ Resposta enviada!</div>';
-                setTimeout(carregarDados, 2000);
+                alert("Mensagem enviada com sucesso!");
+                carregarDados();
             }
-        } catch (e) { alert("Erro ao enviar."); btn.disabled = false; btn.innerText = "ENVIAR RESPOSTA"; }
+        } catch (e) { alert("Erro ao enviar."); }
+        finally { btn.disabled = false; btn.innerText = "ENVIAR MENSAGEM"; }
     }
 
     window.onload = () => { carregarDados(); setInterval(carregarDados, 60000); };
 </script>
-</body>
+
+
 </html>
