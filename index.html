@@ -79,6 +79,62 @@ body {
 
 <script>
 
+
+
+
+/**
+ * Script de Wake Lock Transparente - Projeto Me Leva
+ * Mantém a tela ativa sem interações extras do usuário.
+ */
+
+(function() {
+    let wakeLock = null;
+
+    // Função interna para solicitar o bloqueio
+    const requestLock = async () => {
+        try {
+            if ('wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
+                console.log('💡 Wake Lock Ativo (Invisível)');
+
+                // Se o sistema liberar (ex: bateria crítica), tenta reativar
+                wakeLock.addEventListener('release', () => {
+                    wakeLock = null;
+                    console.log('💡 Wake Lock Liberado');
+                });
+            }
+        } catch (err) {
+            // Falha silenciosa: não interrompe a experiência do usuário
+        }
+    };
+
+    // Ativa no primeiro toque (touchstart para mobile, mousedown para PC)
+    const ativarSilenciosamente = async () => {
+        if (!wakeLock) {
+            await requestLock();
+        }
+        // Remove os ouvintes após a primeira ativação bem-sucedida
+        document.removeEventListener('touchstart', ativarSilenciosamente);
+        document.removeEventListener('mousedown', ativarSilenciosamente);
+    };
+
+    document.addEventListener('touchstart', ativarSilenciosamente);
+    document.addEventListener('mousedown', ativarSilenciosamente);
+
+    // Reativa automaticamente se o motorista minimizar o navegador e voltar
+    document.addEventListener('visibilitychange', async () => {
+        if (document.visibilityState === 'visible' && !wakeLock) {
+            await requestLock();
+        }
+    });
+})();
+
+
+
+
+
+
+    
 // ================= CONFIG =================
 const webhook = "https://primary-production-a103.up.railway.app/webhook/91e80c8e-2309-4dd4-8512-f0dc5c4af856";
 
