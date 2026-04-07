@@ -35,11 +35,17 @@
   <button id="btnEnviar" class="btn" onclick="enviar()">CONCLUIR</button>
 </div>
 
+
 <script>
   const tg = window.Telegram?.WebApp;
-  if (tg) { tg.ready(); tg.expand(); }
+  if (tg) {
+    tg.ready();
+    tg.expand();
+  }
 
-  // Máscara de CPF
+  // --- MÁSCARAS DE INPUT ---
+
+  // Máscara de CPF (000.000.000-00)
   document.getElementById('cpf').addEventListener('input', function (e) {
     let v = e.target.value.replace(/\D/g, '');
     if (v.length > 11) v = v.slice(0, 11);
@@ -49,7 +55,7 @@
     e.target.value = v;
   });
 
-  // Máscara de Telefone
+  // Máscara de Telefone ((00) 00000-0000)
   document.getElementById('telefone').addEventListener('input', function (e) {
     let v = e.target.value.replace(/\D/g, '');
     if (v.length > 11) v = v.slice(0, 11);
@@ -58,7 +64,7 @@
     e.target.value = v;
   });
 
-  // Máscara de Data de Nascimento (Novo)
+  // Máscara de Data de Nascimento (00/00/0000)
   document.getElementById('nascimento').addEventListener('input', function (e) {
     let v = e.target.value.replace(/\D/g, '');
     if (v.length > 8) v = v.slice(0, 8);
@@ -67,7 +73,8 @@
     e.target.value = v;
   });
 
-  // Validação Matemática de CPF
+  // --- VALIDAÇÕES ---
+
   function validarCPF(cpf) {
     cpf = cpf.replace(/\D/g, '');
     if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
@@ -84,81 +91,95 @@
     return true;
   }
 
+  // --- FUNÇÃO DE ENVIO ---
+
   function enviar() {
-  const btn = document.getElementById('btnEnviar');
-  const webhookUrl = "https://primary-production-a103.up.railway.app/webhook/0421cb4e-c94e-40bc-ad39-823394a4d901";
+    const btn = document.getElementById('btnEnviar');
+    const webhookUrl = "https://primary-production-a103.up.railway.app/webhook/0421cb4e-c94e-40bc-ad39-823394a4d901";
 
-  const nome = document.getElementById('nome').value.trim();
-  const telefone = document.getElementById('telefone').value.trim();
-  const email = document.getElementById('email').value.trim();
-  const cpf = document.getElementById('cpf').value.trim();
-  const nascimento = document.getElementById('nascimento').value.trim();
-  const senha = document.getElementById('senha').value.trim();
+    // Captura de valores
+    const campos = {
+      nome: document.getElementById('nome').value.trim(),
+      telefone: document.getElementById('telefone').value.trim(),
+      email: document.getElementById('email').value.trim(),
+      cpf: document.getElementById('cpf').value.trim(),
+      nascimento: document.getElementById('nascimento').value.trim(),
+      senha: document.getElementById('senha').value.trim()
+    };
 
-  // Validações básicas
-  if (!nome || !senha || email === "" || telefone.length < 14 || nascimento.length < 10) {
-    alert("Por favor, preencha todos os campos corretamente.");
-    return;
-  }
+    // Validação de preenchimento obrigatório
+    if (Object.values(campos).some(v => v === "") || campos.telefone.length < 14 || campos.nascimento.length < 10) {
+      alert("Por favor, preencha todos os campos corretamente.");
+      return;
+    }
 
-  if (!validarCPF(cpf)) {
-    alert("O CPF digitado é inválido.");
-    return;
-  }
+    if (!validarCPF(campos.cpf)) {
+      alert("O CPF digitado é inválido. Verifique.");
+      return;
+    }
 
-  btn.disabled = true;
-  btn.innerText = "PROCESSANDO...";
+    // Bloqueio do botão para evitar envios duplos
+    btn.disabled = true;
+    btn.innerText = "PROCESSANDO...";
 
-  const dados = {
-    fluxo: "CADASTRO_PASSAGEIRO",
-    chatId: new URLSearchParams(window.location.search).get('chatId') || tg?.initDataUnsafe?.user?.id || "WEB",
-    nome, telefone, email, cpf, nascimento, senha
-  };
+    // Montagem dos dados para o Webhook
+    const dados = {
+      fluxo: "CADASTRO_PASSAGEIRO",
+      chatId: new URLSearchParams(window.location.search).get('chatId') || tg?.initDataUnsafe?.user?.id || "WEB",
+      ...campos
+    };
 
-  const query = new URLSearchParams(dados).toString();
+    const query = new URLSearchParams(dados).toString();
 
-  fetch(`${webhookUrl}?${query}`)
-    .then(response => {
-      if (!response.ok) throw new Error('Erro na rede');
-      return response.json();
-    })
-    .then(objetoData => {
-      const msg = objetoData.status || "Resposta recebida";
-      const ehSucesso = msg.toLowerCase().includes("sucesso") || 
-                        msg.toLowerCase().includes("realizado") || 
-                        msg.toLowerCase().includes("ok");
+    // Envio para o servidor
+    fetch(`${webhookUrl}?${query}`)
+      .then(response => {
+        if (!response.ok) throw new Error('Erro na resposta do servidor');
+        return response.json(); // Espera JSON: {"status": "Sua mensagem"}
+      })
+      .then(objetoData => {
+        const msgDoServidor = objetoData.status || "Processado pelo servidor";
+        
+        // Verifica se a resposta indica sucesso
+        const ehSucesso = msgDoServidor.toLowerCase().includes("sucesso") || 
+                          msgDoServidor.toLowerCase().includes("realizado") || 
+                          msgDoServidor.toLowerCase().includes("ok");
 
-      // Ajuste para evitar o erro WebAppMethodUnsupported
-      const finalizar = () => {
-        try {
-          if (tg && tg.showAlert) {
-            tg.showAlert(msg, () => { if (ehSucesso) tg.close(); });
-          } else {
-            alert(msg);
+        // Função para mostrar mensagem compatível com versões antigas do Telegram
+        const exibirMensagem = (texto) => {
+          try {
+            if (tg && tg.showAlert) {
+              tg.showAlert(texto, () => { if (ehSucesso) tg.close(); });
+            } else {
+              alert(texto);
+              if (ehSucesso) tg.close();
+            }
+          } catch (e) {
+            alert(texto);
             if (ehSucesso) tg.close();
           }
-        } catch (e) {
-          alert(msg);
-          if (ehSucesso) tg.close();
-        }
-      };
+        };
 
-      if (ehSucesso) {
-        btn.innerText = "CADASTRADO! ✅";
-        finalizar();
-      } else {
+        if (ehSucesso) {
+          btn.innerText = "CADASTRADO! ✅";
+          exibirMensagem(msgDoServidor);
+        } else {
+          // Em caso de erro (ex: CPF já existe), libera o botão para correção
+          btn.disabled = false;
+          btn.innerText = "CONCLUIR";
+          exibirMensagem(msgDoServidor);
+        }
+      })
+      .catch(error => {
+        console.error(error);
+        alert("Erro ao conectar ao servidor. Tente novamente.");
         btn.disabled = false;
         btn.innerText = "CONCLUIR";
-        finalizar();
-      }
-    })
-    .catch(error => {
-      console.error(error);
-      alert("Erro ao conectar ao servidor.");
-      btn.disabled = false;
-      btn.innerText = "CONCLUIR";
-    });
-}
+      });
+  }
 </script>
+
+
+  
 </body>
 </html>
