@@ -85,49 +85,83 @@
   }
 
   function enviar() {
-    const btn = document.getElementById('btnEnviar');
-    const webhookUrl = "https://primary-production-a103.up.railway.app/webhook/0421cb4e-c94e-40bc-ad39-823394a4d901";
+  const btn = document.getElementById('btnEnviar');
+  const webhookUrl = "https://primary-production-a103.up.railway.app/webhook/0421cb4e-c94e-40bc-ad39-823394a4d901";
 
-    const nome = document.getElementById('nome').value.trim();
-    const telefone = document.getElementById('telefone').value.trim();
-    const email = document.getElementById('email').value.trim();
-    const cpf = document.getElementById('cpf').value.trim();
-    const nascimento = document.getElementById('nascimento').value.trim();
-    const senha = document.getElementById('senha').value.trim();
+  // Captura dos valores
+  const nome = document.getElementById('nome').value.trim();
+  const telefone = document.getElementById('telefone').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const cpf = document.getElementById('cpf').value.trim();
+  const nascimento = document.getElementById('nascimento').value.trim();
+  const senha = document.getElementById('senha').value.trim();
 
-    // Verificação de obrigatoriedade e formatos mínimos
-    if (nome === "" || senha === "" || telefone.length < 14 || email === "" || nascimento.length < 10) {
-      alert("Por favor, preencha todos os campos corretamente.");
-      return;
-    }
-
-    if (!validarCPF(cpf)) {
-      alert("O CPF digitado é inválido. Por favor, verifique.");
-      return;
-    }
-
-    btn.disabled = true;
-    btn.innerText = "CADASTRADO! ✅";
-
-    const dados = {
-      fluxo: "CADASTRO_PASSAGEIRO",
-      chatId: new URLSearchParams(window.location.search).get('chatId') || tg?.initDataUnsafe?.user?.id || "WEB",
-      nome, telefone, email, cpf, nascimento, senha
-    };
-
-    const query = new URLSearchParams(dados).toString();
-    const img = new Image();
-    img.src = `${webhookUrl}?${query}&t=${Date.now()}`;
-
-    setTimeout(() => {
-      if (tg && tg.showAlert) {
-        tg.showAlert("✅ Cadastro realizado!", () => tg.close());
-      } else {
-        alert("✅ Cadastro realizado!");
-        window.location.href = "https://t.me/SEU_BOT_NOME"; 
-      }
-    }, 600);
+  // 1. Validação de campos obrigatórios e tamanhos mínimos
+  if (!nome || !senha || email === "" || telefone.length < 14 || nascimento.length < 10) {
+    alert("Por favor, preencha todos os campos corretamente.");
+    return;
   }
+
+  // 2. Validação do CPF
+  if (!validarCPF(cpf)) {
+    alert("O CPF digitado é inválido. Por favor, verifique.");
+    return;
+  }
+
+  // 3. Estado de carregamento
+  btn.disabled = true;
+  btn.innerText = "PROCESSANDO...";
+
+  // 4. Preparação dos dados
+  const dados = {
+    fluxo: "CADASTRO_PASSAGEIRO",
+    chatId: new URLSearchParams(window.location.search).get('chatId') || tg?.initDataUnsafe?.user?.id || "WEB",
+    nome, telefone, email, cpf, nascimento, senha
+  };
+
+  const query = new URLSearchParams(dados).toString();
+
+  // 5. Chamada ao Servidor (FETCH)
+  fetch(`${webhookUrl}?${query}`)
+    .then(response => {
+      if (!response.ok) throw new Error('Erro na comunicação com o servidor');
+      return response.json(); // Espera um JSON do tipo {"status": "mensagem aqui"}
+    })
+    .then(objetoData => {
+      // Pega o valor da chave "status" que vem do seu n8n
+      const mensagemDoServidor = objetoData.status;
+
+      // Verifica se a resposta indica sucesso (ajuste o termo "sucesso" conforme o que seu n8n enviar)
+      const ehSucesso = mensagemDoServidor.toLowerCase().includes("sucesso") || 
+                        mensagemDoServidor.toLowerCase().includes("realizado") ||
+                        mensagemDoServidor.toLowerCase().includes("ok");
+
+      if (ehSucesso) {
+        btn.innerText = "CADASTRADO! ✅";
+        if (tg && tg.showAlert) {
+          tg.showAlert(mensagemDoServidor, () => tg.close());
+        } else {
+          alert(mensagemDoServidor);
+          window.location.href = "https://t.me/SEU_BOT_NOME"; 
+        }
+      } else {
+        // Se o servidor retornar algo como "CPF já cadastrado"
+        btn.disabled = false;
+        btn.innerText = "CONCLUIR";
+        if (tg && tg.showAlert) {
+          tg.showAlert(mensagemDoServidor);
+        } else {
+          alert(mensagemDoServidor);
+        }
+      }
+    })
+    .catch(error => {
+      console.error(error);
+      alert("Erro ao conectar ao servidor. Tente novamente em instantes.");
+      btn.disabled = false;
+      btn.innerText = "CONCLUIR";
+    });
+}
 </script>
 </body>
 </html>
