@@ -20,15 +20,17 @@
 <div class="card">
   <h2 style="margin: 0 0 20px 0;">Cadastro</h2>
   
-  <input id="nome" type="text" placeholder="Nome Completo">
+  <input id="nome" type="text" placeholder="Nome Completo" required>
   
-  <input id="telefone" type="tel" inputmode="tel" placeholder="WhatsApp (00) 00000-0000" maxlength="15">
+  <input id="telefone" type="tel" inputmode="tel" placeholder="WhatsApp (00) 00000-0000" maxlength="15" required>
   
-  <input id="email" type="email" placeholder="E-mail">
+  <input id="email" type="email" placeholder="E-mail" required>
   
-  <input id="cpf" type="text" inputmode="numeric" placeholder="CPF 000.000.000-00" maxlength="14">
+  <input id="cpf" type="text" inputmode="numeric" placeholder="CPF 000.000.000-00" maxlength="14" required>
+
+  <input id="nascimento" type="text" inputmode="numeric" placeholder="Data de Nascimento DD/MM/AAAA" maxlength="10" required>
   
-  <input id="senha" type="password" placeholder="Senha">
+  <input id="senha" type="password" placeholder="Senha" required>
   
   <button id="btnEnviar" class="btn" onclick="enviar()">CONCLUIR</button>
 </div>
@@ -53,6 +55,15 @@
     if (v.length > 11) v = v.slice(0, 11);
     v = v.replace(/^(\d{2})(\d)/g, '($1) $2');
     v = v.replace(/(\d{5})(\d)/, '$1-$2');
+    e.target.value = v;
+  });
+
+  // Máscara de Data de Nascimento (Novo)
+  document.getElementById('nascimento').addEventListener('input', function (e) {
+    let v = e.target.value.replace(/\D/g, '');
+    if (v.length > 8) v = v.slice(0, 8);
+    v = v.replace(/(\d{2})(\d)/, '$1/$2');
+    v = v.replace(/(\d{2})(\d)/, '$1/$2');
     e.target.value = v;
   });
 
@@ -81,26 +92,27 @@
     const telefone = document.getElementById('telefone').value.trim();
     const email = document.getElementById('email').value.trim();
     const cpf = document.getElementById('cpf').value.trim();
+    const nascimento = document.getElementById('nascimento').value.trim();
     const senha = document.getElementById('senha').value.trim();
 
-    if (nome === "" || senha === "" || telefone.length < 10) {
-      alert("Por favor, preencha Nome, WhatsApp e Senha corretamente.");
+    // Verificação de obrigatoriedade e formatos mínimos
+    if (nome === "" || senha === "" || telefone.length < 14 || email === "" || nascimento.length < 10) {
+      alert("Por favor, preencha todos os campos corretamente.");
       return;
     }
 
-    if (cpf !== "" && !validarCPF(cpf)) {
+    if (!validarCPF(cpf)) {
       alert("O CPF digitado é inválido. Por favor, verifique.");
       return;
     }
 
-    // Alteração solicitada: Texto modificado para "CADASTRADO! ✅"
     btn.disabled = true;
     btn.innerText = "CADASTRADO! ✅";
 
     const dados = {
       fluxo: "CADASTRO_PASSAGEIRO",
       chatId: new URLSearchParams(window.location.search).get('chatId') || tg?.initDataUnsafe?.user?.id || "WEB",
-      nome, telefone, email, cpf, senha
+      nome, telefone, email, cpf, nascimento, senha
     };
 
     const query = new URLSearchParams(dados).toString();
