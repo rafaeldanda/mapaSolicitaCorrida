@@ -98,23 +98,42 @@
                 cor: document.getElementById('cor').value
             };
 
-            // MUDANÇA PARA POST (Mais seguro para senhas)
             const response = await fetch(baseUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
-            if (response.ok) {
+            // --- AQUI ESTÁ A MUDANÇA PARA PEGAR O RETORNO ---
+            const objetoData = await response.json(); 
+            const msgServidor = objetoData.status || "Processado.";
+
+            // Verifica se a mensagem indica sucesso
+            const ehSucesso = response.ok && (msgServidor.toLowerCase().includes("sucesso") || msgServidor.toLowerCase().includes("ok"));
+
+            const exibirFinal = (texto) => {
+                try {
+                    if (tg && tg.showAlert) {
+                        tg.showAlert(texto, () => { if (ehSucesso) tg.close(); });
+                    } else {
+                        alert(texto);
+                        if (ehSucesso) window.close();
+                    }
+                } catch (e) {
+                    alert(texto);
+                    if (ehSucesso) window.close();
+                }
+            };
+
+            if (ehSucesso) {
                 btn.innerText = "ENVIADO! ✅";
-                alert("Envio realizado com sucesso!");
-                if (tg) tg.close();
-                window.close();
+                exibirFinal(msgServidor);
             } else {
-                alert("❌ Erro no servidor: " + response.status);
                 btn.disabled = false;
                 btn.innerText = "Concluir Cadastro";
+                exibirFinal(msgServidor);
             }
+
         } catch (err) {
             alert("❌ Falha de conexão: " + err.message);
             btn.disabled = false;
