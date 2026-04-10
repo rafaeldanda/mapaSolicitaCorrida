@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avaliação de Viagem</title>
+    <style>
+        /* Estilização Geral */
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 420px;
+            text-align: center;
+        }
+
+        h2 { color: #1a1a1b; margin-bottom: 8px; font-weight: 700; }
+        p.subtitle { color: #65676b; font-size: 0.95rem; margin-bottom: 25px; }
+
+        /* Sistema de Estrelas (Visual de trás para frente para lógica CSS) */
+        .rating {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .rating input { display: none; }
+
+        .rating label {
+            font-size: 3rem;
+            color: #e4e6eb;
+            cursor: pointer;
+            transition: transform 0.2s, color 0.2s;
+            padding: 0 5px;
+        }
+
+        .rating label:before { content: '★'; }
+
+        /* Efeito de hover e seleção */
+        .rating input:checked ~ label,
+        .rating label:hover,
+        .rating label:hover ~ label {
+            color: #f5c330;
+        }
+
+        .rating label:active { transform: scale(1.2); }
+
+        /* Campo de Texto */
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 12px;
+            border: 1px solid #dddfe2;
+            border-radius: 12px;
+            resize: none;
+            box-sizing: border-box;
+            font-size: 1rem;
+            margin-top: 10px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus { border-color: #1877f2; }
+
+        /* Botão de Envio */
+        button {
+            background-color: #000000; /* Estilo premium/moderno */
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+            transition: opacity 0.3s, transform 0.1s;
+        }
+
+        button:hover { opacity: 0.85; }
+        button:active { transform: scale(0.98); }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        #status-msg { 
+            margin-top: 15px; 
+            font-size: 0.9rem; 
+            min-height: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Avalie seu motorista</h2>
+        <p class="subtitle">Sua opinião é fundamental para a nossa comunidade.</p>
+
+        <div class="rating">
+            <input type="radio" name="star" id="star5" value="5"><label for="star5" title="Excelente"></label>
+            <input type="radio" name="star" id="star4" value="4"><label for="star4" title="Muito Bom"></label>
+            <input type="radio" name="star" id="star3" value="3"><label for="star3" title="Bom"></label>
+            <input type="radio" name="star" id="star2" value="2"><label for="star2" title="Regular"></label>
+            <input type="radio" name="star" id="star1" value="1"><label for="star1" title="Ruim"></label>
+        </div>
+
+        <textarea id="comment" placeholder="Conte-nos mais sobre a viagem..."></textarea>
+
+        <button id="submitBtn">Finalizar Avaliação</button>
+        <p id="status-msg"></p>
+    </div>
+
+    <script>
+        const submitBtn = document.getElementById('submitBtn');
+        const statusMsg = document.getElementById('status-msg');
+        const webhookUrl = 'https://primary-production-a103.up.railway.app/webhook/55e6aaac-fc95-419c-9578-50115ffa6e02';
+
+        // Captura o corridaId da URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const corridaId = urlParams.get('corridaId');
+
+        submitBtn.addEventListener('click', async () => {
+            const stars = document.querySelector('input[name="star"]:checked');
+            const comment = document.getElementById('comment').value;
+
+            // Validação simples
+            if (!stars) {
+                statusMsg.style.color = '#d93025';
+                statusMsg.innerText = "Por favor, selecione uma quantidade de estrelas.";
+                return;
+            }
+
+            // Preparação dos dados incluindo o corridaId
+            const payload = {
+                corridaId: corridaId, // ID capturado da URL (?corridaId=VALOR)
+                rating: parseInt(stars.value),
+                feedback: comment,
+                timestamp: new Date().toISOString(),
+                origem: window.location.href
+            };
+
+            try {
+                // Feedback visual de carregamento
+                submitBtn.disabled = true;
+                submitBtn.innerText = "Enviando...";
+                statusMsg.innerText = "";
+
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    statusMsg.style.color = '#188038';
+                    statusMsg.innerText = "Obrigado! Avaliação enviada com sucesso.";
+                    submitBtn.innerText = "Enviado!";
+                    document.getElementById('comment').disabled = true;
+                    // Desabilita os inputs de estrela
+                    document.querySelectorAll('input[name="star"]').forEach(input => input.disabled = true);
+                } else {
+                    throw new Error('Falha no envio');
+                }
+            } catch (error) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Finalizar Avaliação";
+                statusMsg.style.color = '#d93025';
+                statusMsg.innerText = "Erro ao conectar. Verifique sua internet.";
+                console.error('Erro no Webhook:', error);
+            }
+        });
+    </script>
+</body>
+</html>
