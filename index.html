@@ -79,6 +79,14 @@ document.addEventListener('visibilitychange', async () => {
     }
 });
 
+function ativarPersistencia() {
+    audioSilencioso.volume = 1.0; // Garante que o volume do player está no máximo
+    audioSilencioso.play()
+    .then(() => console.log("🔊 Áudio tocando no volume máximo"))
+    .catch(e => console.log("Erro ao tocar: ", e));
+}
+
+    
 // ================= CONFIG & WEBHOOK =================
 const webhook = "https://primary-production-a103.up.railway.app/webhook/91e80c8e-2309-4dd4-8512-f0dc5c4af856";
 
