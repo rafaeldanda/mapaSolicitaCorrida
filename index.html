@@ -56,11 +56,6 @@ const requestLock = async () => {
     } catch (err) { /* Falha silenciosa */ }
 };
 
-function ativarPersistencia() {
-    audioSilencioso.play()
-    .then(() => console.log("🔊 Áudio de fundo ativo"))
-    .catch(e => console.log("Aguardando clique para áudio"));
-}
 
 // O "SUPER GATILHO" UNIFICADO
 async function ativarEscudo() {
