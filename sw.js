@@ -17,9 +17,9 @@ return caches.delete(key);
 )
 );
 
-```
+
 self.clients.claim();
-```
+
 
 });
 
