@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#2ea6ff">
     <style>
         body { font-family: Arial; background: #f4f7f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .box { background: white; padding: 20px; border-radius: 20px; text-align: center; width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .box { background: white; padding: 20px; border-radius: 20px; text-align: center; width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border: 2px solid transparent; transition: 0.3s; }
         .contador { font-size: 3em; color: #2ea6ff; }
         .led { width: 12px; height: 12px; background: #ccc; border-radius: 50%; margin: 10px auto; }
         .on { background: #28a745; }
@@ -23,7 +23,7 @@
    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
 </audio>
 
-<div class="box">
+<div class="box" id="mainBox">
     <button id="btnInstalar">📲 Instalar App</button>
     <h2>🚗 Motorista</h2>
 
@@ -34,7 +34,7 @@
     <p>Sinais enviados</p>
 
     <div id="led" class="led"></div>
-    <div id="log" class="log">Iniciando...</div>
+    <div id="log" class="log">Aguardando toque...</div>
 </div>
 
 <script>
@@ -55,98 +55,52 @@ const requestLock = async () => {
 // O "SUPER GATILHO" UNIFICADO
 // Força o play imediato e a criação da notificação
 async function ativarEscudo() {
-    // 1. Tenta tocar o áudio imediatamente
-    audioSilencioso.volume = 0.1; // Aumentamos para 10% para o sistema detetar melhor no início
+    log("⏳ Ativando...");
     
+    // 1. Configura a Media Session (Isso é o que força o player a aparecer)
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: 'Me Leva - ONLINE',
+            artist: 'Rastreamento Ativo',
+            album: 'Porto Alegre',
+            artwork: [{ src: 'https://cdn-icons-png.flaticon.com/512/854/854878.png', sizes: '512x512', type: 'image/png' }]
+        });
+
+        // Mantém o player vivo forçando o play se o sistema tentar pausar
+        navigator.mediaSession.setActionHandler('play', () => audioSilencioso.play());
+        navigator.mediaSession.setActionHandler('pause', () => audioSilencioso.play()); 
+    }
+
+    // 2. Tenta tocar o áudio e ativar o Wake Lock
     try {
+        audioSilencioso.volume = 0.05; // Volume baixo (5%) para persistência
         await audioSilencioso.play();
-        
-        // 2. Regista a sessão de média (Isso é o que faz o player aparecer)
-        if ('mediaSession' in navigator) {
-            navigator.mediaSession.metadata = new MediaMetadata({
-                title: 'Me Leva - ONLINE',
-                artist: 'Rastreamento em Tempo Real',
-                album: 'Porto Alegre',
-                artwork: [{ src: 'https://cdn-icons-png.flaticon.com/512/854/854878.png', sizes: '512x512', type: 'image/png' }]
-            });
-
-            // Mantém o player vivo mesmo se o motorista tentar pausar
-            navigator.mediaSession.setActionHandler('play', () => audioSilencioso.play());
-            navigator.mediaSession.setActionHandler('pause', () => audioSilencioso.play()); 
-        }
-
         await requestLock();
-        log("🚀 ONLINE - Player Ativo");
         
-        // Remove os bloqueios de clique
-        document.body.style.backgroundColor = "#fff"; // Feedback visual
+        log("🚀 ONLINE - Player Ativo");
+        document.getElementById('mainBox').style.borderColor = "#28a745"; // Feedback visual verde
+        
+        // Remove ouvintes para não repetir o processo desnecessariamente
+        document.removeEventListener('click', ativarEscudo);
+        document.removeEventListener('touchstart', ativarEscudo);
     } catch (e) {
-        log("⚠️ Erro: Toque novamente para ativar");
+        log("⚠️ Erro: Toque novamente");
         console.error(e);
     }
 }
 
-// Escuta em todo o corpo do site para não falhar
-document.body.addEventListener('click', ativarEscudo, { once: true });
-
-document.addEventListener('touchstart', ativarEscudo);
-document.addEventListener('mousedown', ativarEscudo);
+// Escuta toque na tela inteira para garantir ativação
+document.addEventListener('click', ativarEscudo, { once: true });
+document.addEventListener('touchstart', ativarEscudo, { once: true });
 
 // Reativar se o motorista voltar para a aba
 document.addEventListener('visibilitychange', async () => {
     if (document.visibilityState === 'visible') {
-        ativarPersistencia();
+        if (audioSilencioso.paused) audioSilencioso.play();
         if (!wakeLock) await requestLock();
         iniciarGPS(); // Garante que o GPS retome ao voltar
     }
 });
-
-// ================= O AJUSTE FINAL DO ESCUDO =================
-
-async function ativarPersistencia() {
-    const audio = document.getElementById('silentAudio');
-    
-    // 1. Forçamos o volume para 5% (detetável mas baixo)
-    audio.volume = 0.05;
-
-    // 2. Registramos a Media Session ANTES do play para o sistema se preparar
-    if ('mediaSession' in navigator) {
-        navigator.mediaSession.metadata = new MediaMetadata({
-            title: 'Me Leva - SISTEMA ATIVO',
-            artist: 'Monitoramento de GPS',
-            album: 'Porto Alegre',
-            artwork: [
-                { src: 'https://cdn-icons-png.flaticon.com/512/854/854878.png', sizes: '512x512', type: 'image/png' }
-            ]
-        });
-
-        // Truque: Definir handlers vazios força o widget a aparecer
-        navigator.mediaSession.setActionHandler('play', () => audio.play());
-        navigator.mediaSession.setActionHandler('pause', () => audio.pause());
-    }
-
-    // 3. O Play precisa ser a última coisa
-    try {
-        await audio.play();
-        log("🚀 PLAYER ATIVADO!");
-        document.querySelector('.box').style.borderColor = "#28a745"; // Borda verde se funcionar
-        document.querySelector('.box').style.borderStyle = "solid";
-        document.querySelector('.box').style.borderWidth = "2px";
-    } catch (e) {
-        log("❌ Toque novamente no botão");
-        console.error("Erro no áudio:", e);
-    }
-}
-
-// Vinculamos ao toque na tela INTEIRA para não ter erro
-document.body.addEventListener('click', () => {
-    ativarPersistencia();
-    requestLock(); // Ativa o Wake Lock também
-}, { once: true });
-    audioSilencioso.play()
-    .then(() => console.log("🔊 Persistência de áudio ativa"))
-    .catch(e => console.log("Aguardando interação para áudio: ", e));
-}
 
 // ================= CONFIG & WEBHOOK =================
 const webhook = "https://primary-production-a103.up.railway.app/webhook/91e80c8e-2309-4dd4-8512-f0dc5c4af856";
@@ -182,7 +136,6 @@ async function enviar(lat, lon, speed = 0) {
 
     try {
         const res = await fetch(url);
-        const text = await res.text();
         contador++;
         document.getElementById("contador").innerText = contador;
         log("✔ Enviado");
