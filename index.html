@@ -19,24 +19,20 @@
 </head>
 <body>
 
-<!--<audio id="silentAudio" loop>
-   <source src="Wisdom_from_the_Weeds.mp3" type="audio/mpeg">
-</audio>-->
-
 <audio id="silentAudio" loop>
    <source src="https://actions.google.com/sounds/v1/ambiences/brown_noise.ogg" type="audio/ogg">
 </audio>
 
-
-    
-
 <div class="box">
     <button id="btnInstalar">📲 Instalar App</button>
     <h2>🚗 Motorista</h2>
+
     <p>Token:</p>
     <div id="token" class="token">...</div>
+
     <div id="contador" class="contador">0</div>
     <p>Sinais enviados</p>
+
     <div id="led" class="led"></div>
     <div id="log" class="log">Iniciando...</div>
 </div>
@@ -56,10 +52,9 @@ const requestLock = async () => {
     } catch (err) { /* Falha silenciosa */ }
 };
 
-
 // O "SUPER GATILHO" UNIFICADO
 async function ativarEscudo() {
-    ativarPersistencia(); // Inicia o som invisível
+    ativarPersistencia(); // Inicia o som e registra a sessão de mídia
     await requestLock();   // Inicia a luz sempre acesa
     
     log("🚀 Escudo Ativado");
@@ -82,13 +77,26 @@ document.addEventListener('visibilitychange', async () => {
 });
 
 function ativarPersistencia() {
-    audioSilencioso.volume = 1.0; // Garante que o volume do player está no máximo
+    // Volume baixo (3%) para não incomodar, mas manter o sistema ativo
+    audioSilencioso.volume = 0.03; 
+
+    // Configura a Media Session para o player aparecer na barra de notificações
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: 'Me Leva - Online',
+            artist: 'Rastreamento Ativo',
+            album: 'Porto Alegre',
+            artwork: [
+                { src: 'https://cdn-icons-png.flaticon.com/512/854/854878.png', sizes: '512x512', type: 'image/png' }
+            ]
+        });
+    }
+
     audioSilencioso.play()
-    .then(() => console.log("🔊 Áudio tocando no volume máximo"))
-    .catch(e => console.log("Erro ao tocar: ", e));
+    .then(() => console.log("🔊 Persistência de áudio ativa"))
+    .catch(e => console.log("Aguardando interação para áudio: ", e));
 }
 
-    
 // ================= CONFIG & WEBHOOK =================
 const webhook = "https://primary-production-a103.up.railway.app/webhook/91e80c8e-2309-4dd4-8512-f0dc5c4af856";
 
