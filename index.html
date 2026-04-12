@@ -19,7 +19,7 @@
 </head>
 <body>
 
-<audio id="silentAudio" loop>
+<audio id="silentAudio" loop style="display:none;">
    <source src="https://actions.google.com/sounds/v1/ambiences/brown_noise.ogg" type="audio/ogg">
 </audio>
 
@@ -53,16 +53,41 @@ const requestLock = async () => {
 };
 
 // O "SUPER GATILHO" UNIFICADO
+// Força o play imediato e a criação da notificação
 async function ativarEscudo() {
-    ativarPersistencia(); // Inicia o som e registra a sessão de mídia
-    await requestLock();   // Inicia a luz sempre acesa
+    // 1. Tenta tocar o áudio imediatamente
+    audioSilencioso.volume = 0.1; // Aumentamos para 10% para o sistema detetar melhor no início
     
-    log("🚀 Escudo Ativado");
+    try {
+        await audioSilencioso.play();
+        
+        // 2. Regista a sessão de média (Isso é o que faz o player aparecer)
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: 'Me Leva - ONLINE',
+                artist: 'Rastreamento em Tempo Real',
+                album: 'Porto Alegre',
+                artwork: [{ src: 'https://cdn-icons-png.flaticon.com/512/854/854878.png', sizes: '512x512', type: 'image/png' }]
+            });
 
-    // Remove ouvintes para não repetir
-    document.removeEventListener('touchstart', ativarEscudo);
-    document.removeEventListener('mousedown', ativarEscudo);
+            // Mantém o player vivo mesmo se o motorista tentar pausar
+            navigator.mediaSession.setActionHandler('play', () => audioSilencioso.play());
+            navigator.mediaSession.setActionHandler('pause', () => audioSilencioso.play()); 
+        }
+
+        await requestLock();
+        log("🚀 ONLINE - Player Ativo");
+        
+        // Remove os bloqueios de clique
+        document.body.style.backgroundColor = "#fff"; // Feedback visual
+    } catch (e) {
+        log("⚠️ Erro: Toque novamente para ativar");
+        console.error(e);
+    }
 }
+
+// Escuta em todo o corpo do site para não falhar
+document.body.addEventListener('click', ativarEscudo, { once: true });
 
 document.addEventListener('touchstart', ativarEscudo);
 document.addEventListener('mousedown', ativarEscudo);
