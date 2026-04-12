@@ -59,7 +59,9 @@ body {
 </head>
 
 <body>
-
+<audio id="silentAudio" loop>
+   <source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAP7/" type="audio/wav">
+</audio>
 <div class="box">
 
 <button id="btnInstalar">📲 Instalar App</button>
@@ -79,7 +81,23 @@ body {
 
 <script>
 
+const audioSilencioso = document.getElementById('silentAudio');
 
+// Função para dar o play no silêncio
+function ativarPersistencia() {
+    audioSilencioso.play()
+    .then(() => {
+        console.log("Mantendo o app vivo em segundo plano...");
+    })
+    .catch(error => {
+        console.log("O áudio só ativa após um clique do motorista.");
+    });
+}
+
+// Gatilho: Quando o motorista clicar em qualquer lugar ou no botão de "Ficar Online"
+document.addEventListener('click', () => {
+    ativarPersistencia();
+}, { once: true }); // O 'once: true' faz com que isso rode apenas no primeiro clique
 
 
 /**
