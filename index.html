@@ -1,174 +1,93 @@
 <!DOCTYPE html>
-
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Me Leva - Motorista</title>
-
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#2ea6ff">
-
-<style>
-body {
-    font-family: Arial;
-    background: #f4f7f9;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
-}
-.box {
-    background: white;
-    padding: 20px;
-    border-radius: 20px;
-    text-align: center;
-    width: 300px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-}
-.contador {
-    font-size: 3em;
-    color: #2ea6ff;
-}
-.led {
-    width: 12px;
-    height: 12px;
-    background: #ccc;
-    border-radius: 50%;
-    margin: 10px auto;
-}
-.on { background: #28a745; }
-.log { font-size: 12px; color: #555; }
-.token { font-size: 12px; background: #e3f2fd; padding: 5px; border-radius: 10px; }
-
-#btnInstalar {
-    display:none;
-    width:100%;
-    padding:12px;
-    margin-bottom:10px;
-    background:#28a745;
-    color:white;
-    border:none;
-    border-radius:10px;
-    font-weight:bold;
-    cursor:pointer;
-}
-</style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Me Leva - Motorista</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2ea6ff">
+    <style>
+        body { font-family: Arial; background: #f4f7f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: white; padding: 20px; border-radius: 20px; text-align: center; width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .contador { font-size: 3em; color: #2ea6ff; }
+        .led { width: 12px; height: 12px; background: #ccc; border-radius: 50%; margin: 10px auto; }
+        .on { background: #28a745; }
+        .log { font-size: 12px; color: #555; }
+        .token { font-size: 12px; background: #e3f2fd; padding: 5px; border-radius: 10px; }
+        #btnInstalar { display:none; width:100%; padding:12px; margin-bottom:10px; background:#28a745; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer; }
+    </style>
 </head>
-
 <body>
+
 <audio id="silentAudio" loop>
    <source src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAP7/" type="audio/wav">
 </audio>
+
 <div class="box">
-
-<button id="btnInstalar">📲 Instalar App</button>
-
-<h2>🚗 Motorista</h2>
-
-<p>Token:</p>
-<div id="token" class="token">...</div>
-
-<div id="contador" class="contador">0</div>
-<p>Sinais enviados</p>
-
-<div id="led" class="led"></div>
-<div id="log" class="log">Iniciando...</div>
-
+    <button id="btnInstalar">📲 Instalar App</button>
+    <h2>🚗 Motorista</h2>
+    <p>Token:</p>
+    <div id="token" class="token">...</div>
+    <div id="contador" class="contador">0</div>
+    <p>Sinais enviados</p>
+    <div id="led" class="led"></div>
+    <div id="log" class="log">Iniciando...</div>
 </div>
 
 <script>
-
+// ================= PERSISTÊNCIA (ÁUDIO + WAKE LOCK) =================
 const audioSilencioso = document.getElementById('silentAudio');
+let wakeLock = null;
 
-// Função para dar o play no silêncio
+const requestLock = async () => {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('💡 Wake Lock Ativo');
+            wakeLock.addEventListener('release', () => { wakeLock = null; });
+        }
+    } catch (err) { /* Falha silenciosa */ }
+};
+
 function ativarPersistencia() {
     audioSilencioso.play()
-    .then(() => {
-        console.log("Mantendo o app vivo em segundo plano...");
-    })
-    .catch(error => {
-        console.log("O áudio só ativa após um clique do motorista.");
-    });
+    .then(() => console.log("🔊 Áudio de fundo ativo"))
+    .catch(e => console.log("Aguardando clique para áudio"));
 }
 
-// Gatilho: Quando o motorista clicar em qualquer lugar ou no botão de "Ficar Online"
-document.addEventListener('click', () => {
-    ativarPersistencia();
-}, { once: true }); // O 'once: true' faz com que isso rode apenas no primeiro clique
-
-
-/**
- * Script de Wake Lock Transparente - Projeto Me Leva
- * Mantém a tela ativa sem interações extras do usuário.
- */
-
-(function() {
-    let wakeLock = null;
-
-    // Função interna para solicitar o bloqueio
-    const requestLock = async () => {
-        try {
-            if ('wakeLock' in navigator) {
-                wakeLock = await navigator.wakeLock.request('screen');
-                console.log('💡 Wake Lock Ativo (Invisível)');
-
-                // Se o sistema liberar (ex: bateria crítica), tenta reativar
-                wakeLock.addEventListener('release', () => {
-                    wakeLock = null;
-                    console.log('💡 Wake Lock Liberado');
-                });
-            }
-        } catch (err) {
-            // Falha silenciosa: não interrompe a experiência do usuário
-        }
-    };
-
-    // Ativa no primeiro toque (touchstart para mobile, mousedown para PC)
-    const ativarSilenciosamente = async () => {
-        if (!wakeLock) {
-            await requestLock();
-        }
-        // Remove os ouvintes após a primeira ativação bem-sucedida
-        document.removeEventListener('touchstart', ativarSilenciosamente);
-        document.removeEventListener('mousedown', ativarSilenciosamente);
-    };
-
-    document.addEventListener('touchstart', ativarSilenciosamente);
-    document.addEventListener('mousedown', ativarSilenciosamente);
-
-    // Reativa automaticamente se o motorista minimizar o navegador e voltar
-    document.addEventListener('visibilitychange', async () => {
-        if (document.visibilityState === 'visible' && !wakeLock) {
-            await requestLock();
-        }
-    });
-})();
-
-
-
-
-
-
+// O "SUPER GATILHO" UNIFICADO
+async function ativarEscudo() {
+    ativarPersistencia(); // Inicia o som invisível
+    await requestLock();   // Inicia a luz sempre acesa
     
-// ================= CONFIG =================
+    log("🚀 Escudo Ativado");
+
+    // Remove ouvintes para não repetir
+    document.removeEventListener('touchstart', ativarEscudo);
+    document.removeEventListener('mousedown', ativarEscudo);
+}
+
+document.addEventListener('touchstart', ativarEscudo);
+document.addEventListener('mousedown', ativarEscudo);
+
+// Reativar se o motorista voltar para a aba
+document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible') {
+        ativarPersistencia();
+        if (!wakeLock) await requestLock();
+        iniciarGPS(); // Garante que o GPS retome ao voltar
+    }
+});
+
+// ================= CONFIG & WEBHOOK =================
 const webhook = "https://primary-production-a103.up.railway.app/webhook/91e80c8e-2309-4dd4-8512-f0dc5c4af856";
 
-// ================= TOKEN =================
 const params = new URLSearchParams(window.location.search);
-let token = params.get("token");
-
-if (token) {
-    localStorage.setItem("meleva_token", token);
-} else {
-    token = localStorage.getItem("meleva_token") || "SEM_TOKEN";
-}
-
+let token = params.get("token") || localStorage.getItem("meleva_token") || "SEM_TOKEN";
+if (token !== "SEM_TOKEN") localStorage.setItem("meleva_token", token);
 document.getElementById("token").innerText = token;
 
-// ================= UI =================
+// ================= UI & LOGS =================
 function log(msg) {
     console.log(msg);
     document.getElementById("log").innerText = msg;
@@ -180,19 +99,14 @@ function blink() {
     setTimeout(() => led.classList.remove("on"), 500);
 }
 
-// ================= VARIÁVEIS =================
+// ================= LÓGICA DE ENVIO =================
 let contador = 0;
 let ultimaPosicao = null;
 let ultimoEnvio = 0;
 
-// ================= ENVIO =================
 async function enviar(lat, lon, speed = 0) {
-
     const agora = Date.now();
-
-    // envio a cada 10s
-    if (agora - ultimoEnvio < 10000) return;
-
+    if (agora - ultimoEnvio < 10000) return; // Trava de 10s
     ultimoEnvio = agora;
 
     const url = `${webhook}?token=${token}&lat=${lat}&lon=${lon}&speed=${speed || 0}&ping=${contador+1}`;
@@ -200,24 +114,17 @@ async function enviar(lat, lon, speed = 0) {
     try {
         const res = await fetch(url);
         const text = await res.text();
-
-        console.log("Servidor:", text);
-
         contador++;
         document.getElementById("contador").innerText = contador;
-
         log("✔ Enviado");
         blink();
-
     } catch (e) {
-        console.error(e);
-        log("❌ Erro: " + e.message);
+        log("❌ Erro de conexão");
     }
 }
 
 // ================= GPS =================
 function iniciarGPS() {
-
     if (!navigator.geolocation) {
         log("GPS não suportado");
         return;
@@ -226,106 +133,57 @@ function iniciarGPS() {
     navigator.geolocation.watchPosition(
         (pos) => {
             ultimaPosicao = pos;
-
-            const { latitude, longitude } = pos.coords;
-            console.log("GPS atualizado:", latitude, longitude);
-
             log("📍 GPS OK");
         },
-        (err) => {
-            log("Erro GPS: " + err.code);
-        },
-        {
-            enableHighAccuracy: true,
-            maximumAge: 0,
-            timeout: 20000
-        }
+        (err) => { log("Erro GPS: " + err.code); },
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
     );
 }
 
-// ================= LOOP ESTÁVEL =================
+// LOOP DE ENVIO (Roda a cada 10s de forma estável)
 function loopEnvio() {
-
     if (ultimaPosicao) {
         const { latitude, longitude, speed } = ultimaPosicao.coords;
         enviar(latitude, longitude, speed);
     } else {
         log("⏳ Aguardando GPS...");
     }
-
     setTimeout(loopEnvio, 10000);
 }
 
+// Início de tudo
+iniciarGPS();
 loopEnvio();
 
-// ================= PERMISSÃO =================
+// Verificação de permissão inicial
 navigator.permissions.query({ name: "geolocation" }).then(result => {
-
-    console.log("Permissão:", result.state);
-
-    if (result.state === "denied") {
-        log("❌ Permissão negada");
-    } else {
-        iniciarGPS();
-    }
-
+    if (result.state === "denied") log("❌ GPS Negado");
 });
 
-// ================= RETORNO DA TELA =================
-document.addEventListener("visibilitychange", () => {
-
-    if (document.visibilityState === "visible") {
-
-        console.log("Tela voltou!");
-        log("🔄 Retomando...");
-
-        iniciarGPS();
-
-        if (ultimaPosicao) {
-            const { latitude, longitude, speed } = ultimaPosicao.coords;
-            enviar(latitude, longitude, speed);
-        }
-    }
-
-});
-
-// ================= INSTALAÇÃO =================
+// ================= INSTALAÇÃO PWA =================
 let deferredPrompt;
 const btnInstalar = document.getElementById("btnInstalar");
 
-function isPWAInstalled() {
-    return window.matchMedia('(display-mode: standalone)').matches
-        || window.navigator.standalone === true;
-}
-
-if (!isPWAInstalled()) {
-    window.addEventListener("beforeinstallprompt", (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
+window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (!window.matchMedia('(display-mode: standalone)').matches) {
         btnInstalar.style.display = "block";
-    });
-}
+    }
+});
 
 btnInstalar.addEventListener("click", async () => {
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-
-    btnInstalar.style.display = "none";
-    deferredPrompt = null;
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        await deferredPrompt.userChoice;
+        btnInstalar.style.display = "none";
+        deferredPrompt = null;
+    }
 });
 
-window.addEventListener("appinstalled", () => {
-    btnInstalar.style.display = "none";
-});
-
-// ================= SERVICE WORKER =================
 if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js");
 }
-
 </script>
-
 </body>
 </html>
