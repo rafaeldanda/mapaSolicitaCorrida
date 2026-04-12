@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Avaliação de Viagem</title>
     <style>
-        /* Estilização Geral */
+        /* Estilização Geral (Mantida conforme original) */
         body {
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background-color: #f0f2f5;
@@ -29,7 +29,6 @@
         h2 { color: #1a1a1b; margin-bottom: 8px; font-weight: 700; }
         p.subtitle { color: #65676b; font-size: 0.95rem; margin-bottom: 25px; }
 
-        /* Sistema de Estrelas (Visual de trás para frente para lógica CSS) */
         .rating {
             display: flex;
             flex-direction: row-reverse;
@@ -49,7 +48,6 @@
 
         .rating label:before { content: '★'; }
 
-        /* Efeito de hover e seleção */
         .rating input:checked ~ label,
         .rating label:hover,
         .rating label:hover ~ label {
@@ -58,7 +56,6 @@
 
         .rating label:active { transform: scale(1.2); }
 
-        /* Campo de Texto */
         textarea {
             width: 100%;
             height: 100px;
@@ -75,9 +72,8 @@
 
         textarea:focus { border-color: #1877f2; }
 
-        /* Botão de Envio */
         button {
-            background-color: #000000; /* Estilo premium/moderno */
+            background-color: #000000;
             color: white;
             border: none;
             padding: 15px;
@@ -124,26 +120,68 @@
     <script>
         const submitBtn = document.getElementById('submitBtn');
         const statusMsg = document.getElementById('status-msg');
-        const webhookUrl = 'https://primary-production-a103.up.railway.app/webhook/55e6aaac-fc95-419c-9578-50115ffa6e02';
+        const commentField = document.getElementById('comment');
+        
+        // URLs
+        const checkUrl = 'https://primary-production-a103.up.railway.app/webhook/055eef49-5e20-4f65-9212-a5927d82b7eb';
+        const submitUrl = 'https://primary-production-a103.up.railway.app/webhook/55e6aaac-fc95-419c-9578-50115ffa6e02';
 
         // Captura o corridaId da URL
         const urlParams = new URLSearchParams(window.location.search);
         const corridaId = urlParams.get('corridaId');
 
+        // 1. Lógica de Busca ao iniciar
+        window.onload = async () => {
+            if (!corridaId) return;
+
+            try {
+                const response = await fetch(`${checkUrl}?corridaId=${corridaId}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Se retornar um objeto com dados (existe avaliação)
+                    if (data && data.rating) {
+                        // Popular campos
+                        document.getElementById(`star${data.rating}`).checked = true;
+                        commentField.value = data.feedback || "";
+                        
+                        // Desabilitar tudo
+                        disableForm("Esta corrida já foi avaliada.");
+                    }
+                }
+            } catch (error) {
+                console.error("Erro ao verificar avaliação existente:", error);
+            }
+        };
+
+        function disableForm(message) {
+    submitBtn.disabled = true;
+    submitBtn.innerText = "Avaliação Concluída";
+    commentField.disabled = true;
+    
+    // Ajuste da cor para manter a fidelidade do site (#65676b)
+    statusMsg.style.color = '#65676b'; 
+    statusMsg.style.fontWeight = '500';
+    statusMsg.innerText = message;
+    
+    // Desabilita os inputs de estrela
+    document.querySelectorAll('input[name="star"]').forEach(input => input.disabled = true);
+}
+
+        // 2. Lógica de Envio (Mantida com pequenas melhorias)
         submitBtn.addEventListener('click', async () => {
             const stars = document.querySelector('input[name="star"]:checked');
-            const comment = document.getElementById('comment').value;
+            const comment = commentField.value;
 
-            // Validação simples
             if (!stars) {
                 statusMsg.style.color = '#d93025';
                 statusMsg.innerText = "Por favor, selecione uma quantidade de estrelas.";
                 return;
             }
 
-            // Preparação dos dados incluindo o corridaId
             const payload = {
-                corridaId: corridaId, // ID capturado da URL (?corridaId=VALOR)
+                corridaId: corridaId,
                 rating: parseInt(stars.value),
                 feedback: comment,
                 timestamp: new Date().toISOString(),
@@ -151,26 +189,18 @@
             };
 
             try {
-                // Feedback visual de carregamento
                 submitBtn.disabled = true;
                 submitBtn.innerText = "Enviando...";
-                statusMsg.innerText = "";
 
-                const response = await fetch(webhookUrl, {
+                const response = await fetch(submitUrl, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
                 if (response.ok) {
-                    statusMsg.style.color = '#188038';
-                    statusMsg.innerText = "Obrigado! Avaliação enviada com sucesso.";
+                    disableForm("Obrigado! Avaliação enviada com sucesso.");
                     submitBtn.innerText = "Enviado!";
-                    document.getElementById('comment').disabled = true;
-                    // Desabilita os inputs de estrela
-                    document.querySelectorAll('input[name="star"]').forEach(input => input.disabled = true);
                 } else {
                     throw new Error('Falha no envio');
                 }
@@ -179,7 +209,6 @@
                 submitBtn.innerText = "Finalizar Avaliação";
                 statusMsg.style.color = '#d93025';
                 statusMsg.innerText = "Erro ao conectar. Verifique sua internet.";
-                console.error('Erro no Webhook:', error);
             }
         });
     </script>
