@@ -19,8 +19,8 @@
 </head>
 <body>
 
-<audio id="silentAudio" loop style="display:none;">
-   <source src="https://actions.google.com/sounds/v1/ambiences/brown_noise.ogg" type="audio/ogg">
+<audio id="silentAudio" loop preload="auto" style="display:none;">
+   <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
 </audio>
 
 <div class="box">
@@ -101,22 +101,48 @@ document.addEventListener('visibilitychange', async () => {
     }
 });
 
-function ativarPersistencia() {
-    // Volume baixo (3%) para não incomodar, mas manter o sistema ativo
-    audioSilencioso.volume = 0.03; 
+// ================= O AJUSTE FINAL DO ESCUDO =================
 
-    // Configura a Media Session para o player aparecer na barra de notificações
+async function ativarPersistencia() {
+    const audio = document.getElementById('silentAudio');
+    
+    // 1. Forçamos o volume para 5% (detetável mas baixo)
+    audio.volume = 0.05;
+
+    // 2. Registramos a Media Session ANTES do play para o sistema se preparar
     if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
-            title: 'Me Leva - Online',
-            artist: 'Rastreamento Ativo',
+            title: 'Me Leva - SISTEMA ATIVO',
+            artist: 'Monitoramento de GPS',
             album: 'Porto Alegre',
             artwork: [
                 { src: 'https://cdn-icons-png.flaticon.com/512/854/854878.png', sizes: '512x512', type: 'image/png' }
             ]
         });
+
+        // Truque: Definir handlers vazios força o widget a aparecer
+        navigator.mediaSession.setActionHandler('play', () => audio.play());
+        navigator.mediaSession.setActionHandler('pause', () => audio.pause());
     }
 
+    // 3. O Play precisa ser a última coisa
+    try {
+        await audio.play();
+        log("🚀 PLAYER ATIVADO!");
+        document.querySelector('.box').style.borderColor = "#28a745"; // Borda verde se funcionar
+        document.querySelector('.box').style.borderStyle = "solid";
+        document.querySelector('.box').style.borderWidth = "2px";
+    } catch (e) {
+        log("❌ Toque novamente no botão");
+        console.error("Erro no áudio:", e);
+    }
+}
+
+// Vinculamos ao toque na tela INTEIRA para não ter erro
+document.body.addEventListener('click', () => {
+    ativarPersistencia();
+    requestLock(); // Ativa o Wake Lock também
+}, { once: true });
     audioSilencioso.play()
     .then(() => console.log("🔊 Persistência de áudio ativa"))
     .catch(e => console.log("Aguardando interação para áudio: ", e));
