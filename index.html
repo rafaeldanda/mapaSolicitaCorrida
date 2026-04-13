@@ -83,7 +83,7 @@ async function ativarEscudo() {
 
     // 2. Tenta tocar o áudio e ativar o Wake Lock
     try {
-        audioSilencioso.volume = 0.05; // Volume baixo (5%) para persistência
+        audioSilencioso.volume = 0.01; // Volume baixo (5%) para persistência
         await audioSilencioso.play();
         await requestLock();
         
